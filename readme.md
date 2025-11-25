@@ -71,5 +71,77 @@ The goal is to deliver a modern, fast, and reliable chess experience.
 
 ---
 
-## 🧱 System Architecture
+
+**Flow Description:**
+1. Client connects to backend using WebSockets  
+2. Server validates moves using Chess.js  
+3. Redis stores fast-changing room states  
+4. MongoDB stores long-term data (users, puzzles, history)  
+5. Redis Pub/Sub syncs multiple backend servers for scaling  
+
+---
+
+## ⚡ Why Redis?
+
+Redis makes the system **fast, scalable, and consistent**:
+
+- **Room State Cache** → avoids constant DB hits  
+- **Pub/Sub** → syncs all Socket servers when scaling  
+- **Fast leaderboard** using sorted sets  
+- **Prevents race conditions** in simultaneous moves  
+- **In-memory speed** → microsecond responses  
+
+Without Redis, real-time gaming at scale becomes slow and inconsistent.
+
+---
+
+## 🌐 How Real-Time Gameplay Works (WebSockets)
+
+1. Player moves a piece  
+2. Move sent via WebSocket to backend  
+3. Backend validates with Chess.js  
+4. Room state updated in Redis  
+5. Opponent instantly receives the updated board  
+6. UI refreshes without delays  
+
+This produces **0–50ms latency**, ideal for real-time gaming.
+
+---
+
+## 🧩 Puzzle Module
+
+Puzzles include:
+- **FEN string**  
+- **Expected moves/solution**  
+- **Difficulty**  
+- **Timer**  
+- **Attempts tracking**
+
+Players solve puzzles like a riddle or training mode.
+
+---
+
+---
+
+## ▶️ How to Run Locally
+
+### 1️⃣ Clone the repo
+```bash
+git clone https://github.com/your-username/chess-platform.git
+cd chess-platform
+
+
+npm install
+cd client && npm install
+
+npm run dev
+
+
+cd client
+npm run dev
+
+
+
+
+---
 
