@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import userRoutes from "./routes/user.route.js";
+import adminRoutes from "./routes/admin.route.js";
 import connectDB from "./config/db.js"
 
 
@@ -16,8 +17,11 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+
 // Routes
 app.use("/api/user",userRoutes)
+app.use("/api/admin",adminRoutes)
 
 app.get("/",(req,res)=>{
     console.log("welcome to game ");

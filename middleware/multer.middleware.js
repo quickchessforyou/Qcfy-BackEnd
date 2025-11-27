@@ -12,12 +12,19 @@ const storage = multer.diskStorage({
 })
 
 const fileFilter = (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-        cb(null, true);
-    } else {
-        cb(new Error('Not an image! Please upload an image.'), false);
-    }
+  console.log("FILE MIMETYPE:", file.mimetype);
+
+  const ext = path.extname(file.originalname).toLowerCase();
+  const allowedExt = [".jpg", ".jpeg", ".png", ".webp", ".jfif"];
+
+  // Allow if file extension is an image
+  if (allowedExt.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error("Not an image! Please upload an image."), false);
+  }
 };
+
 
 const upload = multer({ 
     storage: storage,
