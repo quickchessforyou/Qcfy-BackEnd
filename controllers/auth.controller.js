@@ -180,4 +180,29 @@ const verifyOTP = async (req, res) => {
   }
 };
 
-export { register, login, sendOTP, verifyOTP }
+// Reset password
+const resetPassword = async (req, res) => {
+  try {
+    const { password } = req.body;
+    const userId = req.user._id;
+
+    if (!password) {
+      return res.status(400).json({ message: "Password is required" });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Update user password
+    await User.findByIdAndUpdate(userId, {
+      password: hashedPassword
+    });
+
+    return res.status(200).json({ message: "Password reset successfully" });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export { register, login, sendOTP, verifyOTP, resetPassword }
