@@ -4,6 +4,8 @@ import cors from "cors";
 import userRoutes from "./routes/user.route.js";
 import adminRoutes from "./routes/admin.route.js";
 import connectDB from "./config/db.js"
+import puzzleRoutes from "./routes/puzzle.route.js";
+import { Chess } from "chess.js";
 
 
 
@@ -22,10 +24,15 @@ app.use(express.json());
 // Routes
 app.use("/api/user",userRoutes)
 app.use("/api/admin",adminRoutes)
+app.use("/api/puzzle",puzzleRoutes)
 
 app.get("/",(req,res)=>{
     console.log("welcome to game ");
 })
+
+
+console.log("Chess import:", Chess);
+
 
 // Start server
 const PORT = process.env.PORT || 3000;

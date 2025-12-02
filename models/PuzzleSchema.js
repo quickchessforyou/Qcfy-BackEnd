@@ -4,8 +4,10 @@ const PuzzleSchema = new mongoose.Schema({
   title: String,
   fen: String,
   difficulty: { type: String, enum: ["easy", "medium", "hard"] },
-  solutionMoves: [String], // ["e4", "Nf6", ...]
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  solutionMoves: [String], 
+  // ["e4", "Nf6", ...]
+  description: String,
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "Admin" },
 
   createdAt: { type: Date, default: Date.now }
 });
