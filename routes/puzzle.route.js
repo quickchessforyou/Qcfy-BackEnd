@@ -1,13 +1,32 @@
 import express from "express";
-import { createPuzzle, getPuzzles, getPuzzleById, updatePuzzle, deletePuzzle } from "../controllers/puzzle.controller.js";
-import  isAdmin  from "../middleware/admin.middleware.js";
+import { 
+  createPuzzle, 
+  getPuzzles, 
+  getPuzzleById, 
+  updatePuzzle, 
+  deletePuzzle,
+  importFromLichess,
+  getPuzzlesWithFilters,
+  getPuzzleStats,
+  getRandomPuzzle
+} from "../controllers/puzzle.controller.js";
+import isAdmin from "../middleware/admin.middleware.js";
+
 const router = express.Router();
 
-
+// Manual puzzle routes
 router.post("/create-puzzle", isAdmin, createPuzzle);
 router.get("/get-puzzles", getPuzzles);
-router.get("/get-puzzle/:id", isAdmin, getPuzzleById);
+router.get("/get-puzzle/:id", getPuzzleById);
 router.put("/update-puzzle/:id", isAdmin, updatePuzzle);
 router.delete("/delete-puzzle/:id", isAdmin, deletePuzzle);
+
+// Lichess import routes
+router.post("/import-lichess", isAdmin, importFromLichess);
+router.get("/puzzles-filtered", getPuzzlesWithFilters);
+router.get("/puzzle-stats", getPuzzleStats);
+
+// Casual puzzle route (no auth required)
+router.get("/random-puzzle", getRandomPuzzle);
 
 export default router;

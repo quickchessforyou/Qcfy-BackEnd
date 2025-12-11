@@ -133,7 +133,7 @@ export const validateSolutionMoves = (fen, moves = []) => {
   
   const createPuzzle = async (req, res) => {
     try {
-      const { title, fen, difficulty, solutionMoves, description } = req.body;
+      const { title, fen, difficulty, solutionMoves, description, category } = req.body;
   
       // --- REQUIRED FIELDS CHECK ---
       const missingFields = [];
@@ -142,6 +142,7 @@ export const validateSolutionMoves = (fen, moves = []) => {
       if (!difficulty) missingFields.push("difficulty");
       if (!solutionMoves) missingFields.push("solutionMoves");
       if (!description) missingFields.push("description");
+      if (!category) missingFields.push("category");
   
       if (missingFields.length > 0) {
         return res.status(400).json({
@@ -180,6 +181,7 @@ export const validateSolutionMoves = (fen, moves = []) => {
         difficulty,
         solutionMoves,
         description,
+        category,
         createdBy: req.admin._id,
       });
   
@@ -281,4 +283,141 @@ export const validateSolutionMoves = (fen, moves = []) => {
   };
 
 
-  export { createPuzzle, getPuzzles, getPuzzleById, updatePuzzle, deletePuzzle }
+// Import Lichess puzzles
+const importFromLichess = async (req, res) => {
+  try {
+    const { count = 50 } = req.body;
+    
+    // Dynamically import the service
+    const { importLichessPuzzles } = await import('../services/lichessService.js');
+    
+    const result = await importLichessPuzzles(count);
+    
+    res.status(200).json({
+      message: 'Puzzles imported successfully from Lichess',
+      ...result
+    });
+  } catch (error) {
+    console.error('Error importing from Lichess:', error);
+    res.status(500).json({ 
+      message: 'Failed to import puzzles from Lichess',
+      error: error.message 
+    });
+  }
+};
+
+// Get puzzles with filters (source, category, rating, search)
+const getPuzzlesWithFilters = async (req, res) => {
+  try {
+    const { 
+      source, 
+      category, 
+      minRating, 
+      maxRating, 
+      search, 
+      page = 1, 
+      limit = 20 
+    } = req.query;
+    
+    const query = {};
+    
+    if (source) query.source = source;
+    if (category) query.category = category;
+    if (minRating || maxRating) {
+      query.rating = {};
+      if (minRating) query.rating.$gte = parseInt(minRating);
+      if (maxRating) query.rating.$lte = parseInt(maxRating);
+    }
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { lichessId: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    const puzzles = await PuzzleModel.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+    
+    const total = await PuzzleModel.countDocuments(query);
+    
+    res.status(200).json({
+      puzzles,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching puzzles with filters:', error);
+    res.status(500).json({ message: 'Failed to fetch puzzles' });
+  }
+};
+
+// Get puzzle statistics
+const getPuzzleStats = async (req, res) => {
+  try {
+    const stats = await PuzzleModel.aggregate([
+      {
+        $group: {
+          _id: '$source',
+          count: { $sum: 1 },
+          avgRating: { $avg: '$rating' }
+        }
+      }
+    ]);
+    
+    const categoryStats = await PuzzleModel.aggregate([
+      {
+        $group: {
+          _id: '$category',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+    
+    res.status(200).json({
+      bySource: stats,
+      byCategory: categoryStats
+    });
+  } catch (error) {
+    console.error('Error fetching puzzle stats:', error);
+    res.status(500).json({ message: 'Failed to fetch statistics' });
+  }
+};
+
+// Get random puzzle from Lichess (proxy to avoid CORS)
+const getRandomPuzzle = async (req, res) => {
+  try {
+    // Dynamically import the service
+    const { fetchRandomPuzzle } = await import('../services/lichessService.js');
+    
+    const puzzle = await fetchRandomPuzzle();
+    
+    res.status(200).json(puzzle);
+  } catch (error) {
+    console.error('Error fetching random puzzle:', error);
+    res.status(500).json({ 
+      message: 'Failed to fetch puzzle from Lichess',
+      error: error.message 
+    });
+  }
+};
+
+export { 
+  createPuzzle, 
+  getPuzzles, 
+  getPuzzleById, 
+  updatePuzzle, 
+  deletePuzzle,
+  importFromLichess,
+  getPuzzlesWithFilters,
+  getPuzzleStats,
+  getRandomPuzzle
+}

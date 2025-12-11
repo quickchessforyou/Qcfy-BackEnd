@@ -5,6 +5,8 @@ import userRoutes from "./routes/user.route.js";
 import adminRoutes from "./routes/admin.route.js";
 import connectDB from "./config/db.js"
 import puzzleRoutes from "./routes/puzzle.route.js";
+import competitionRoutes from "./routes/competition.route.js";
+import categoryRoutes from "./routes/category.route.js";
 import { Chess } from "chess.js";
 
 
@@ -25,6 +27,8 @@ app.use(express.json());
 app.use("/api/user",userRoutes)
 app.use("/api/admin",adminRoutes)
 app.use("/api/puzzle",puzzleRoutes)
+app.use("/api/competition",competitionRoutes)
+app.use("/api/category",categoryRoutes)
 
 app.get("/",(req,res)=>{
     console.log("welcome to game ");
