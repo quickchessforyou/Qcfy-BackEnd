@@ -1,11 +1,10 @@
 import express from "express";
-import { 
-  createPuzzle, 
-  getPuzzles, 
-  getPuzzleById, 
-  updatePuzzle, 
+import {
+  createPuzzle,
+  getPuzzles,
+  getPuzzleById,
+  updatePuzzle,
   deletePuzzle,
-  importFromLichess,
   getPuzzlesWithFilters,
   getPuzzleStats,
   getRandomPuzzle
@@ -22,7 +21,9 @@ router.put("/update-puzzle/:id", isAdmin, updatePuzzle);
 router.delete("/delete-puzzle/:id", isAdmin, deletePuzzle);
 
 // Lichess import routes
-router.post("/import-lichess", isAdmin, importFromLichess);
+// Lichess import routes
+// router.post("/import-lichess", isAdmin, importFromLichess); // Removed
+
 router.get("/puzzles-filtered", getPuzzlesWithFilters);
 router.get("/puzzle-stats", getPuzzleStats);
 

@@ -130,221 +130,210 @@ export const validateSolutionMoves = (fen, moves = []) => {
 };
 
 
-  
-  const createPuzzle = async (req, res) => {
-    try {
-      const { title, fen, difficulty, solutionMoves, description, category } = req.body;
-  
-      // --- REQUIRED FIELDS CHECK ---
-      const missingFields = [];
-      if (!title) missingFields.push("title");
-      if (!fen) missingFields.push("fen");
-      if (!difficulty) missingFields.push("difficulty");
-      if (!solutionMoves) missingFields.push("solutionMoves");
-      if (!description) missingFields.push("description");
-      if (!category) missingFields.push("category");
-  
-      if (missingFields.length > 0) {
-        return res.status(400).json({
-          message: `Missing required fields: ${missingFields.join(", ")}`,
-        });
-      }
-  
-      // --- DIFFICULTY VALIDATION ---
-      const allowedDifficulties = ["easy", "medium", "hard"];
-      if (!allowedDifficulties.includes(difficulty)) {
-        return res.status(400).json({
-          message: "Difficulty must be one of: easy, medium, hard",
-        });
-      }
-  
-      // --- FEN VALIDATION ---
-      const fenResult = validateFen(fen);
-      if (!fenResult.valid) {
-        return res.status(400).json({
-          message: `FEN Error: ${fenResult.message}`,
-        });
-      }
-  
-      // --- SOLUTION MOVES VALIDATION ---
+
+const createPuzzle = async (req, res) => {
+  try {
+    const { title, fen, difficulty, solutionMoves, description, category, type, kidsConfig } = req.body;
+
+    // --- REQUIRED FIELDS CHECK ---
+    const missingFields = [];
+    if (!title) missingFields.push("title");
+    if (!fen) missingFields.push("fen");
+    if (!difficulty) missingFields.push("difficulty");
+    if (!description) missingFields.push("description");
+    if (!category) missingFields.push("category");
+
+    // For normal puzzles, solutionMoves is required
+    if ((!type || type === 'normal') && !solutionMoves) missingFields.push("solutionMoves");
+
+    // For kids puzzles, kidsConfig is required
+    if (type === 'kids' && !kidsConfig) missingFields.push("kidsConfig");
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        message: `Missing required fields: ${missingFields.join(", ")}`,
+      });
+    }
+
+    // --- DIFFICULTY VALIDATION ---
+    const allowedDifficulties = ["easy", "medium", "hard"];
+    if (!allowedDifficulties.includes(difficulty)) {
+      return res.status(400).json({
+        message: "Difficulty must be one of: easy, medium, hard",
+      });
+    }
+
+    // --- FEN VALIDATION ---
+    const fenResult = validateFen(fen);
+    if (!fenResult.valid) {
+      return res.status(400).json({
+        message: `FEN Error: ${fenResult.message}`,
+      });
+    }
+
+    // --- SOLUTION MOVES VALIDATION (Only for Normal Puzzles) ---
+    if (!type || type === 'normal') {
       const moveResult = validateSolutionMoves(fen, solutionMoves);
       if (!moveResult.valid) {
         return res.status(400).json({
           message: `Solution Error: ${moveResult.message}`,
         });
       }
-  
-      // --- CREATE PUZZLE ---
-      const puzzle = await PuzzleModel.create({
-        title,
-        fen,
-        difficulty,
-        solutionMoves,
-        description,
-        category,
-        createdBy: req.admin._id,
-      });
-  
-      return res.status(201).json({
-        message: "Puzzle created successfully",
-        puzzle,
-      });
-  
-    } catch (error) {
-      console.error("Error creating puzzle:", error);
-  
-      return res.status(500).json({
-        message: "Internal server error",
-        error: error.message,
-      });
     }
-  };
-  
-  
-  const getPuzzles = async (_req, res) => {
-    try {
-      const puzzles = await PuzzleModel.find().sort({ createdAt: -1 });
-      res.status(200).json(puzzles);
-    } catch (error) {
-      console.error("Error fetching puzzles:", error);
-      res.status(500).json({ message: "Failed to fetch puzzles" });
-    }
-  };
-  
-  const getPuzzleById = async (req, res) => {
-    try {
-      const { id } = req.params;
-      const puzzle = await PuzzleModel.findById(id);
-  
-      if (!puzzle) {
-        return res.status(404).json({ message: "Puzzle not found" });
-      }
-  
-      res.status(200).json(puzzle);
-    } catch (error) {
-      console.error("Error fetching puzzle:", error);
-      res.status(500).json({ message: "Failed to fetch puzzle" });
-    }
-  };
-  
-  const updatePuzzle = async (req, res) => {
-    try {
-      const { id } = req.params;
-      const updates = req.body;
-  
-      const puzzle = await PuzzleModel.findById(id);
-      if (!puzzle) {
-        return res.status(404).json({ message: "Puzzle not found" });
-      }
-  
-      const fenToValidate = updates.fen || puzzle.fen;
-  
-      if (updates.fen) {
-        const fenValidation = validateFen(updates.fen);
-        if (!fenValidation.valid) {
-          return res.status(400).json({ message: fenValidation.message });
-        }
-      }
-  
-      if (updates.solutionMoves) {
-        const solutionValidation = validateSolutionMoves(
-          fenToValidate,
-          updates.solutionMoves
-        );
-        if (!solutionValidation.valid) {
-          return res.status(400).json({ message: solutionValidation.message });
-        }
-      }
-  
-      Object.assign(puzzle, updates);
-      await puzzle.save();
-  
-      res.status(200).json({ message: "Puzzle updated successfully", puzzle });
-    } catch (error) {
-      console.error("Error updating puzzle:", error);
-      res.status(500).json({ message: "Failed to update puzzle" });
-    }
-  };
-  
-  const deletePuzzle = async (req, res) => {
-    try {
-      const { id } = req.params;
-      const puzzle = await PuzzleModel.findByIdAndDelete(id);
-  
-      if (!puzzle) {
-        return res.status(404).json({ message: "Puzzle not found" });
-      }
-  
-      res.status(200).json({ message: "Puzzle deleted successfully" });
-    } catch (error) {
-      console.error("Error deleting puzzle:", error);
-      res.status(500).json({ message: "Failed to delete puzzle" });
-    }
-  };
 
+    // --- CREATE PUZZLE ---
+    const puzzleData = {
+      title,
+      fen,
+      difficulty,
+      description,
+      category,
+      createdBy: req.admin._id,
+      type: type || 'normal',
+      source: 'manual'
+    };
 
-// Import Lichess puzzles
-const importFromLichess = async (req, res) => {
-  try {
-    const { count = 50 } = req.body;
-    
-    // Dynamically import the service
-    const { importLichessPuzzles } = await import('../services/lichessService.js');
-    
-    const result = await importLichessPuzzles(count);
-    
-    res.status(200).json({
-      message: 'Puzzles imported successfully from Lichess',
-      ...result
+    if (solutionMoves) puzzleData.solutionMoves = solutionMoves;
+    if (type === 'kids' && kidsConfig) puzzleData.kidsConfig = kidsConfig;
+
+    const puzzle = await PuzzleModel.create(puzzleData);
+
+    return res.status(201).json({
+      message: "Puzzle created successfully",
+      puzzle,
     });
+
   } catch (error) {
-    console.error('Error importing from Lichess:', error);
-    res.status(500).json({ 
-      message: 'Failed to import puzzles from Lichess',
-      error: error.message 
+    console.error("Error creating puzzle:", error);
+
+    return res.status(500).json({
+      message: "Internal server error",
+      error: error.message,
     });
   }
 };
 
+
+const getPuzzles = async (_req, res) => {
+  try {
+    const puzzles = await PuzzleModel.find().sort({ createdAt: -1 });
+    res.status(200).json(puzzles);
+  } catch (error) {
+    console.error("Error fetching puzzles:", error);
+    res.status(500).json({ message: "Failed to fetch puzzles" });
+  }
+};
+
+const getPuzzleById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const puzzle = await PuzzleModel.findById(id);
+
+    if (!puzzle) {
+      return res.status(404).json({ message: "Puzzle not found" });
+    }
+
+    res.status(200).json(puzzle);
+  } catch (error) {
+    console.error("Error fetching puzzle:", error);
+    res.status(500).json({ message: "Failed to fetch puzzle" });
+  }
+};
+
+const updatePuzzle = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    const puzzle = await PuzzleModel.findById(id);
+    if (!puzzle) {
+      return res.status(404).json({ message: "Puzzle not found" });
+    }
+
+    const fenToValidate = updates.fen || puzzle.fen;
+
+    if (updates.fen) {
+      const fenValidation = validateFen(updates.fen);
+      if (!fenValidation.valid) {
+        return res.status(400).json({ message: fenValidation.message });
+      }
+    }
+
+    if (updates.solutionMoves && (puzzle.type === 'normal' || !puzzle.type)) {
+      const solutionValidation = validateSolutionMoves(
+        fenToValidate,
+        updates.solutionMoves
+      );
+      if (!solutionValidation.valid) {
+        return res.status(400).json({ message: solutionValidation.message });
+      }
+    }
+
+    Object.assign(puzzle, updates);
+    await puzzle.save();
+
+    res.status(200).json({ message: "Puzzle updated successfully", puzzle });
+  } catch (error) {
+    console.error("Error updating puzzle:", error);
+    res.status(500).json({ message: "Failed to update puzzle" });
+  }
+};
+
+const deletePuzzle = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const puzzle = await PuzzleModel.findByIdAndDelete(id);
+
+    if (!puzzle) {
+      return res.status(404).json({ message: "Puzzle not found" });
+    }
+
+    res.status(200).json({ message: "Puzzle deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting puzzle:", error);
+    res.status(500).json({ message: "Failed to delete puzzle" });
+  }
+};
+
+
 // Get puzzles with filters (source, category, rating, search)
 const getPuzzlesWithFilters = async (req, res) => {
   try {
-    const { 
-      source, 
-      category, 
-      minRating, 
-      maxRating, 
-      search, 
-      page = 1, 
-      limit = 20 
+    const {
+      source,
+      category,
+      minRating,
+      maxRating,
+      search,
+      type, // 'normal' or 'kids'
+      page = 1,
+      limit = 20
     } = req.query;
-    
+
     const query = {};
-    
+
     if (source) query.source = source;
     if (category) query.category = category;
-    if (minRating || maxRating) {
-      query.rating = {};
-      if (minRating) query.rating.$gte = parseInt(minRating);
-      if (maxRating) query.rating.$lte = parseInt(maxRating);
-    }
+    if (type) query.type = type;
+
+    // Rating filters removed as Rating is deprecated/removed
+
     if (search) {
       query.$or = [
         { title: { $regex: search, $options: 'i' } },
-        { lichessId: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } }
       ];
     }
-    
+
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    
+
     const puzzles = await PuzzleModel.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
-    
+
     const total = await PuzzleModel.countDocuments(query);
-    
+
     res.status(200).json({
       puzzles,
       pagination: {
@@ -366,13 +355,12 @@ const getPuzzleStats = async (req, res) => {
     const stats = await PuzzleModel.aggregate([
       {
         $group: {
-          _id: '$source',
-          count: { $sum: 1 },
-          avgRating: { $avg: '$rating' }
+          _id: '$type', // Group by type instead of source
+          count: { $sum: 1 }
         }
       }
     ]);
-    
+
     const categoryStats = await PuzzleModel.aggregate([
       {
         $group: {
@@ -381,9 +369,9 @@ const getPuzzleStats = async (req, res) => {
         }
       }
     ]);
-    
+
     res.status(200).json({
-      bySource: stats,
+      byType: stats,
       byCategory: categoryStats
     });
   } catch (error) {
@@ -392,31 +380,52 @@ const getPuzzleStats = async (req, res) => {
   }
 };
 
-// Get random puzzle from Lichess (proxy to avoid CORS)
+// Get random puzzle from Local DB (Replaces Lichess Proxy)
 const getRandomPuzzle = async (req, res) => {
   try {
-    // Dynamically import the service
-    const { fetchRandomPuzzle } = await import('../services/lichessService.js');
-    
-    const puzzle = await fetchRandomPuzzle();
-    
+    // Get a random puzzle from the database
+    // Optionally filter by type 'normal' if kids should be separate casual mode?
+    // User said "in casual puzzle... remove that lichess... in kids type admin will choose...". 
+    // Implies Casual Puzzle might serve both or user chooses. 
+    // For now, let's fetch a random puzzle of ANY type, or maybe default to 'normal' unless specified.
+    // Let's stick to 'normal' for default casual puzzle flow if not specified, OR just random.
+    // Given the prompt "Casual Puzzle you can see its taking from lichess remove that", 
+    // I should return a local puzzle.
+
+    const { type } = req.query;
+    const filter = {};
+    if (type) {
+      filter.type = type;
+    }
+
+    const count = await PuzzleModel.countDocuments(filter);
+    if (count === 0) {
+      return res.status(404).json({ message: "No puzzles available" });
+    }
+
+    const random = Math.floor(Math.random() * count);
+    const puzzle = await PuzzleModel.findOne(filter).skip(random);
+
+    if (!puzzle) {
+      return res.status(404).json({ message: "No puzzles available" });
+    }
+
     res.status(200).json(puzzle);
   } catch (error) {
     console.error('Error fetching random puzzle:', error);
-    res.status(500).json({ 
-      message: 'Failed to fetch puzzle from Lichess',
-      error: error.message 
+    res.status(500).json({
+      message: 'Failed to fetch random puzzle',
+      error: error.message
     });
   }
 };
 
-export { 
-  createPuzzle, 
-  getPuzzles, 
-  getPuzzleById, 
-  updatePuzzle, 
+export {
+  createPuzzle,
+  getPuzzles,
+  getPuzzleById,
+  updatePuzzle,
   deletePuzzle,
-  importFromLichess,
   getPuzzlesWithFilters,
   getPuzzleStats,
   getRandomPuzzle

@@ -4,26 +4,37 @@ const PuzzleSchema = new mongoose.Schema({
   title: String,
   fen: { type: String, required: true },
   difficulty: { type: String, enum: ["easy", "medium", "hard"] },
-  solutionMoves: [String], 
+  solutionMoves: [String],
   // ["e4", "Nf6", ...]
   description: String,
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "Admin" },
-  
-  // Source tracking
-  source: { 
-    type: String, 
-    enum: ["manual", "lichess"], 
-    default: "manual" 
+
+  // Puzzle type
+  type: {
+    type: String,
+    enum: ["normal", "kids"],
+    default: "normal"
   },
-  
-  // Lichess-specific fields
-  lichessId: { type: String, unique: true, sparse: true },
-  rating: { type: Number }, // Lichess puzzle rating
-  themes: [String], // Lichess themes like "fork", "mate", "pin"
-  popularity: { type: Number }, // Lichess popularity score
-  
-  // Category (for both manual and lichess)
-  category: { 
+
+  // Kids mode configuration
+  kidsConfig: {
+    piece: String, // e.g., "n" for knight, "r" for rook
+    startSquare: String, // e.g., "e4"
+    targets: [{
+      square: String,
+      item: { type: String, enum: ["pizza", "chocolate"] }
+    }]
+  },
+
+  // Source tracking
+  source: {
+    type: String,
+    enum: ["manual"],
+    default: "manual"
+  },
+
+  // Category
+  category: {
     type: String,
     required: true,
     default: "Tactics"
@@ -33,8 +44,7 @@ const PuzzleSchema = new mongoose.Schema({
 });
 
 // Index for faster queries
-PuzzleSchema.index({ source: 1, category: 1, rating: 1 });
-PuzzleSchema.index({ lichessId: 1 });
+PuzzleSchema.index({ type: 1, category: 1 });
 
 const PuzzleModel = mongoose.model("Puzzle", PuzzleSchema);
 
