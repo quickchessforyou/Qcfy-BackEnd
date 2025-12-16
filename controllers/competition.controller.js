@@ -4,23 +4,21 @@ import PuzzleModel from "../models/PuzzleSchema.js";
 // Create a new competition
 export const createCompetition = async (req, res) => {
   try {
-    const {
-      name,
-      description,
-      startTime,
-      endTime,
-      duration,
-      puzzles,
-      maxParticipants,
-    } = req.body;
+    const { name, description, startTime, duration, puzzles, maxParticipants } =
+      req.body;
     console.log(req.body);
 
     // Validate required fields
-    if (!name || !startTime || !endTime) {
+    if (!name || !startTime || !duration) {
       return res.status(400).json({
-        message: "Name, start time, and end time are required",
+        message: "Name, start time, and duration are required",
       });
     }
+
+    // Calculate endTime based on startTime + duration (in minutes)
+    const start = new Date(startTime);
+    const durationInMinutes = parseInt(duration);
+    const end = new Date(start.getTime() + durationInMinutes * 60 * 1000);
 
     // Validate puzzles exist
     if (puzzles && puzzles.length > 0) {
@@ -34,8 +32,6 @@ export const createCompetition = async (req, res) => {
 
     // Determine status based on start time
     const now = new Date();
-    const start = new Date(startTime);
-    const end = new Date(endTime);
 
     let status = "upcoming";
     let isActive = false;
@@ -52,8 +48,8 @@ export const createCompetition = async (req, res) => {
       name,
       description,
       startTime,
-      endTime,
-      duration,
+      endTime: end,
+      duration: durationInMinutes,
       puzzles: puzzles || [],
       maxParticipants,
       status,
