@@ -1,7 +1,5 @@
 
-
-import { Chess, validateFen as rawValidateFen } from "chess.js/dist/esm/chess.js";
-
+import { Chess, validateFen as rawValidateFen } from "chess.js";
 
 
 import PuzzleModel from "../models/PuzzleSchema.js";
