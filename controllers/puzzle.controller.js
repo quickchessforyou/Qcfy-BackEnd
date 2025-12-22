@@ -140,7 +140,6 @@ const createPuzzle = async (req, res) => {
     if (!title) missingFields.push("title");
     if (!fen) missingFields.push("fen");
     if (!difficulty) missingFields.push("difficulty");
-    if (!description) missingFields.push("description");
     if (!category) missingFields.push("category");
 
     // For normal puzzles, solutionMoves is required

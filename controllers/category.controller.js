@@ -7,15 +7,16 @@ export const createCategory = async (req, res) => {
     const { name, title, description, icon } = req.body;
 
     // Validate required fields
-    if (!name || !title || !description) {
+    // Validate required fields
+    if (!name) {
       return res.status(400).json({
-        message: "Name, title, and description are required",
+        message: "Name is required",
       });
     }
 
     // Check if category already exists
-    const existingCategory = await CategoryModel.findOne({ 
-      name: name.trim() 
+    const existingCategory = await CategoryModel.findOne({
+      name: name.trim()
     });
 
     if (existingCategory) {
@@ -27,8 +28,8 @@ export const createCategory = async (req, res) => {
     // Create new category
     const category = await CategoryModel.create({
       name: name.trim(),
-      title: title.trim(),
-      description: description.trim(),
+      title: (title || name).trim(),
+      description: (description || "").trim(),
       icon: icon || "FaChess",
       createdBy: req.admin._id,
     });
@@ -50,9 +51,9 @@ export const createCategory = async (req, res) => {
 export const getCategories = async (req, res) => {
   try {
     const { includeInactive } = req.query;
-    
+
     const query = includeInactive === 'true' ? {} : { isActive: true };
-    
+
     const categories = await CategoryModel.find(query)
       .sort({ createdAt: -1 })
       .lean();
@@ -60,8 +61,8 @@ export const getCategories = async (req, res) => {
     // Get puzzle count for each category
     const categoriesWithCount = await Promise.all(
       categories.map(async (category) => {
-        const puzzleCount = await PuzzleModel.countDocuments({ 
-          category: category.name 
+        const puzzleCount = await PuzzleModel.countDocuments({
+          category: category.name
         });
         return {
           ...category,
@@ -73,9 +74,9 @@ export const getCategories = async (req, res) => {
     res.status(200).json(categoriesWithCount);
   } catch (error) {
     console.error("Error fetching categories:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Failed to fetch categories",
-      error: error.message 
+      error: error.message
     });
   }
 };
@@ -92,8 +93,8 @@ export const getCategoryById = async (req, res) => {
     }
 
     // Get puzzle count
-    const puzzleCount = await PuzzleModel.countDocuments({ 
-      category: category.name 
+    const puzzleCount = await PuzzleModel.countDocuments({
+      category: category.name
     });
 
     res.status(200).json({
@@ -102,9 +103,9 @@ export const getCategoryById = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching category:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Failed to fetch category",
-      error: error.message 
+      error: error.message
     });
   }
 };
@@ -123,7 +124,7 @@ export const updateCategory = async (req, res) => {
 
     // If name is being changed, check for duplicates
     if (name && name.trim() !== category.name) {
-      const existingCategory = await CategoryModel.findOne({ 
+      const existingCategory = await CategoryModel.findOne({
         name: name.trim(),
         _id: { $ne: id }
       });
@@ -156,9 +157,9 @@ export const updateCategory = async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating category:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Failed to update category",
-      error: error.message 
+      error: error.message
     });
   }
 };
@@ -175,8 +176,8 @@ export const deleteCategory = async (req, res) => {
     }
 
     // Check if category has puzzles
-    const puzzleCount = await PuzzleModel.countDocuments({ 
-      category: category.name 
+    const puzzleCount = await PuzzleModel.countDocuments({
+      category: category.name
     });
 
     if (puzzleCount > 0) {
@@ -187,14 +188,14 @@ export const deleteCategory = async (req, res) => {
 
     await CategoryModel.findByIdAndDelete(id);
 
-    res.status(200).json({ 
-      message: "Category deleted successfully" 
+    res.status(200).json({
+      message: "Category deleted successfully"
     });
   } catch (error) {
     console.error("Error deleting category:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Failed to delete category",
-      error: error.message 
+      error: error.message
     });
   }
 };
@@ -225,9 +226,9 @@ export const getCategoryStats = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching category stats:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Failed to fetch statistics",
-      error: error.message 
+      error: error.message
     });
   }
 };

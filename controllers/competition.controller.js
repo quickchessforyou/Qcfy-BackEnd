@@ -4,7 +4,7 @@ import PuzzleModel from "../models/PuzzleSchema.js";
 // Create a new competition
 export const createCompetition = async (req, res) => {
   try {
-    const { name, description, startTime, duration, puzzles, maxParticipants } =
+    const { name, description, startTime, duration, puzzles, maxParticipants, accessCode } =
       req.body;
     console.log(req.body);
 
@@ -54,6 +54,7 @@ export const createCompetition = async (req, res) => {
       maxParticipants,
       status,
       isActive,
+      accessCode,
       createdBy: req.admin._id,
     });
 
@@ -73,26 +74,109 @@ export const createCompetition = async (req, res) => {
 // Get all competitions
 export const getCompetitions = async (req, res) => {
   try {
-    const { status, isActive } = req.query;
+    const { status, isActive, page = 1, limit = 10 } = req.query;
 
     const query = {};
     if (status) query.status = status;
     if (isActive !== undefined) query.isActive = isActive === "true";
 
+    const skip = (page - 1) * limit;
+
     const competitions = await CompetitionModel.find(query)
-      .populate("puzzles")
+      .populate("puzzles", "title difficulty category type")
       .populate("createdBy", "name email")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await CompetitionModel.countDocuments(query);
 
     res.status(200).json({
       success: true,
       data: competitions,
+      pagination: {
+        current: parseInt(page),
+        total: Math.ceil(total / limit),
+        count: competitions.length,
+        totalRecords: total
+      }
     });
   } catch (error) {
     console.error("Error fetching competitions:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch competitions",
+    });
+  }
+};
+
+// Get puzzles with advanced filtering for competition creation
+export const getPuzzlesForCompetition = async (req, res) => {
+  try {
+    const {
+      category,
+      difficulty,
+      type,
+      search,
+      page = 1,
+      limit = 20,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    const query = {};
+
+    // Apply filters
+    if (category && category !== 'all') query.category = category;
+    if (difficulty && difficulty !== 'all') query.difficulty = difficulty;
+    if (type && type !== 'all') query.type = type;
+
+    // Search functionality
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { category: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+    const sort = {};
+    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+    const puzzles = await PuzzleModel.find(query)
+      .populate("createdBy", "name")
+      .sort(sort)
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await PuzzleModel.countDocuments(query);
+
+    // Get filter options for frontend
+    const categories = await PuzzleModel.distinct('category');
+    const difficulties = await PuzzleModel.distinct('difficulty');
+    const types = await PuzzleModel.distinct('type');
+
+    res.status(200).json({
+      success: true,
+      data: puzzles,
+      pagination: {
+        current: parseInt(page),
+        total: Math.ceil(total / limit),
+        count: puzzles.length,
+        totalRecords: total
+      },
+      filters: {
+        categories: categories.filter(Boolean),
+        difficulties: difficulties.filter(Boolean),
+        types: types.filter(Boolean)
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching puzzles:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch puzzles",
     });
   }
 };
@@ -150,8 +234,16 @@ export const updateCompetition = async (req, res) => {
       }
     }
 
+    // Calculate endTime if startTime or duration is being updated
+    if (updates.startTime || updates.duration) {
+      const start = new Date(updates.startTime || competition.startTime);
+      const durationInMinutes = parseInt(updates.duration || competition.duration);
+      const end = new Date(start.getTime() + durationInMinutes * 60 * 1000);
+      updates.endTime = end;
+    }
+
     // Update status based on times if they're being changed
-    if (updates.startTime || updates.endTime) {
+    if (updates.startTime || updates.endTime || updates.duration) {
       const now = new Date();
       const start = new Date(updates.startTime || competition.startTime);
       const end = new Date(updates.endTime || competition.endTime);
@@ -171,6 +263,9 @@ export const updateCompetition = async (req, res) => {
     updates.updatedAt = new Date();
 
     Object.assign(competition, updates);
+    // Explicitly handle unsetting accessCode if sent as empty string or null (optional, usually updates just overwrite)
+    if (updates.accessCode === "") competition.accessCode = undefined;
+
     await competition.save();
 
     res.status(200).json({
@@ -204,6 +299,7 @@ export const deleteCompetition = async (req, res) => {
 export const joinCompetition = async (req, res) => {
   try {
     const { id } = req.params;
+    const { accessCode } = req.body;
     const userId = req.user._id;
 
     const competition = await CompetitionModel.findById(id);
@@ -214,6 +310,11 @@ export const joinCompetition = async (req, res) => {
     // Check if competition is active
     if (!competition.isActive) {
       return res.status(400).json({ message: "Competition is not active" });
+    }
+
+    // Check Access Code
+    if (competition.accessCode && competition.accessCode !== accessCode) {
+      return res.status(403).json({ message: "Invalid access code", requireCode: true });
     }
 
     // Check if already joined
@@ -371,4 +472,5 @@ export default {
   joinCompetition,
   submitSolution,
   getLeaderboard,
+  getPuzzlesForCompetition,
 };
