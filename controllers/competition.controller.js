@@ -307,9 +307,21 @@ export const joinCompetition = async (req, res) => {
       return res.status(404).json({ message: "Competition not found" });
     }
 
-    // Check if competition is active
-    if (!competition.isActive) {
+    // 🔄 Recalculate active status based on current time to avoid stale `isActive`
+    const now = new Date();
+    const start = new Date(competition.startTime);
+    const end = new Date(competition.endTime);
+
+    const isWithinWindow = now >= start && now <= end;
+
+    if (!isWithinWindow) {
       return res.status(400).json({ message: "Competition is not active" });
+    }
+
+    // Ensure stored status flags are in sync when user joins
+    if (competition.status !== "live" || !competition.isActive) {
+      competition.status = "live";
+      competition.isActive = true;
     }
 
     // Check Access Code
