@@ -12,6 +12,8 @@ const PuzzleHistorySchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+PuzzleHistorySchema.index({ userId: 1, isSolved: 1 });
+
 const PuzzleHistoryModel = mongoose.model("PuzzleHistory", PuzzleHistorySchema);
 
 export default PuzzleHistoryModel;

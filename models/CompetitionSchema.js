@@ -45,6 +45,7 @@ const CompetitionSchema = new mongoose.Schema({
 // Index for faster queries
 CompetitionSchema.index({ status: 1, startTime: 1 });
 CompetitionSchema.index({ isActive: 1 });
+CompetitionSchema.index({ "participants.user": 1 });
 
 const CompetitionModel = mongoose.model("Competition", CompetitionSchema);
 

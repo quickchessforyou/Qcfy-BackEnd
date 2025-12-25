@@ -4,6 +4,10 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import sendOTPEmail from "../utils/emailService.js";
 import PuzzleModel from "../models/PuzzleSchema.js";
+import PuzzleHistoryModel from "../models/PuzzleHistorySchema.js";
+import CompetitionModel from "../models/CompetitionSchema.js";
+import fs from "fs";
+import path from "path";
 
 
 const register = async (req,res)=>{
@@ -29,6 +33,8 @@ const register = async (req,res)=>{
         return res.status(500).json({message:"Internal server error"});
     }
 }
+
+
 
 
 const login = async (req,res)=>{
@@ -214,4 +220,128 @@ const getAllPuzzles = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
-export { register, login, sendOTP, verifyOTP, resetPassword, getAllPuzzles }
+
+
+// Get current user data with statistics
+const getCurrentUser = async (req, res) => {
+  try {
+    const userId = req.user._id; // Get user ID from authenticated middleware
+    
+    // Find the user and exclude password
+    const user = await User.findById(userId).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Get statistics
+    // Count solved puzzles (where isSolved is true)
+    const puzzlesSolved = await PuzzleHistoryModel.countDocuments({
+      userId: userId,
+      isSolved: true
+    });
+
+    // Count competitions participated in (where user is in participants array)
+    const competitionsParticipated = await CompetitionModel.countDocuments({
+      'participants.user': userId
+    });
+
+    // Convert user to object and add statistics
+    const userObject = user.toObject();
+    userObject.statistics = {
+      puzzlesSolved,
+      competitionsParticipated
+    };
+
+    return res.status(200).json({ 
+      message: "User data retrieved successfully", 
+      user: userObject 
+    });
+  } catch (error) {
+    console.error("Get current user error:", error);
+    return res.status(500).json({ 
+      message: "Internal server error",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+const updateUser = async (req, res) => {
+  try {
+    const { name, username } = req.body;
+    const userId = req.user._id; // Get user ID from authenticated middleware
+
+    // Find the user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if username is being changed and if it already exists
+    if (username && username !== user.username) {
+      const existingUser = await User.findOne({ username });
+      if (existingUser) {
+        return res.status(400).json({ message: "Username already exists" });
+      }
+    }
+
+    // Handle file upload (avatar)
+    let avatarPath = user.avatar; // Keep existing avatar by default
+    if (req.file) {
+      // Delete old avatar file if it exists
+      if (user.avatar) {
+        // Construct path relative to project root (where multer saves files)
+        const oldAvatarPath = path.join(process.cwd(), user.avatar);
+        try {
+          if (fs.existsSync(oldAvatarPath)) {
+            fs.unlinkSync(oldAvatarPath);
+          }
+        } catch (err) {
+          console.error("Error deleting old avatar:", err);
+          // Continue even if deletion fails
+        }
+      }
+      avatarPath = req.file.path; // Save new avatar path
+    }
+
+    // Prepare update data
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (username) updateData.username = username;
+    if (req.file) updateData.avatar = avatarPath;
+
+    // Update user
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    return res.status(200).json({ 
+      message: "User updated successfully", 
+      user: updatedUser 
+    });
+  } catch (error) {
+    console.error("Update user error:", error);
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ 
+        message: "Validation error", 
+        error: error.message 
+      });
+    }
+    
+    // Handle duplicate key error (for unique fields)
+    if (error.code === 11000) {
+      return res.status(400).json({ 
+        message: "Username already exists" 
+      });
+    }
+    
+    return res.status(500).json({ 
+      message: "Internal server error",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+export { register, login, sendOTP, verifyOTP, resetPassword, getAllPuzzles, getCurrentUser, updateUser }
