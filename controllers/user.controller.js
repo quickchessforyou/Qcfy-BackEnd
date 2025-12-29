@@ -106,15 +106,15 @@ const sendOTP = async (req, res) => {
     console.log('✅ OTP saved to database');
 
     // Send OTP via email
-    console.log('📧 Sending OTP email...');
+  //  console.log('📧 Sending OTP email...');
     const emailSent = await sendOTPEmail(email, otp);
     
     if (!emailSent) {
-      console.log('❌ Email sending failed');
+     // console.log('❌ Email sending failed');
       return res.status(500).json({ message: "Failed to send OTP email" });
     }
 
-    console.log('✅ OTP process completed successfully');
+    //console.log('✅ OTP process completed successfully');
     return res.status(200).json({ 
       message: "OTP sent successfully to your email",
       // In development, you might want to return OTP for testing
@@ -122,11 +122,11 @@ const sendOTP = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Send OTP error:", error.message);
-    console.error("📋 Error details:", {
-      name: error.name,
-      message: error.message,
-      stack: error.stack
-    });
+    // console.error("📋 Error details:", {
+    //   name: error.name,
+    //   message: error.message,
+    //   stack: error.stack
+    // });
     return res.status(500).json({ 
       message: "Internal server error",
       error: process.env.NODE_ENV === 'development' ? error.message : undefined

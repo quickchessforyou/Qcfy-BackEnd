@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   participateInCompetition,
+  submitCompetition,
   submitPuzzleSolution,
   getLiveLeaderboard,
   getCompetitionPuzzles,
@@ -13,6 +14,7 @@ const router = express.Router();
 
 // User routes for live competitions
 router.post('/:competitionId/participate', isUser, participateInCompetition);
+router.post('/:competitionId/submit', isUser, submitCompetition);
 router.post('/:competitionId/puzzles/:puzzleId/submit', isUser, submitPuzzleSolution);
 router.get('/:competitionId/leaderboard', getLiveLeaderboard);
 router.get('/:competitionId/puzzles', isUser, getCompetitionPuzzles);

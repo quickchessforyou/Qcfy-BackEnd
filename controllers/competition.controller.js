@@ -300,6 +300,7 @@ export const joinCompetition = async (req, res) => {
   try {
     const { id } = req.params;
     const { accessCode } = req.body;
+    console.log(accessCode);
     const userId = req.user._id;
 
     const competition = await CompetitionModel.findById(id);

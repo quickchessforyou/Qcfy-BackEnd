@@ -31,6 +31,9 @@ const ParticipantSchema = new mongoose.Schema({
     type: Date, 
     default: Date.now 
   },
+  submittedAt: { 
+    type: Date 
+  }, // When user submitted early (optional)
   lastActivity: { 
     type: Date, 
     default: Date.now 

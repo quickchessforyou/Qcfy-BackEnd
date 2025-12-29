@@ -57,6 +57,16 @@ export const participateInCompetition = async (req, res) => {
       userId
     });
 
+    if (existingParticipant) {
+      // Check if participant has already submitted
+      if (existingParticipant.submittedAt) {
+        return res.status(400).json({
+          success: false,
+          message: 'You have already submitted this competition'
+        });
+      }
+    }
+
     console.log('Existing participant check:', existingParticipant ? 'Found' : 'Not found');
 
     if (existingParticipant) {
@@ -133,6 +143,78 @@ export const participateInCompetition = async (req, res) => {
   }
 };
 
+// Submit entire competition (early submission)
+export const submitCompetition = async (req, res) => {
+  try {
+    const { competitionId } = req.params;
+    const userId = req.user._id;
+
+    console.log('Competition submission request:', { competitionId, userId });
+
+    // Validate competition exists and is active
+    const competition = await CompetitionModel.findById(competitionId);
+    if (!competition) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Competition not found' 
+      });
+    }
+
+    if (competition.status !== 'live') {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Competition is not currently active' 
+      });
+    }
+
+    // Get participant record
+    const participant = await ParticipantModel.findOne({
+      competitionId,
+      userId
+    });
+
+    if (!participant) {
+      return res.status(404).json({
+        success: false,
+        message: 'You are not participating in this competition'
+      });
+    }
+
+    // Mark participant as submitted (add submittedAt field)
+    participant.submittedAt = new Date();
+    participant.isActive = false; // Mark as inactive to prevent further submissions
+    await participant.save();
+
+    // Get updated leaderboard
+    const updatedLeaderboard = await getCurrentLeaderboard(competitionId);
+    
+    // Notify all participants via Socket.IO
+    const roomName = `competition_${competitionId}`;
+    io.to(roomName).emit('leaderboardUpdate', updatedLeaderboard);
+    io.to(roomName).emit('participantSubmitted', {
+      username: participant.username,
+      score: participant.score,
+      puzzlesSolved: participant.puzzlesSolved,
+      timeSpent: participant.timeSpent
+    });
+
+    res.json({
+      success: true,
+      message: 'Competition submitted successfully',
+      finalScore: participant.score,
+      puzzlesSolved: participant.puzzlesSolved,
+      timeSpent: participant.timeSpent
+    });
+
+  } catch (error) {
+    console.error('Competition submission error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Server error during submission' 
+    });
+  }
+};
+
 // Submit puzzle solution with Socket.IO notification
 export const submitPuzzleSolution = async (req, res) => {
   try {
@@ -177,6 +259,26 @@ export const submitPuzzleSolution = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Puzzle already solved'
+      });
+    }
+
+    // Check if participant has already submitted the competition
+    const participant = await ParticipantModel.findOne({
+      competitionId,
+      userId
+    });
+
+    if (!participant) {
+      return res.status(404).json({
+        success: false,
+        message: 'You are not participating in this competition'
+      });
+    }
+
+    if (participant.submittedAt) {
+      return res.status(400).json({
+        success: false,
+        message: 'You have already submitted this competition and cannot solve more puzzles'
       });
     }
 

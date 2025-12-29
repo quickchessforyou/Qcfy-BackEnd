@@ -32,7 +32,7 @@ const getCurrentLeaderboard = async (competitionId) => {
       .lean();
 
     console.log('Found participants:', leaderboard.length);
-    console.log('Participants data:', leaderboard);
+    //console.log('Participants data:', leaderboard);
 
     // Add ranking
     return leaderboard.map((participant, index) => ({
