@@ -183,6 +183,7 @@ export const submitCompetition = async (req, res) => {
     // Mark participant as submitted (add submittedAt field)
     participant.submittedAt = new Date();
     participant.isActive = false; // Mark as inactive to prevent further submissions
+    participant.isSubmitted = true;
     await participant.save();
 
     // Get updated leaderboard

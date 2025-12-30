@@ -23,6 +23,10 @@ const ParticipantSchema = new mongoose.Schema({
     type: Number, 
     default: 0 
   },
+  isSubmitted: { 
+    type: Boolean, 
+    default: false 
+  },
   timeSpent: { 
     type: Number, 
     default: 0 
