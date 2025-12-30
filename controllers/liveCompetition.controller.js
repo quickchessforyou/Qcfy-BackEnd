@@ -19,9 +19,9 @@ export const participateInCompetition = async (req, res) => {
     // Validate competition exists and is active
     const competition = await CompetitionModel.findById(competitionId);
     if (!competition) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        error: 'Competition not found' 
+        error: 'Competition not found'
       });
     }
 
@@ -34,9 +34,9 @@ export const participateInCompetition = async (req, res) => {
     }
 
     if (competition.status === 'completed') {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        error: 'Competition has ended' 
+        error: 'Competition has ended'
       });
     }
 
@@ -44,9 +44,9 @@ export const participateInCompetition = async (req, res) => {
     if (competition.maxParticipants) {
       const currentParticipants = await ParticipantModel.countDocuments({ competitionId });
       if (currentParticipants >= competition.maxParticipants) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           success: false,
-          error: 'Competition is full' 
+          error: 'Competition is full'
         });
       }
     }
@@ -71,7 +71,7 @@ export const participateInCompetition = async (req, res) => {
 
     if (existingParticipant) {
       console.log('User already participated, returning existing data');
-      return res.json({ 
+      return res.json({
         success: true,
         message: 'Already participating',
         competition: {
@@ -91,9 +91,9 @@ export const participateInCompetition = async (req, res) => {
     // Get user details
     const user = await UserModel.findById(userId);
     if (!user) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        error: 'User not found' 
+        error: 'User not found'
       });
     }
 
@@ -136,9 +136,9 @@ export const participateInCompetition = async (req, res) => {
 
   } catch (error) {
     console.error('Participation error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: 'Server error during participation' 
+      error: 'Server error during participation'
     });
   }
 };
@@ -154,16 +154,16 @@ export const submitCompetition = async (req, res) => {
     // Validate competition exists and is active
     const competition = await CompetitionModel.findById(competitionId);
     if (!competition) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Competition not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'Competition not found'
       });
     }
 
     if (competition.status !== 'live') {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Competition is not currently active' 
+      return res.status(400).json({
+        success: false,
+        message: 'Competition is not currently active'
       });
     }
 
@@ -188,7 +188,7 @@ export const submitCompetition = async (req, res) => {
 
     // Get updated leaderboard
     const updatedLeaderboard = await getCurrentLeaderboard(competitionId);
-    
+
     // Notify all participants via Socket.IO
     const roomName = `competition_${competitionId}`;
     io.to(roomName).emit('leaderboardUpdate', updatedLeaderboard);
@@ -199,6 +199,15 @@ export const submitCompetition = async (req, res) => {
       timeSpent: participant.timeSpent
     });
 
+    // Check if ALL participants have submitted
+    const totalParticipants = await ParticipantModel.countDocuments({ competitionId });
+    const submittedParticipants = await ParticipantModel.countDocuments({
+      competitionId,
+      $or: [{ isSubmitted: true }, { submittedAt: { $exists: true } }]
+    });
+
+    console.log(`Competition ${competitionId} progress: ${submittedParticipants}/${totalParticipants} submitted`);
+
     res.json({
       success: true,
       message: 'Competition submitted successfully',
@@ -207,11 +216,19 @@ export const submitCompetition = async (req, res) => {
       timeSpent: participant.timeSpent
     });
 
+    // If everyone has submitted, end the competition early
+    // We do this AFTER response to avoid blocking, but for UX 'competitionEnded' event will handle redirect
+    if (totalParticipants > 0 && submittedParticipants >= totalParticipants) {
+      console.log('All participants submitted. Ending competition early.');
+      handleCompetitionEnd(io, competitionId);
+    }
+
+
   } catch (error) {
     console.error('Competition submission error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: 'Server error during submission' 
+      error: 'Server error during submission'
     });
   }
 };
@@ -236,16 +253,16 @@ export const submitPuzzleSolution = async (req, res) => {
     // Validate competition is active
     const competition = await CompetitionModel.findById(competitionId);
     if (!competition || new Date() > competition.endTime) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Competition has ended' 
+      return res.status(400).json({
+        success: false,
+        message: 'Competition has ended'
       });
     }
 
     if (competition.status !== 'live') {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Competition is not currently active' 
+      return res.status(400).json({
+        success: false,
+        message: 'Competition is not currently active'
       });
     }
 
@@ -294,7 +311,7 @@ export const submitPuzzleSolution = async (req, res) => {
 
     // Validate solution
     const isCorrect = validatePuzzleSolution(puzzle, solution);
-    
+
     if (!isCorrect) {
       return res.status(400).json({
         success: false,
@@ -323,8 +340,8 @@ export const submitPuzzleSolution = async (req, res) => {
     const updatedParticipant = await ParticipantModel.findOneAndUpdate(
       { competitionId, userId },
       {
-        $inc: { 
-          score: scoreEarned, 
+        $inc: {
+          score: scoreEarned,
           puzzlesSolved: 1,
           timeSpent: timeSpent
         },
@@ -599,7 +616,7 @@ const calculateScore = (difficulty, timeSpent) => {
   // Time bonus: faster solutions get more points (max 60 seconds for full bonus)
   const maxTimeForBonus = 60;
   const timeBonus = Math.max(0, maxTimeForBonus - timeSpent) * 2; // 2 points per second under 60s
-  
+
   return Math.round(baseScore + timeBonus);
 };
 
