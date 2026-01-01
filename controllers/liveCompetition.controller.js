@@ -5,13 +5,13 @@ import PuzzleModel from "../models/PuzzleSchema.js";
 import UserModel from "../models/UserSchema.js";
 import { io } from "../index.js";
 
-import { notifyPuzzleSolved, scheduleCompetitionEnd, getCurrentLeaderboard } from "../utils/socketHandlers.js";
+import { scheduleCompetitionEnd, getCurrentLeaderboard, handleCompetitionEnd } from "../utils/socketHandlers.js";
 
 // Participate in live competition (REST API validation)
 export const participateInCompetition = async (req, res) => {
   try {
     const { competitionId } = req.params;
-    const { username } = req.body;
+    const { username, accessCode } = req.body;
     const userId = req.user._id;
 
     console.log('Participation request:', { competitionId, userId, username });
@@ -27,17 +27,31 @@ export const participateInCompetition = async (req, res) => {
 
     console.log('Competition found:', competition.name, 'Status:', competition.status);
 
-    // Check if competition is still open for participation
+    // Check if competition is still open for participation (allow joining until competition ends)
     const now = new Date();
-    if (now > competition.startTime) {
-      console.log('Competition already started, allowing participation anyway for live competitions');
-    }
-
-    if (competition.status === 'completed') {
+    if (now > competition.endTime) {
       return res.status(400).json({
         success: false,
         error: 'Competition has ended'
       });
+    }
+
+    if (competition.status === 'ENDED') {
+      return res.status(400).json({
+        success: false,
+        error: 'Competition has ended'
+      });
+    }
+
+    // Check Access Code if required
+    if (competition.accessCode && competition.accessCode.trim() !== '') {
+      if (!accessCode || accessCode !== competition.accessCode) {
+        return res.status(403).json({
+          success: false,
+          error: 'Invalid access code',
+          requireCode: true
+        });
+      }
     }
 
     // Check max participants
@@ -104,6 +118,7 @@ export const participateInCompetition = async (req, res) => {
       competitionId,
       userId,
       username: username || user.username || user.name,
+      status: "JOINED",
       joinedAt: new Date(),
       score: 0,
       puzzlesSolved: 0,
@@ -160,7 +175,8 @@ export const submitCompetition = async (req, res) => {
       });
     }
 
-    if (competition.status !== 'live') {
+    // Check if competition is live (handle both lowercase and uppercase)
+    if (competition.status !== 'live' && competition.status !== 'LIVE') {
       return res.status(400).json({
         success: false,
         message: 'Competition is not currently active'
@@ -184,6 +200,7 @@ export const submitCompetition = async (req, res) => {
     participant.submittedAt = new Date();
     participant.isActive = false; // Mark as inactive to prevent further submissions
     participant.isSubmitted = true;
+    participant.status = "SUBMITTED";
     await participant.save();
 
     // Get updated leaderboard
@@ -220,7 +237,10 @@ export const submitCompetition = async (req, res) => {
     // We do this AFTER response to avoid blocking, but for UX 'competitionEnded' event will handle redirect
     if (totalParticipants > 0 && submittedParticipants >= totalParticipants) {
       console.log('All participants submitted. Ending competition early.');
-      handleCompetitionEnd(io, competitionId);
+      // Use setTimeout to avoid blocking the response
+      setTimeout(() => {
+        handleCompetitionEnd(io, competitionId);
+      }, 100);
     }
 
 
@@ -240,89 +260,88 @@ export const submitPuzzleSolution = async (req, res) => {
     const { solution, timeSpent } = req.body;
     const userId = req.user._id;
 
-    console.log('Puzzle solution submission:', {
-      competitionId,
-      puzzleId,
-      userId,
-      solution,
-      solutionType: typeof solution,
-      isArray: Array.isArray(solution),
-      timeSpent
-    });
-
-    // Validate competition is active
+    /* ================= COMPETITION CHECK ================= */
     const competition = await CompetitionModel.findById(competitionId);
     if (!competition || new Date() > competition.endTime) {
       return res.status(400).json({
         success: false,
-        message: 'Competition has ended'
+        message: "Competition has ended",
       });
     }
 
-    if (competition.status !== 'live') {
+    if (competition.status !== "LIVE") {
       return res.status(400).json({
         success: false,
-        message: 'Competition is not currently active'
+        message: "Competition is not live",
       });
     }
 
-    // Check if puzzle already solved by user
-    const existingSolution = await PuzzleSolutionModel.findOne({
-      competitionId,
-      puzzleId,
-      userId
-    });
-
-    if (existingSolution) {
-      return res.status(400).json({
-        success: false,
-        message: 'Puzzle already solved'
-      });
-    }
-
-    // Check if participant has already submitted the competition
+    /* ================= PARTICIPANT CHECK ================= */
     const participant = await ParticipantModel.findOne({
       competitionId,
-      userId
+      userId,
     });
 
     if (!participant) {
       return res.status(404).json({
         success: false,
-        message: 'You are not participating in this competition'
+        message: "You are not participating in this competition",
       });
     }
 
-    if (participant.submittedAt) {
+    if (participant.status === "SUBMITTED") {
       return res.status(400).json({
         success: false,
-        message: 'You have already submitted this competition and cannot solve more puzzles'
+        message: "You have already submitted the competition",
       });
     }
 
-    // Get puzzle details
+    /* ================= DUPLICATE PUZZLE CHECK ================= */
+    const existingSolution = await PuzzleSolutionModel.findOne({
+      competitionId,
+      puzzleId,
+      userId,
+    });
+
+    if (existingSolution) {
+      return res.status(400).json({
+        success: false,
+        message: "Puzzle already solved",
+      });
+    }
+
+    /* ================= PUZZLE CHECK ================= */
     const puzzle = await PuzzleModel.findById(puzzleId);
     if (!puzzle) {
       return res.status(404).json({
         success: false,
-        message: 'Puzzle not found'
+        message: "Puzzle not found",
       });
     }
 
-    // Validate solution
     const isCorrect = validatePuzzleSolution(puzzle, solution);
-
     if (!isCorrect) {
       return res.status(400).json({
         success: false,
-        message: 'Incorrect solution'
+        message: "Incorrect solution",
       });
     }
 
-    // Calculate score based on difficulty and time
+    /* ================= MARK PLAYER AS PLAYING ================= */
+    if (participant.status === "JOINED") {
+      participant.status = "PLAYING";
+      await participant.save();
+
+      // Notify lobby immediately
+      io.to(`competition_${competitionId}`).emit("player-progress", {
+        userId,
+        participantState: "PLAYING",
+      });
+    }
+
+    /* ================= SCORE CALCULATION ================= */
     const scoreEarned = calculateScore(puzzle.difficulty, timeSpent);
 
-    // Save solution
     const puzzleSolution = new PuzzleSolutionModel({
       competitionId,
       puzzleId,
@@ -331,47 +350,45 @@ export const submitPuzzleSolution = async (req, res) => {
       timeSpent,
       scoreEarned,
       isCorrect: true,
-      solvedAt: new Date()
+      solvedAt: new Date(),
     });
 
     await puzzleSolution.save();
 
-    // Update participant stats
     const updatedParticipant = await ParticipantModel.findOneAndUpdate(
       { competitionId, userId },
       {
         $inc: {
           score: scoreEarned,
           puzzlesSolved: 1,
-          timeSpent: timeSpent
+          timeSpent: timeSpent,
         },
-        lastActivity: new Date()
+        lastActivity: new Date(),
       },
       { new: true }
     );
 
-    // Get total score for response
-    const totalScore = updatedParticipant.score;
+    /* ================= LEADERBOARD UPDATE ================= */
+    const leaderboard = await getCurrentLeaderboard(competitionId);
+    io.to(`competition_${competitionId}`).emit("leaderboardUpdate", leaderboard);
 
-    // Notify Socket.IO server about the solved puzzle
-    await notifyPuzzleSolved(io, competitionId, userId, scoreEarned);
-
+    /* ================= RESPONSE ================= */
     res.json({
       success: true,
       scoreEarned,
-      totalScore,
+      totalScore: updatedParticipant.score,
       puzzlesSolved: updatedParticipant.puzzlesSolved,
-      message: 'Puzzle solved successfully!'
+      message: "Puzzle solved successfully!",
     });
-
   } catch (error) {
-    console.error('Puzzle submission error:', error);
+    console.error("Puzzle submission error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error during submission'
+      message: "Server error during submission",
     });
   }
 };
+
 
 // Get live leaderboard
 export const getLiveLeaderboard = async (req, res) => {
@@ -389,6 +406,15 @@ export const getLiveLeaderboard = async (req, res) => {
 
     // Get current leaderboard
     const leaderboard = await getCurrentLeaderboard(competitionId);
+    const participant = await ParticipantModel.findOne({
+      competitionId,
+      userId: req.user?._id
+    });
+
+    let participantState = "NOT_JOINED";
+    if (participant) {
+      participantState = participant.status;
+    }
 
     res.json({
       success: true,
@@ -399,8 +425,10 @@ export const getLiveLeaderboard = async (req, res) => {
         startTime: competition.startTime,
         endTime: competition.endTime
       },
+      competitionState: competition.status, // UPCOMING | LIVE | ENDED
+      participantState,                     // NOT_JOINED | JOINED | PLAYING | SUBMITTED
       leaderboard,
-      lastUpdate: new Date()
+      serverTime: Date.now()
     });
 
   } catch (error) {
@@ -511,14 +539,14 @@ export const startCompetition = async (req, res) => {
       });
     }
 
-    if (competition.status === 'live') {
+    if (competition.status === 'LIVE') {
       return res.status(400).json({
         success: false,
         message: 'Competition is already live'
       });
     }
 
-    if (competition.status === 'completed') {
+    if (competition.status === 'ENDED') {
       return res.status(400).json({
         success: false,
         message: 'Competition has already ended'
@@ -526,7 +554,7 @@ export const startCompetition = async (req, res) => {
     }
 
     // Update competition status
-    competition.status = 'live';
+    competition.status = 'LIVE';
     competition.isActive = true;
     competition.startTime = new Date(); // Start now
     await competition.save();
@@ -604,6 +632,79 @@ const validatePuzzleSolution = (puzzle, solution) => {
     return false;
   }
 };
+
+export const getLobbyState = async (req, res) => {
+  try {
+    const { competitionId } = req.params;
+    const userId = req.user._id;
+
+    // 1. Competition lao
+    const competition = await CompetitionModel.findById(competitionId);
+    if (!competition) {
+      return res.status(404).json({ success: false, message: "Competition not found" });
+    }
+
+    // 2. Participant lao (sirf ParticipantModel se)
+    const participant = await ParticipantModel.findOne({
+      competitionId,
+      userId
+    });
+
+    // 3. Competition state - check time-based status
+    const now = new Date();
+    let competitionState = competition.status.toUpperCase();
+    
+    // Update status based on current time if needed
+    if (competitionState === "UPCOMING" && now >= competition.startTime && now <= competition.endTime) {
+      competitionState = "LIVE";
+      // Update in DB if needed
+      if (competition.status !== "LIVE") {
+        competition.status = "LIVE";
+        competition.isActive = true;
+        await competition.save();
+      }
+    } else if (now > competition.endTime) {
+      competitionState = "ENDED";
+      if (competition.status !== "ENDED") {
+        competition.status = "ENDED";
+        competition.isActive = false;
+        await competition.save();
+      }
+    }
+
+    // 4. Participant state
+    let participantState = "NOT_JOINED";
+    if (participant) {
+      participantState = participant.status || "JOINED";
+      // JOINED | PLAYING | SUBMITTED
+    }
+
+    // 5. Leaderboard lao
+    const leaderboard = await getCurrentLeaderboard(competitionId);
+
+    // 6. Response bhejo
+    res.json({
+      success: true,
+      competition: {
+        id: competition._id,
+        name: competition.name,
+        startTime: competition.startTime,
+        endTime: competition.endTime,
+        duration: competition.duration,
+        requiresAccessCode: !!(competition.accessCode && competition.accessCode.trim() !== '')
+      },
+      competitionState,
+      participantState,
+      leaderboard,
+      serverTime: Date.now()
+    });
+
+  } catch (err) {
+    console.error("Lobby state error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 
 // Helper function to calculate score
 const calculateScore = (difficulty, timeSpent) => {

@@ -20,21 +20,15 @@ const CompetitionSchema = new mongoose.Schema({
   isActive: { type: Boolean, default: false },
   status: {
     type: String,
-    enum: ["upcoming", "live", "completed"],
-    default: "upcoming"
+    enum: ["UPCOMING", "LIVE", "ENDED"],
+    default: "UPCOMING"
   },
+
 
   // Access Control
   accessCode: { type: String }, // Optional password/code to join
 
 
-  // Participants and scores
-  participants: [{
-    user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    score: { type: Number, default: 0 },
-    completedPuzzles: [{ type: mongoose.Schema.Types.ObjectId, ref: "Puzzle" }],
-    joinedAt: { type: Date, default: Date.now }
-  }],
 
   // Metadata
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "Admin" },

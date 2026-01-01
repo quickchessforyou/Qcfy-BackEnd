@@ -30,17 +30,17 @@ export const createCompetition = async (req, res) => {
       }
     }
 
-    // Determine status based on start time
+    // Determine status based on start time (use uppercase to match schema enum)
     const now = new Date();
 
-    let status = "upcoming";
+    let status = "UPCOMING";
     let isActive = false;
 
     if (now >= start && now <= end) {
-      status = "live";
+      status = "LIVE";
       isActive = true;
     } else if (now > end) {
-      status = "completed";
+      status = "ENDED";
       isActive = false;
     }
 
@@ -84,7 +84,6 @@ export const getCompetitions = async (req, res) => {
 
     const competitions = await CompetitionModel.find(query)
       .populate("puzzles", "title difficulty category type")
-      .populate("createdBy", "name email")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -188,7 +187,6 @@ export const getCompetitionById = async (req, res) => {
 
     const competition = await CompetitionModel.findById(id)
       .populate("puzzles")
-      .populate("participants.user", "name email")
       .populate("createdBy", "name email");
 
     if (!competition) {
@@ -211,6 +209,7 @@ export const getCompetitionById = async (req, res) => {
   }
 };
 
+
 // Update competition
 export const updateCompetition = async (req, res) => {
   try {
@@ -222,24 +221,36 @@ export const updateCompetition = async (req, res) => {
       return res.status(404).json({ message: "Competition not found" });
     }
 
-    // Validate puzzles if being updated
-    if (updates.puzzles && updates.puzzles.length > 0) {
-      const existingPuzzles = await PuzzleModel.find({
-        _id: { $in: updates.puzzles },
-      });
-      if (existingPuzzles.length !== updates.puzzles.length) {
-        return res.status(400).json({
-          message: "Some puzzles do not exist",
+    // Validate puzzles if being updated (allow empty array)
+    if (updates.puzzles !== undefined) {
+      if (Array.isArray(updates.puzzles) && updates.puzzles.length > 0) {
+        const existingPuzzles = await PuzzleModel.find({
+          _id: { $in: updates.puzzles },
         });
+        if (existingPuzzles.length !== updates.puzzles.length) {
+          return res.status(400).json({
+            message: "Some puzzles do not exist",
+          });
+        }
       }
+      // Empty array is valid (allow removing all puzzles)
     }
 
     // Calculate endTime if startTime or duration is being updated
     if (updates.startTime || updates.duration) {
       const start = new Date(updates.startTime || competition.startTime);
-      const durationInMinutes = parseInt(updates.duration || competition.duration);
-      const end = new Date(start.getTime() + durationInMinutes * 60 * 1000);
-      updates.endTime = end;
+
+      const durationInMinutes =
+        updates.duration !== undefined && updates.duration !== ""
+          ? parseInt(updates.duration)
+          : competition.duration;
+
+      if (isNaN(durationInMinutes)) {
+        return res.status(400).json({ message: "Invalid duration value" });
+      }
+
+      updates.duration = durationInMinutes;
+      updates.endTime = new Date(start.getTime() + durationInMinutes * 60 * 1000);
     }
 
     // Update status based on times if they're being changed
@@ -249,22 +260,41 @@ export const updateCompetition = async (req, res) => {
       const end = new Date(updates.endTime || competition.endTime);
 
       if (now >= start && now <= end) {
-        updates.status = "live";
+        updates.status = "LIVE"; // Use uppercase to match schema enum
         updates.isActive = true;
       } else if (now > end) {
-        updates.status = "completed";
+        updates.status = "ENDED";
         updates.isActive = false;
       } else {
-        updates.status = "upcoming";
+        updates.status = "UPCOMING"; // Use uppercase to match schema enum
         updates.isActive = false;
       }
     }
 
     updates.updatedAt = new Date();
 
-    Object.assign(competition, updates);
-    // Explicitly handle unsetting accessCode if sent as empty string or null (optional, usually updates just overwrite)
-    if (updates.accessCode === "") competition.accessCode = undefined;
+    // Only assign valid fields to prevent schema validation errors
+    const allowedFields = ['name', 'description', 'startTime', 'endTime', 'duration', 'puzzles', 'maxParticipants', 'status', 'isActive', 'accessCode', 'updatedAt'];
+    const validUpdates = {};
+    allowedFields.forEach(field => {
+      if (updates[field] !== undefined) {
+        // Handle special cases
+        if (field === 'maxParticipants' && (updates[field] === '' || updates[field] === null)) {
+          validUpdates[field] = undefined; // Allow unsetting
+        } else if (field === 'maxParticipants' && typeof updates[field] === 'string') {
+          validUpdates[field] = parseInt(updates[field]) || undefined;
+        } else {
+          validUpdates[field] = updates[field];
+        }
+      }
+    });
+
+    Object.assign(competition, validUpdates);
+    
+    // Explicitly handle unsetting accessCode if sent as empty string or null
+    if (updates.accessCode === "" || updates.accessCode === null) {
+      competition.accessCode = undefined;
+    }
 
     await competition.save();
 
@@ -274,7 +304,10 @@ export const updateCompetition = async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating competition:", error);
-    res.status(500).json({ message: "Failed to update competition" });
+    res.status(500).json({ 
+      message: "Failed to update competition",
+      error: error.message || "Unknown error occurred"
+    });
   }
 };
 
@@ -320,8 +353,8 @@ export const joinCompetition = async (req, res) => {
     }
 
     // Ensure stored status flags are in sync when user joins
-    if (competition.status !== "live" || !competition.isActive) {
-      competition.status = "live";
+    if (competition.status !== "LIVE" || !competition.isActive) {
+      competition.status = "LIVE";
       competition.isActive = true;
     }
 
@@ -352,7 +385,7 @@ export const joinCompetition = async (req, res) => {
     competition.participants.push({
       user: userId,
       score: 0,
-      completedPuzzles: [],
+      ENDEDPuzzles: [],
       joinedAt: new Date(),
     });
 
@@ -391,9 +424,9 @@ export const submitSolution = async (req, res) => {
         .json({ message: "Not a participant in this competition" });
     }
 
-    // Check if puzzle already completed
-    if (participant.completedPuzzles.includes(puzzleId)) {
-      return res.status(400).json({ message: "Puzzle already completed" });
+    // Check if puzzle already ENDED
+    if (participant.ENDEDPuzzles.includes(puzzleId)) {
+      return res.status(400).json({ message: "Puzzle already ENDED" });
     }
 
     // Verify puzzle is part of competition
@@ -411,7 +444,7 @@ export const submitSolution = async (req, res) => {
       JSON.stringify(moves) === JSON.stringify(puzzle.solutionMoves);
 
     if (isCorrect) {
-      participant.completedPuzzles.push(puzzleId);
+      participant.ENDEDPuzzles.push(puzzleId);
       // Calculate score based on difficulty and time
       let points = 10;
       if (puzzle.difficulty === "medium") points = 20;
@@ -459,7 +492,7 @@ export const getLeaderboard = async (req, res) => {
         rank: index + 1,
         user: p.user,
         score: p.score,
-        completedPuzzles: p.completedPuzzles.length,
+        ENDEDPuzzles: p.ENDEDPuzzles.length,
         joinedAt: p.joinedAt,
       }));
 

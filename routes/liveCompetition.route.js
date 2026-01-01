@@ -5,7 +5,8 @@ import {
   submitPuzzleSolution,
   getLiveLeaderboard,
   getCompetitionPuzzles,
-  startCompetition
+  startCompetition,
+  getLobbyState
 } from '../controllers/liveCompetition.controller.js';
 import isUser from '../middleware/user.middleware.js';
 import isAdmin from '../middleware/admin.middleware.js';
@@ -18,6 +19,12 @@ router.post('/:competitionId/submit', isUser, submitCompetition);
 router.post('/:competitionId/puzzles/:puzzleId/submit', isUser, submitPuzzleSolution);
 router.get('/:competitionId/leaderboard', getLiveLeaderboard);
 router.get('/:competitionId/puzzles', isUser, getCompetitionPuzzles);
+router.get(
+  "/:competitionId/lobby-state",
+  isUser,
+  getLobbyState
+);
+
 
 // Admin routes
 router.post('/:competitionId/start', isAdmin, startCompetition);

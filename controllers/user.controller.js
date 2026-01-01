@@ -10,55 +10,55 @@ import fs from "fs";
 import path from "path";
 
 
-const register = async (req,res)=>{
-    try {
-        const {name,email,password,username, wins, losses, draws} = req.body;
-        if(!name || !email || !password || !username){
-            return res.status(400).json({message:"All fields are required"});
-        }
-        const existingUser = await User.findOne({email});
-        if(existingUser){
-            return res.status(400).json({message:"User already exists"});
-        }
-
-        const avatar = req.file ? req.file.path : "";
-        const hashedPassword = await bcrypt.hash(password,10);
-        const user = await User.create({name,email,password:hashedPassword,username,avatar, wins, losses, draws});
-        const token = jwt.sign({id:user._id},process.env.JWT_SECRET,{expiresIn:"7d"});
-        return res.status(200).json({message:"User registered successfully",user,token});
-
-        
-
-    } catch (error) {
-        return res.status(500).json({message:"Internal server error"});
+const register = async (req, res) => {
+  try {
+    const { name, email, password, username, wins, losses, draws } = req.body;
+    if (!name || !email || !password || !username) {
+      return res.status(400).json({ message: "All fields are required" });
     }
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    const avatar = req.file ? req.file.path : "";
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await User.create({ name, email, password: hashedPassword, username, avatar, wins, losses, draws });
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    return res.status(200).json({ message: "User registered successfully", user, token });
+
+
+
+  } catch (error) {
+    return res.status(500).json({ message: "Internal server error" });
+  }
 }
 
 
 
 
-const login = async (req,res)=>{
-    try {
-        const {email,password} = req.body;
-        if(!email || !password){
-            return res.status(400).json({message:"All fields are required"});
-        }
-        const user = await User.findOne({email});
-        if(!user){
-            return res.status(400).json({message:"User not found"});
-        }
-        const isPasswordMatched = await bcrypt.compare(password,user.password);
-        if(!isPasswordMatched){
-            return res.status(400).json({message:"Invalid password"});
-        }
-        const token = jwt.sign(
-            {
-            id:user._id
-        },process.env.JWT_SECRET,{expiresIn:"7d"});
-        return res.status(200).json({message:"User logged in successfully",user,token});
-    } catch (error) {
-        return res.status(500).json({message:"Internal server error"});
+const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ message: "All fields are required" });
     }
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+    const isPasswordMatched = await bcrypt.compare(password, user.password);
+    if (!isPasswordMatched) {
+      return res.status(400).json({ message: "Invalid password" });
+    }
+    const token = jwt.sign(
+      {
+        id: user._id
+      }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    return res.status(200).json({ message: "User logged in successfully", user, token });
+  } catch (error) {
+    return res.status(500).json({ message: "Internal server error" });
+  }
 }
 
 
@@ -72,9 +72,9 @@ const generateOTP = () => {
 const sendOTP = async (req, res) => {
   try {
     const { email } = req.body;
-    
+
     console.log('📨 Send OTP request received for:', email);
-    
+
     if (!email) {
       return res.status(400).json({ message: "Email is required" });
     }
@@ -106,16 +106,16 @@ const sendOTP = async (req, res) => {
     console.log('✅ OTP saved to database');
 
     // Send OTP via email
-  //  console.log('📧 Sending OTP email...');
+    //  console.log('📧 Sending OTP email...');
     const emailSent = await sendOTPEmail(email, otp);
-    
+
     if (!emailSent) {
-     // console.log('❌ Email sending failed');
+      // console.log('❌ Email sending failed');
       return res.status(500).json({ message: "Failed to send OTP email" });
     }
 
-    //console.log('✅ OTP process completed successfully');
-    return res.status(200).json({ 
+    //console.log('✅ OTP process ENDED successfully');
+    return res.status(200).json({
       message: "OTP sent successfully to your email",
       // In development, you might want to return OTP for testing
       ...(process.env.NODE_ENV === 'development' && { otp })
@@ -127,7 +127,7 @@ const sendOTP = async (req, res) => {
     //   message: error.message,
     //   stack: error.stack
     // });
-    return res.status(500).json({ 
+    return res.status(500).json({
       message: "Internal server error",
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
@@ -138,14 +138,14 @@ const sendOTP = async (req, res) => {
 const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
-    
+
     if (!email || !otp) {
       return res.status(400).json({ message: "Email and OTP are required" });
     }
 
     // Find the OTP record
-    const otpRecord = await OTP.findOne({ 
-      email, 
+    const otpRecord = await OTP.findOne({
+      email,
       isUsed: false,
       expiresAt: { $gt: new Date() } // Not expired
     });
@@ -226,7 +226,7 @@ const getAllPuzzles = async (req, res) => {
 const getCurrentUser = async (req, res) => {
   try {
     const userId = req.user._id; // Get user ID from authenticated middleware
-    
+
     // Find the user and exclude password
     const user = await User.findById(userId).select('-password');
     if (!user) {
@@ -252,13 +252,13 @@ const getCurrentUser = async (req, res) => {
       competitionsParticipated
     };
 
-    return res.status(200).json({ 
-      message: "User data retrieved successfully", 
-      user: userObject 
+    return res.status(200).json({
+      message: "User data retrieved successfully",
+      user: userObject
     });
   } catch (error) {
     console.error("Get current user error:", error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       message: "Internal server error",
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
@@ -316,29 +316,29 @@ const updateUser = async (req, res) => {
       { new: true, runValidators: true }
     );
 
-    return res.status(200).json({ 
-      message: "User updated successfully", 
-      user: updatedUser 
+    return res.status(200).json({
+      message: "User updated successfully",
+      user: updatedUser
     });
   } catch (error) {
     console.error("Update user error:", error);
-    
+
     // Handle validation errors
     if (error.name === 'ValidationError') {
-      return res.status(400).json({ 
-        message: "Validation error", 
-        error: error.message 
+      return res.status(400).json({
+        message: "Validation error",
+        error: error.message
       });
     }
-    
+
     // Handle duplicate key error (for unique fields)
     if (error.code === 11000) {
-      return res.status(400).json({ 
-        message: "Username already exists" 
+      return res.status(400).json({
+        message: "Username already exists"
       });
     }
-    
-    return res.status(500).json({ 
+
+    return res.status(500).json({
       message: "Internal server error",
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });

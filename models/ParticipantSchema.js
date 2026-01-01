@@ -45,6 +45,11 @@ const ParticipantSchema = new mongoose.Schema({
   isActive: { 
     type: Boolean, 
     default: true 
+  },
+  status: {
+    type: String,
+    enum: ["JOINED", "PLAYING", "SUBMITTED"],
+    default: "JOINED"
   }
 });
 
