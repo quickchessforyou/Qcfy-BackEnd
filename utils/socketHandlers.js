@@ -9,7 +9,7 @@ import CompetitionRankingModel from "../models/CompetitionRankingSchema.js";
 const getCurrentLeaderboard = async (competitionId) => {
   try {
     const leaderboard = await ParticipantModel.find({ competitionId })
-      .sort({ score: -1, timeSpent: 1 })
+      .sort({ puzzlesSolved: -1, timeSpent: 1, score: -1 }) // Sort by puzzles solved, then time, then score
       .limit(100) // Increased limit for larger competitions
       .populate("userId", "name avatar")
       .select("userId username score puzzlesSolved timeSpent status submittedAt isSubmitted joinedAt") // Only select needed fields for performance

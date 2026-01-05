@@ -77,7 +77,8 @@ export const getCompetitions = async (req, res) => {
     const { status, isActive, page = 1, limit = 10 } = req.query;
 
     const query = {};
-    if (status) query.status = status;
+    // Handle case-insensitive status (convert to uppercase to match schema)
+    if (status) query.status = status.toUpperCase();
     if (isActive !== undefined) query.isActive = isActive === "true";
 
     const skip = (page - 1) * limit;
@@ -290,7 +291,7 @@ export const updateCompetition = async (req, res) => {
     });
 
     Object.assign(competition, validUpdates);
-    
+
     // Explicitly handle unsetting accessCode if sent as empty string or null
     if (updates.accessCode === "" || updates.accessCode === null) {
       competition.accessCode = undefined;
@@ -304,7 +305,7 @@ export const updateCompetition = async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating competition:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Failed to update competition",
       error: error.message || "Unknown error occurred"
     });

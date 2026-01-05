@@ -372,6 +372,16 @@ export const submitPuzzleSolution = async (req, res) => {
     const leaderboard = await getCurrentLeaderboard(competitionId);
     io.to(`competition_${competitionId}`).emit("leaderboardUpdate", leaderboard);
 
+    // Emit live score update for immediate feedback in lobby
+    io.to(`competition_${competitionId}`).emit("liveScoreUpdate", {
+      userId: updatedParticipant.userId,
+      username: updatedParticipant.username,
+      score: updatedParticipant.score,
+      puzzlesSolved: updatedParticipant.puzzlesSolved,
+      timeSpent: updatedParticipant.timeSpent,
+      status: updatedParticipant.status
+    });
+
     /* ================= RESPONSE ================= */
     res.json({
       success: true,
@@ -653,7 +663,7 @@ export const getLobbyState = async (req, res) => {
     // 3. Competition state - check time-based status
     const now = new Date();
     let competitionState = competition.status.toUpperCase();
-    
+
     // Update status based on current time if needed
     if (competitionState === "UPCOMING" && now >= competition.startTime && now <= competition.endTime) {
       competitionState = "LIVE";
@@ -707,18 +717,9 @@ export const getLobbyState = async (req, res) => {
 
 
 // Helper function to calculate score
+// All puzzles are worth 100 points - winner determined by time taken
 const calculateScore = (difficulty, timeSpent) => {
-  const baseScore = {
-    'easy': 100,
-    'medium': 200,
-    'hard': 300
-  }[difficulty] || 100;
-
-  // Time bonus: faster solutions get more points (max 60 seconds for full bonus)
-  const maxTimeForBonus = 60;
-  const timeBonus = Math.max(0, maxTimeForBonus - timeSpent) * 2; // 2 points per second under 60s
-
-  return Math.round(baseScore + timeBonus);
+  return 100; // Fixed score for all puzzles
 };
 
 export default {
