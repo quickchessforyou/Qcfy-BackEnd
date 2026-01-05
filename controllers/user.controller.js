@@ -344,4 +344,105 @@ const updateUser = async (req, res) => {
     });
   }
 };
-export { register, login, sendOTP, verifyOTP, resetPassword, getAllPuzzles, getCurrentUser, updateUser }
+// Admin: Get all users with statistics
+const getAllUsers = async (req, res) => {
+  try {
+    // Get all users excluding passwords
+    const users = await User.find().select('-password').sort({ createdAt: -1 });
+
+    // Get statistics for each user
+    const usersWithStats = await Promise.all(
+      users.map(async (user) => {
+        const puzzlesSolved = await PuzzleHistoryModel.countDocuments({
+          userId: user._id,
+          isSolved: true
+        });
+
+        const competitionsParticipated = await CompetitionModel.countDocuments({
+          'participants.user': user._id
+        });
+
+        return {
+          ...user.toObject(),
+          statistics: {
+            puzzlesSolved,
+            competitionsParticipated
+          }
+        };
+      })
+    );
+
+    return res.status(200).json({
+      message: "Users retrieved successfully",
+      success: true,
+      data: usersWithStats,
+      count: usersWithStats.length
+    });
+  } catch (error) {
+    console.error("Get all users error:", error);
+    return res.status(500).json({
+      message: "Internal server error",
+      success: false,
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Admin: Delete a user by ID
+const deleteUserById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if user exists
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+        success: false
+      });
+    }
+
+    // Delete user's avatar file if exists
+    if (user.avatar) {
+      const avatarPath = path.join(process.cwd(), user.avatar);
+      try {
+        if (fs.existsSync(avatarPath)) {
+          fs.unlinkSync(avatarPath);
+        }
+      } catch (err) {
+        console.error("Error deleting avatar:", err);
+        // Continue even if deletion fails
+      }
+    }
+
+    // Delete user from database
+    await User.findByIdAndDelete(id);
+
+    // Note: You might also want to delete user's puzzle history and competition participations
+    // Uncomment if you want to clean up related data:
+    // await PuzzleHistoryModel.deleteMany({ userId: id });
+    // await CompetitionModel.updateMany(
+    //   { 'participants.user': id },
+    //   { $pull: { participants: { user: id } } }
+    // );
+
+    return res.status(200).json({
+      message: "User deleted successfully",
+      success: true,
+      deletedUser: {
+        id: user._id,
+        name: user.name,
+        email: user.email
+      }
+    });
+  } catch (error) {
+    console.error("Delete user error:", error);
+    return res.status(500).json({
+      message: "Internal server error",
+      success: false,
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+export { register, login, sendOTP, verifyOTP, resetPassword, getAllPuzzles, getCurrentUser, updateUser, getAllUsers, deleteUserById }
