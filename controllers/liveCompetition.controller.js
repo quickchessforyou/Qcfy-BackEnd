@@ -147,7 +147,7 @@ export const participateInCompetition = async (req, res) => {
         endTime: competition.endTime,
         duration: competition.duration,
         puzzles: competition.puzzles,
-        maxScore: competition.puzzles.length * 100, // Assuming max 100 points per puzzle
+        maxScore: competition.puzzles.length * 10, // Assuming max 10 points per puzzle
         status: competition.status,
         participantCount: await ParticipantModel.countDocuments({ competitionId })
       }
@@ -465,7 +465,7 @@ export const submitPuzzleSolution = async (req, res) => {
         totalScore: updatedParticipant.score,
         puzzlesSolved: updatedParticipant.puzzlesSolved,
         puzzleStatus: 'failed',
-        message: "Incorrect solution. Puzzle is now locked.",
+        message: "Incorrect solution. .",
       });
     }
 
@@ -868,9 +868,9 @@ export const getLobbyState = async (req, res) => {
 
 
 // Helper function to calculate score
-// All puzzles are worth 100 points - winner determined by time taken
+// All puzzles are worth 10 points - winner determined by time taken
 const calculateScore = (difficulty, timeSpent) => {
-  return 100; // Fixed score for all puzzles
+  return 10; // Fixed score for all puzzles
 };
 
 export default {
