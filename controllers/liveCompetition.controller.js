@@ -1,6 +1,7 @@
 import CompetitionModel from "../models/CompetitionSchema.js";
 import ParticipantModel from "../models/ParticipantSchema.js";
 import PuzzleSolutionModel from "../models/PuzzleSolutionSchema.js";
+import PuzzleAttemptModel from "../models/PuzzleAttemptSchema.js";
 import PuzzleModel from "../models/PuzzleSchema.js";
 import UserModel from "../models/UserSchema.js";
 import { io } from "../index.js";
@@ -257,7 +258,7 @@ export const submitCompetition = async (req, res) => {
 export const submitPuzzleSolution = async (req, res) => {
   try {
     const { competitionId, puzzleId } = req.params;
-    const { solution, timeSpent } = req.body;
+    const { solution, timeSpent, boardPosition, moveHistory } = req.body;
     const userId = req.user._id;
 
     /* ================= COMPETITION CHECK ================= */
@@ -296,17 +297,19 @@ export const submitPuzzleSolution = async (req, res) => {
       });
     }
 
-    /* ================= DUPLICATE PUZZLE CHECK ================= */
-    const existingSolution = await PuzzleSolutionModel.findOne({
+    /* ================= CHECK FOR EXISTING ATTEMPT ================= */
+    const existingAttempt = await PuzzleAttemptModel.findOne({
       competitionId,
       puzzleId,
       userId,
     });
 
-    if (existingSolution) {
+    // If puzzle is already completed (solved or failed), prevent new attempts
+    if (existingAttempt && (existingAttempt.status === 'solved' || existingAttempt.status === 'failed')) {
       return res.status(400).json({
         success: false,
-        message: "Puzzle already solved",
+        message: `Puzzle already ${existingAttempt.status}`,
+        puzzleStatus: existingAttempt.status
       });
     }
 
@@ -320,12 +323,6 @@ export const submitPuzzleSolution = async (req, res) => {
     }
 
     const isCorrect = validatePuzzleSolution(puzzle, solution);
-    if (!isCorrect) {
-      return res.status(400).json({
-        success: false,
-        message: "Incorrect solution",
-      });
-    }
 
     /* ================= MARK PLAYER AS PLAYING ================= */
     if (participant.status === "JOINED") {
@@ -339,57 +336,136 @@ export const submitPuzzleSolution = async (req, res) => {
       });
     }
 
-    /* ================= SCORE CALCULATION ================= */
-    const scoreEarned = calculateScore(puzzle.difficulty, timeSpent);
+    /* ================= HANDLE SOLUTION RESULT ================= */
+    if (isCorrect) {
+      // CORRECT SOLUTION
+      const scoreEarned = calculateScore(puzzle.difficulty, timeSpent);
 
-    const puzzleSolution = new PuzzleSolutionModel({
-      competitionId,
-      puzzleId,
-      userId,
-      solution,
-      timeSpent,
-      scoreEarned,
-      isCorrect: true,
-      solvedAt: new Date(),
-    });
-
-    await puzzleSolution.save();
-
-    const updatedParticipant = await ParticipantModel.findOneAndUpdate(
-      { competitionId, userId },
-      {
-        $inc: {
-          score: scoreEarned,
-          puzzlesSolved: 1,
-          timeSpent: timeSpent,
+      // Create or update puzzle attempt
+      const puzzleAttempt = await PuzzleAttemptModel.findOneAndUpdate(
+        { competitionId, puzzleId, userId },
+        {
+          status: 'solved',
+          solution,
+          boardPosition,
+          moveHistory: moveHistory || [],
+          timeSpent,
+          scoreEarned,
+          isLocked: true,
+          completedAt: new Date()
         },
-        lastActivity: new Date(),
-      },
-      { new: true }
-    );
+        { upsert: true, new: true }
+      );
 
-    /* ================= LEADERBOARD UPDATE ================= */
-    const leaderboard = await getCurrentLeaderboard(competitionId);
-    io.to(`competition_${competitionId}`).emit("leaderboardUpdate", leaderboard);
+      console.log('Created/updated puzzle attempt (solved):', {
+        puzzleId,
+        userId,
+        status: puzzleAttempt.status,
+        isLocked: puzzleAttempt.isLocked
+      });
 
-    // Emit live score update for immediate feedback in lobby
-    io.to(`competition_${competitionId}`).emit("liveScoreUpdate", {
-      userId: updatedParticipant.userId,
-      username: updatedParticipant.username,
-      score: updatedParticipant.score,
-      puzzlesSolved: updatedParticipant.puzzlesSolved,
-      timeSpent: updatedParticipant.timeSpent,
-      status: updatedParticipant.status
-    });
+      // Create puzzle solution record (for backward compatibility)
+      const puzzleSolution = new PuzzleSolutionModel({
+        competitionId,
+        puzzleId,
+        userId,
+        solution,
+        timeSpent,
+        scoreEarned,
+        isCorrect: true,
+        solvedAt: new Date(),
+      });
 
-    /* ================= RESPONSE ================= */
-    res.json({
-      success: true,
-      scoreEarned,
-      totalScore: updatedParticipant.score,
-      puzzlesSolved: updatedParticipant.puzzlesSolved,
-      message: "Puzzle solved successfully!",
-    });
+      await puzzleSolution.save();
+
+      // Update participant score
+      const updatedParticipant = await ParticipantModel.findOneAndUpdate(
+        { competitionId, userId },
+        {
+          $inc: {
+            score: scoreEarned,
+            puzzlesSolved: 1,
+            timeSpent: timeSpent,
+          },
+          lastActivity: new Date(),
+        },
+        { new: true }
+      );
+
+      /* ================= LEADERBOARD UPDATE ================= */
+      const leaderboard = await getCurrentLeaderboard(competitionId);
+      io.to(`competition_${competitionId}`).emit("leaderboardUpdate", leaderboard);
+
+      // Emit live score update for immediate feedback in lobby
+      io.to(`competition_${competitionId}`).emit("liveScoreUpdate", {
+        userId: updatedParticipant.userId,
+        username: updatedParticipant.username,
+        score: updatedParticipant.score,
+        puzzlesSolved: updatedParticipant.puzzlesSolved,
+        timeSpent: updatedParticipant.timeSpent,
+        status: updatedParticipant.status
+      });
+
+      /* ================= SUCCESS RESPONSE ================= */
+      res.json({
+        success: true,
+        isCorrect: true,
+        scoreEarned,
+        totalScore: updatedParticipant.score,
+        puzzlesSolved: updatedParticipant.puzzlesSolved,
+        puzzleStatus: 'solved',
+        message: "Puzzle solved successfully!",
+      });
+
+    } else {
+      // INCORRECT SOLUTION
+      // Create or update puzzle attempt as failed
+      const puzzleAttempt = await PuzzleAttemptModel.findOneAndUpdate(
+        { competitionId, puzzleId, userId },
+        {
+          status: 'failed',
+          solution,
+          boardPosition,
+          moveHistory: moveHistory || [],
+          timeSpent,
+          scoreEarned: 0,
+          isLocked: true,
+          completedAt: new Date()
+        },
+        { upsert: true, new: true }
+      );
+
+      console.log('Created/updated puzzle attempt (failed):', {
+        puzzleId,
+        userId,
+        status: puzzleAttempt.status,
+        isLocked: puzzleAttempt.isLocked
+      });
+
+      // Update participant time spent (but no score)
+      const updatedParticipant = await ParticipantModel.findOneAndUpdate(
+        { competitionId, userId },
+        {
+          $inc: {
+            timeSpent: timeSpent,
+          },
+          lastActivity: new Date(),
+        },
+        { new: true }
+      );
+
+      /* ================= FAILURE RESPONSE ================= */
+      res.json({
+        success: false,
+        isCorrect: false,
+        scoreEarned: 0,
+        totalScore: updatedParticipant.score,
+        puzzlesSolved: updatedParticipant.puzzlesSolved,
+        puzzleStatus: 'failed',
+        message: "Incorrect solution. Puzzle is now locked.",
+      });
+    }
+
   } catch (error) {
     console.error("Puzzle submission error:", error);
     res.status(500).json({
@@ -478,7 +554,36 @@ export const getCompetitionPuzzles = async (req, res) => {
       });
     }
 
-    // Get user's solved puzzles
+    // Get user's puzzle attempts (includes solved, failed, and in-progress)
+    const puzzleAttempts = await PuzzleAttemptModel.find({
+      competitionId,
+      userId
+    }).select('puzzleId status scoreEarned timeSpent completedAt boardPosition moveHistory isLocked');
+
+    console.log('Found puzzle attempts for user:', userId, puzzleAttempts.length);
+    puzzleAttempts.forEach(attempt => {
+      console.log('Attempt:', {
+        puzzleId: attempt.puzzleId,
+        status: attempt.status,
+        isLocked: attempt.isLocked
+      });
+    });
+
+    // Create attempts map for quick lookup
+    const attemptsMap = new Map();
+    puzzleAttempts.forEach(attempt => {
+      attemptsMap.set(attempt.puzzleId.toString(), {
+        status: attempt.status,
+        scoreEarned: attempt.scoreEarned || 0,
+        timeSpent: attempt.timeSpent || 0,
+        completedAt: attempt.completedAt,
+        boardPosition: attempt.boardPosition,
+        moveHistory: attempt.moveHistory || [],
+        isLocked: attempt.isLocked
+      });
+    });
+
+    // Get user's solved puzzles (for backward compatibility)
     const solvedPuzzles = await PuzzleSolutionModel.find({
       competitionId,
       userId,
@@ -495,19 +600,60 @@ export const getCompetitionPuzzles = async (req, res) => {
       });
     });
 
-    // Prepare puzzles with solved status
-    const puzzlesWithStatus = competition.puzzles.map(puzzle => ({
-      _id: puzzle._id,
-      title: puzzle.title,
-      description: puzzle.description,
-      difficulty: puzzle.difficulty,
-      category: puzzle.category,
-      type: puzzle.type,
-      fen: puzzle.fen,
-      solutionMoves: puzzle.solutionMoves,
-      isSolved: solvedMap.has(puzzle._id.toString()),
-      solvedData: solvedMap.get(puzzle._id.toString()) || null
-    }));
+    // Prepare puzzles with solved status and attempt data
+    const puzzlesWithStatus = competition.puzzles.map(puzzle => {
+      const puzzleId = puzzle._id.toString();
+      const attemptData = attemptsMap.get(puzzleId);
+      const solvedData = solvedMap.get(puzzleId);
+
+      // Determine puzzle status
+      let status = 'unsolved';
+      let isSolved = false;
+      let isFailed = false;
+      let isLocked = false;
+
+      if (attemptData) {
+        status = attemptData.status;
+        isSolved = attemptData.status === 'solved';
+        isFailed = attemptData.status === 'failed';
+        isLocked = attemptData.isLocked || isSolved || isFailed;
+      } else if (solvedData) {
+        // Backward compatibility for old solved puzzles
+        status = 'solved';
+        isSolved = true;
+        isLocked = true;
+      }
+
+      return {
+        _id: puzzle._id,
+        title: puzzle.title,
+        description: puzzle.description,
+        difficulty: puzzle.difficulty,
+        category: puzzle.category,
+        type: puzzle.type,
+        fen: puzzle.fen,
+        solutionMoves: puzzle.solutionMoves,
+        
+        // Status information
+        status,
+        isSolved,
+        isFailed,
+        isLocked,
+        
+        // Attempt data
+        solvedData: attemptData || solvedData || null,
+        boardPosition: attemptData?.boardPosition || null,
+        moveHistory: attemptData?.moveHistory || []
+      };
+    });
+
+    console.log('Final puzzles with status:', puzzlesWithStatus.map(p => ({
+      id: p._id,
+      status: p.status,
+      isSolved: p.isSolved,
+      isFailed: p.isFailed,
+      isLocked: p.isLocked
+    })));
 
     res.json({
       success: true,
@@ -516,7 +662,8 @@ export const getCompetitionPuzzles = async (req, res) => {
         name: competition.name,
         status: competition.status,
         startTime: competition.startTime,
-        endTime: competition.endTime
+        endTime: competition.endTime,
+        totalPuzzles: competition.puzzles.length // Add total puzzle count
       },
       puzzles: puzzlesWithStatus,
       participant: {
@@ -648,8 +795,8 @@ export const getLobbyState = async (req, res) => {
     const { competitionId } = req.params;
     const userId = req.user._id;
 
-    // 1. Competition lao
-    const competition = await CompetitionModel.findById(competitionId);
+    // 1. Competition lao with puzzles populated
+    const competition = await CompetitionModel.findById(competitionId).populate('puzzles');
     if (!competition) {
       return res.status(404).json({ success: false, message: "Competition not found" });
     }
@@ -692,7 +839,7 @@ export const getLobbyState = async (req, res) => {
     // 5. Leaderboard lao
     const leaderboard = await getCurrentLeaderboard(competitionId);
 
-    // 6. Response bhejo
+    // 6. Response bhejo with total puzzle count
     res.json({
       success: true,
       competition: {
@@ -701,6 +848,7 @@ export const getLobbyState = async (req, res) => {
         startTime: competition.startTime,
         endTime: competition.endTime,
         duration: competition.duration,
+        totalPuzzles: competition.puzzles.length, // Add total puzzle count
         requiresAccessCode: !!(competition.accessCode && competition.accessCode.trim() !== '')
       },
       competitionState,
