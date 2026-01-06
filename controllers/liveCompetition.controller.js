@@ -46,13 +46,16 @@ export const participateInCompetition = async (req, res) => {
 
     // Check Access Code if required
     if (competition.accessCode && competition.accessCode.trim() !== '') {
-      if (!accessCode || accessCode !== competition.accessCode) {
+      console.log('Access code required. Competition code:', competition.accessCode, 'Provided code:', accessCode);
+      if (!accessCode || accessCode.trim() !== competition.accessCode.trim()) {
+        console.log('Access code validation failed');
         return res.status(403).json({
           success: false,
           error: 'Invalid access code',
           requireCode: true
         });
       }
+      console.log('Access code validation passed');
     }
 
     // Check max participants
