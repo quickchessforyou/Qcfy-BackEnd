@@ -134,6 +134,148 @@ const sendOTP = async (req, res) => {
   }
 };
 
+// Send OTP for signup email verification
+const sendSignupOTP = async (req, res) => {
+  try {
+    const { email, name, username, password } = req.body;
+
+    console.log('📨 Send Signup OTP request received for:', email);
+
+    // Validate required fields
+    if (!email || !name || !username || !password) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // Check if user already exists
+    console.log('🔍 Checking if user already exists...');
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      console.log('❌ User already exists:', email);
+      return res.status(400).json({ message: "User with this email already exists" });
+    }
+
+    // Check if username is taken
+    const existingUsername = await User.findOne({ username });
+    if (existingUsername) {
+      return res.status(400).json({ message: "Username already taken" });
+    }
+
+    // Delete any existing OTPs for this email
+    console.log('🗑️  Deleting existing OTPs...');
+    await OTP.deleteMany({ email });
+
+    // Generate new OTP
+    const otp = generateOTP();
+    console.log('🔑 Generated OTP:', otp);
+
+    // Save OTP to database with type 'signup'
+    console.log('💾 Saving OTP to database...');
+    await OTP.create({
+      email,
+      otp,
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+    });
+    console.log('✅ OTP saved to database');
+
+    // Send OTP via email
+    const emailSent = await sendOTPEmail(email, otp);
+
+    if (!emailSent) {
+      return res.status(500).json({ message: "Failed to send OTP email" });
+    }
+
+    console.log('✅ Signup OTP sent successfully');
+    return res.status(200).json({
+      message: "OTP sent successfully to your email. Please verify to complete registration.",
+      // In development, you might want to return OTP for testing
+      ...(process.env.NODE_ENV === 'development' && { otp })
+    });
+  } catch (error) {
+    console.error("❌ Send Signup OTP error:", error.message);
+    return res.status(500).json({
+      message: "Internal server error",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Verify signup OTP and create user account
+const verifySignupOTP = async (req, res) => {
+  try {
+    const { email, otp, name, username, password } = req.body;
+
+    console.log('🔐 Verify Signup OTP request for:', email);
+
+    // Validate required fields
+    if (!email || !otp || !name || !username || !password) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // Find the OTP record
+    const otpRecord = await OTP.findOne({
+      email,
+      isUsed: false,
+      expiresAt: { $gt: new Date() } // Not expired
+    });
+
+    if (!otpRecord) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    // Verify OTP
+    if (otpRecord.otp !== otp) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+
+    // Check again if user exists (in case created between sending OTP and verifying)
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    // Check if username is taken
+    const existingUsername = await User.findOne({ username });
+    if (existingUsername) {
+      return res.status(400).json({ message: "Username already taken" });
+    }
+
+    // Mark OTP as used
+    otpRecord.isUsed = true;
+    await otpRecord.save();
+
+    // Hash password and create user
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      username,
+      avatar: ""
+    });
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    console.log('✅ User registered successfully:', user.email);
+    return res.status(200).json({
+      message: "User registered successfully",
+      user,
+      token
+    });
+  } catch (error) {
+    console.error("❌ Verify Signup OTP error:", error);
+    return res.status(500).json({
+      message: "Internal server error",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+
 // Verify OTP and login user
 const verifyOTP = async (req, res) => {
   try {
@@ -445,4 +587,5 @@ const deleteUserById = async (req, res) => {
   }
 };
 
-export { register, login, sendOTP, verifyOTP, resetPassword, getAllPuzzles, getCurrentUser, updateUser, getAllUsers, deleteUserById }
+export { register, login, sendOTP, verifyOTP, resetPassword, sendSignupOTP, verifySignupOTP, getAllPuzzles, getCurrentUser, updateUser, getAllUsers, deleteUserById }
+
