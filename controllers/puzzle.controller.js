@@ -191,6 +191,21 @@ const createPuzzle = async (req, res) => {
     };
 
     if (solutionMoves) puzzleData.solutionMoves = solutionMoves;
+
+    if (req.body.alternativeSolutions && Array.isArray(req.body.alternativeSolutions)) {
+      const altSolutions = req.body.alternativeSolutions;
+      const validAltSolutions = [];
+      for (const altSol of altSolutions) {
+        if (Array.isArray(altSol) && altSol.length > 0) {
+          const altResult = validateSolutionMoves(fen, altSol);
+          if (!altResult.valid) {
+            return res.status(400).json({ message: `Alternative Solution Error: ${altResult.message}` });
+          }
+          validAltSolutions.push(altSol);
+        }
+      }
+      puzzleData.alternativeSolutions = validAltSolutions;
+    }
     if (type === 'kids' && kidsConfig) puzzleData.kidsConfig = kidsConfig;
 
     const puzzle = await PuzzleModel.create(puzzleData);
@@ -263,6 +278,18 @@ const updatePuzzle = async (req, res) => {
       );
       if (!solutionValidation.valid) {
         return res.status(400).json({ message: solutionValidation.message });
+      }
+    }
+
+    if (updates.alternativeSolutions && Array.isArray(updates.alternativeSolutions)) {
+      const altSolutions = updates.alternativeSolutions;
+      for (const altSol of altSolutions) {
+        if (Array.isArray(altSol) && altSol.length > 0) {
+          const altResult = validateSolutionMoves(fenToValidate, altSol);
+          if (!altResult.valid) {
+            return res.status(400).json({ message: `Alternative Solution Error: ${altResult.message}` });
+          }
+        }
       }
     }
 
@@ -417,6 +444,96 @@ const getRandomPuzzle = async (req, res) => {
   }
 };
 
+const bulkCreatePuzzles = async (req, res) => {
+  try {
+    const puzzles = req.body;
+
+    if (!Array.isArray(puzzles) || puzzles.length === 0) {
+      return res.status(400).json({ message: "Invalid input: Expected a non-empty array of puzzles." });
+    }
+
+    const results = {
+      total: puzzles.length,
+      imported: 0,
+      failed: 0,
+      errors: []
+    };
+
+    const puzzlesToInsert = [];
+
+    for (let i = 0; i < puzzles.length; i++) {
+      const puzzle = puzzles[i];
+      const { title, fen, difficulty, solutionMoves, category, type = 'normal' } = puzzle;
+
+      // Basic validation
+      if (!title || !fen || !difficulty || !category) {
+        results.failed++;
+        results.errors.push(`Puzzle #${i + 1}: Missing required fields`);
+        continue;
+      }
+
+      // FEN validation
+      const fenResult = validateFen(fen);
+      if (!fenResult.valid) {
+        results.failed++;
+        results.errors.push(`Puzzle #${i + 1} (${title}): Invalid FEN - ${fenResult.message}`);
+        continue;
+      }
+
+      // Solution validation (only for normal type)
+      if (type === 'normal') {
+        const moveResult = validateSolutionMoves(fen, solutionMoves);
+        if (!moveResult.valid) {
+          results.failed++;
+          results.errors.push(`Puzzle #${i + 1} (${title}): Invalid Solution - ${moveResult.message}`);
+          continue;
+        }
+      }
+
+      puzzlesToInsert.push({
+        ...puzzle,
+        createdBy: req.admin._id,
+        source: 'manual', // or 'bulk-import'
+        createdAt: new Date(),
+        type: type
+      });
+    }
+
+    if (puzzlesToInsert.length > 0) {
+      await PuzzleModel.insertMany(puzzlesToInsert);
+      results.imported = puzzlesToInsert.length;
+    }
+
+    res.status(201).json({
+      message: `Bulk import completed. Imported: ${results.imported}, Failed: ${results.failed}`,
+      results
+    });
+
+  } catch (error) {
+    console.error("Error bulk creating puzzles:", error);
+    res.status(500).json({ message: "Internal server error during bulk import", error: error.message });
+  }
+};
+
+// Export all puzzles
+const exportPuzzles = async (req, res) => {
+  try {
+    const puzzles = await PuzzleModel.find({}, {
+      _id: 0, // Exclude Mongo ID if strictly exporting for re-import elsewhere, or keep it. Let's exclude for cleaner JSON.
+      __v: 0,
+      createdAt: 0,
+      updatedAt: 0,
+      createdBy: 0,
+      source: 0
+    });
+
+    res.status(200).json(puzzles);
+  } catch (error) {
+    console.error("Error exporting puzzles:", error);
+    res.status(500).json({ message: "Failed to export puzzles" });
+  }
+};
+
 export {
   createPuzzle,
   getPuzzles,
@@ -425,5 +542,7 @@ export {
   deletePuzzle,
   getPuzzlesWithFilters,
   getPuzzleStats,
-  getRandomPuzzle
+  getRandomPuzzle,
+  bulkCreatePuzzles,
+  exportPuzzles
 }

@@ -5,6 +5,7 @@ const PuzzleSchema = new mongoose.Schema({
   fen: { type: String, required: true },
   difficulty: { type: String, enum: ["easy", "medium", "hard"] },
   solutionMoves: [String],
+  alternativeSolutions: [[String]],
   // ["e4", "Nf6", ...]
   description: String,
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "Admin" },

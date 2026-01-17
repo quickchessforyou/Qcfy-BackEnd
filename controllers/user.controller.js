@@ -10,11 +10,30 @@ import fs from "fs";
 import path from "path";
 
 
+
+const validatePassword = (password) => {
+  const minLength = 8;
+  const hasNumber = /\d/.test(password);
+  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+  const hasLetter = /[a-zA-Z]/.test(password);
+
+  if (password.length < minLength) return "Password must be at least 8 characters long";
+  if (!hasNumber) return "Password must contain at least one number";
+  if (!hasSpecialChar) return "Password must contain at least one special character";
+  if (!hasLetter) return "Password must contain at least one letter";
+  return null;
+};
+
 const register = async (req, res) => {
   try {
     const { name, email, password, username, wins, losses, draws } = req.body;
     if (!name || !email || !password || !username) {
       return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      return res.status(400).json({ message: passwordError });
     }
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -209,6 +228,11 @@ const verifySignupOTP = async (req, res) => {
     // Validate required fields
     if (!email || !otp || !name || !username || !password) {
       return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      return res.status(400).json({ message: passwordError });
     }
 
     // Find the OTP record

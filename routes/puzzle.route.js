@@ -7,7 +7,9 @@ import {
   deletePuzzle,
   getPuzzlesWithFilters,
   getPuzzleStats,
-  getRandomPuzzle
+  getRandomPuzzle,
+  bulkCreatePuzzles,
+  exportPuzzles
 } from "../controllers/puzzle.controller.js";
 import isAdmin from "../middleware/admin.middleware.js";
 
@@ -15,6 +17,8 @@ const router = express.Router();
 
 // Manual puzzle routes
 router.post("/create-puzzle", isAdmin, createPuzzle);
+router.post("/bulk-create-puzzle", isAdmin, bulkCreatePuzzles);
+router.get("/export-puzzles", isAdmin, exportPuzzles);
 router.get("/get-puzzles", getPuzzles);
 router.get("/get-puzzle/:id", getPuzzleById);
 router.put("/update-puzzle/:id", isAdmin, updatePuzzle);
