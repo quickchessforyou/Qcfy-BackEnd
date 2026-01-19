@@ -155,8 +155,18 @@ export const initializeSocketHandlers = (io) => {
 
         socket.join(`competition_${competitionId}`);
 
+        // Send initial data immediately
         const leaderboard = await getCurrentLeaderboard(competitionId);
+
+        // Send server time for synchronization
+        socket.emit("competitionJoined", {
+          serverTime: Date.now(),
+          leaderboard
+        });
+
+        // Also send standard update (redundant but safe for existing clients)
         socket.emit("leaderboardUpdate", leaderboard);
+
       } catch (err) {
         console.error("joinCompetition error:", err);
         socket.emit("error", { message: "Join failed" });
@@ -164,6 +174,43 @@ export const initializeSocketHandlers = (io) => {
     });
 
     /* ---------------- SUBMIT COMPETITION ---------------- */
+    // Queue for throttled updates
+    // Map<competitionId, { timeout: Timer, lastUpdate: timestamp }>
+    const leaderboardUpdateQueue = new Map();
+
+    const scheduleLeaderboardUpdate = (competitionId) => {
+      const now = Date.now();
+      const queueItem = leaderboardUpdateQueue.get(competitionId) || { lastUpdate: 0, timeout: null };
+      const THROTTLE_MS = 2000; // 2 seconds throttle
+
+      if (queueItem.timeout) return; // Already scheduled
+
+      const timeSinceLast = now - queueItem.lastUpdate;
+      const delay = Math.max(0, THROTTLE_MS - timeSinceLast);
+
+      queueItem.timeout = setTimeout(async () => {
+        try {
+          const leaderboard = await getCurrentLeaderboard(competitionId);
+          io.to(`competition_${competitionId}`).emit("leaderboardUpdate", leaderboard);
+
+          // Update tracking
+          leaderboardUpdateQueue.set(competitionId, {
+            lastUpdate: Date.now(),
+            timeout: null
+          });
+        } catch (error) {
+          console.error("Throttled leaderboard update failed:", error);
+          // Clear timeout so we can try again next time
+          leaderboardUpdateQueue.set(competitionId, {
+            lastUpdate: Date.now(), // Treat failed attempt as update to avoid tight loops
+            timeout: null
+          });
+        }
+      }, delay);
+
+      leaderboardUpdateQueue.set(competitionId, queueItem);
+    };
+
     socket.on("submitCompetition", async ({ competitionId }) => {
       try {
         await ParticipantModel.findOneAndUpdate(
@@ -174,11 +221,9 @@ export const initializeSocketHandlers = (io) => {
           }
         );
 
-        const leaderboard = await getCurrentLeaderboard(competitionId);
-        io.to(`competition_${competitionId}`).emit(
-          "leaderboardUpdate",
-          leaderboard
-        );
+        // Replaced immediate broadcast with throttled schedule
+        scheduleLeaderboardUpdate(competitionId);
+
       } catch (err) {
         console.error("submitCompetition error:", err);
       }
