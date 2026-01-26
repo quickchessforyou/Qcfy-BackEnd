@@ -131,7 +131,7 @@ export const validateSolutionMoves = (fen, moves = []) => {
 
 const createPuzzle = async (req, res) => {
   try {
-    const { title, fen, difficulty, solutionMoves, description, category, type, kidsConfig } = req.body;
+    const { title, fen, difficulty, solutionMoves, description, category, type, kidsConfig, level, rating } = req.body;
 
     // --- REQUIRED FIELDS CHECK ---
     const missingFields = [];
@@ -143,8 +143,11 @@ const createPuzzle = async (req, res) => {
     // For normal puzzles, solutionMoves is required
     if ((!type || type === 'normal') && !solutionMoves) missingFields.push("solutionMoves");
 
-    // For kids puzzles, kidsConfig is required
     if (type === 'kids' && !kidsConfig) missingFields.push("kidsConfig");
+
+    // Level and Rating are required (schema has default, but good to ensure if sent)
+    // Actually schema defaults handle it if missing, but let's check input validity if provided
+
 
     if (missingFields.length > 0) {
       return res.status(400).json({
@@ -158,6 +161,11 @@ const createPuzzle = async (req, res) => {
       return res.status(400).json({
         message: "Difficulty must be one of: easy, medium, hard",
       });
+    }
+
+    // --- LEVEL VALIDATION ---
+    if (level && (level < 1 || level > 7)) {
+      return res.status(400).json({ message: "Level must be between 1 and 7" });
     }
 
     // --- FEN VALIDATION ---
@@ -186,8 +194,12 @@ const createPuzzle = async (req, res) => {
       description,
       category,
       createdBy: req.admin._id,
+      category,
+      createdBy: req.admin._id,
       type: type || 'normal',
-      source: 'manual'
+      source: 'manual',
+      level: level || 1,
+      rating: rating || 400
     };
 
     if (solutionMoves) puzzleData.solutionMoves = solutionMoves;

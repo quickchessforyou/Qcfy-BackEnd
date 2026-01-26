@@ -17,6 +17,10 @@ const PuzzleSchema = new mongoose.Schema({
     default: "normal"
   },
 
+  // Difficulty & Rating
+  level: { type: Number, required: true, default: 1 }, // 1 to 7
+  rating: { type: Number, required: true, default: 400 },
+
   // Kids mode configuration
   kidsConfig: {
     piece: String, // e.g., "n" for knight, "r" for rook
