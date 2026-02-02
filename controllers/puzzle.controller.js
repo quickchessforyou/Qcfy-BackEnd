@@ -503,11 +503,20 @@ const bulkCreatePuzzles = async (req, res) => {
       }
 
       puzzlesToInsert.push({
-        ...puzzle,
+        title,
+        fen,
+        difficulty,
+        category,
+        solutionMoves,
+        alternativeSolutions: puzzle.alternativeSolutions,
+        description: puzzle.description,
+        type,
+        level: puzzle.level || 1,
+        rating: puzzle.rating || 400,
+        kidsConfig: puzzle.kidsConfig,
         createdBy: req.admin._id,
-        source: 'manual', // or 'bulk-import'
-        createdAt: new Date(),
-        type: type
+        source: 'manual',
+        createdAt: new Date()
       });
     }
 
@@ -531,12 +540,18 @@ const bulkCreatePuzzles = async (req, res) => {
 const exportPuzzles = async (req, res) => {
   try {
     const puzzles = await PuzzleModel.find({}, {
-      _id: 0, // Exclude Mongo ID if strictly exporting for re-import elsewhere, or keep it. Let's exclude for cleaner JSON.
-      __v: 0,
-      createdAt: 0,
-      updatedAt: 0,
-      createdBy: 0,
-      source: 0
+      _id: 0,
+      title: 1,
+      fen: 1,
+      difficulty: 1,
+      category: 1,
+      solutionMoves: 1,
+      alternativeSolutions: 1,
+      description: 1,
+      type: 1,
+      level: 1,
+      rating: 1,
+      kidsConfig: 1
     });
 
     res.status(200).json(puzzles);

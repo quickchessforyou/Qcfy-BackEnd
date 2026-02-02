@@ -636,13 +636,13 @@ export const getCompetitionPuzzles = async (req, res) => {
         type: puzzle.type,
         fen: puzzle.fen,
         solutionMoves: puzzle.solutionMoves,
-        
+
         // Status information
         status,
         isSolved,
         isFailed,
         isLocked,
-        
+
         // Attempt data
         solvedData: attemptData || solvedData || null,
         boardPosition: attemptData?.boardPosition || null,
@@ -873,10 +873,75 @@ const calculateScore = (difficulty, timeSpent) => {
   return 10; // Fixed score for all puzzles
 };
 
+// Check for active participation
+export const getActiveParticipation = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Find participant record where:
+    // 1. User is the current user
+    // 2. Not submitted yet
+    const participations = await ParticipantModel.find({
+      userId,
+      isSubmitted: false
+    }).populate('competitionId');
+
+    // Filter for active/upcoming competitions
+    const now = new Date();
+    const activeParticipation = participations.find(p => {
+      const comp = p.competitionId;
+      if (!comp) return false;
+
+      // Allow if LIVE OR UPCOMING (near start)
+      // Check status strings case-insensitively
+      const status = comp.status?.toUpperCase();
+
+      const isLive = status === 'LIVE';
+      const isUpcoming = status === 'UPCOMING';
+
+      // If live, standard check
+      if (isLive) {
+        return new Date(comp.endTime) > now;
+      }
+
+      // If upcoming, always allow rejoining/waiting if within sensible range (or just all joined upcoming)
+      // The user wants "popup logic that tournanment is running or about to start"
+      if (isUpcoming) {
+        return true;
+      }
+
+      return false;
+    });
+
+    if (activeParticipation) {
+      return res.json({
+        success: true,
+        hasActiveParticipation: true,
+        competition: {
+          id: activeParticipation.competitionId._id,
+          name: activeParticipation.competitionId.name,
+          endTime: activeParticipation.competitionId.endTime
+        }
+      });
+    }
+
+    return res.json({
+      success: true,
+      hasActiveParticipation: false
+    });
+
+  } catch (error) {
+    console.error('Check active participation error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+};
+
 export default {
   participateInCompetition,
   submitPuzzleSolution,
   getLiveLeaderboard,
   getCompetitionPuzzles,
-  startCompetition
+  startCompetition,
+  submitCompetition,
+  getActiveParticipation
 };

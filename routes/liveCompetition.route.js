@@ -6,7 +6,8 @@ import {
   getLiveLeaderboard,
   getCompetitionPuzzles,
   startCompetition,
-  getLobbyState
+  getLobbyState,
+  getActiveParticipation
 } from '../controllers/liveCompetition.controller.js';
 import isUser from '../middleware/user.middleware.js';
 import isAdmin from '../middleware/admin.middleware.js';
@@ -14,6 +15,7 @@ import isAdmin from '../middleware/admin.middleware.js';
 const router = express.Router();
 
 // User routes for live competitions
+router.get('/user/active-participation', isUser, getActiveParticipation); // Check active participation
 router.post('/:competitionId/participate', isUser, participateInCompetition);
 router.post('/:competitionId/submit', isUser, submitCompetition);
 router.post('/:competitionId/puzzles/:puzzleId/submit', isUser, submitPuzzleSolution);
