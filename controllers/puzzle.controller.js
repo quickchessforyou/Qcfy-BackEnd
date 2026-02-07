@@ -456,6 +456,32 @@ const getRandomPuzzle = async (req, res) => {
   }
 };
 
+
+const LEVEL_RANGES = {
+  1: { easy: [300, 450], medium: [450, 600], hard: [600, 750] },
+  2: { easy: [750, 900], medium: [900, 1050], hard: [1050, 1200] },
+  3: { easy: [1200, 1350], medium: [1350, 1500], hard: [1500, 1650] },
+  4: { easy: [1650, 1800], medium: [1800, 1950], hard: [1950, 2100] },
+  5: { easy: [2100, 2250], medium: [2250, 2400], hard: [2400, 2550] },
+  6: { easy: [2550, 2700], medium: [2700, 2850], hard: [2850, 3000] },
+  7: { easy: [3000, 3160], medium: [3160, 3330], hard: [3330, 3500] }
+};
+
+const determineLevelAndDifficulty = (rating) => {
+  const r = Number(rating);
+  for (const [lvl, ranges] of Object.entries(LEVEL_RANGES)) {
+    if (r >= ranges.easy[0] && r <= ranges.hard[1]) {
+      if (r <= ranges.easy[1]) return { level: Number(lvl), difficulty: 'easy' };
+      if (r <= ranges.medium[1]) return { level: Number(lvl), difficulty: 'medium' };
+      return { level: Number(lvl), difficulty: 'hard' };
+    }
+  }
+  // Fallback if out of bounds
+  if (r < 300) return { level: 1, difficulty: 'easy' };
+  if (r > 3500) return { level: 7, difficulty: 'hard' };
+  return { level: 1, difficulty: 'medium' };
+};
+
 const bulkCreatePuzzles = async (req, res) => {
   try {
     const puzzles = req.body;
@@ -475,12 +501,27 @@ const bulkCreatePuzzles = async (req, res) => {
 
     for (let i = 0; i < puzzles.length; i++) {
       const puzzle = puzzles[i];
-      const { title, fen, difficulty, solutionMoves, category, type = 'normal' } = puzzle;
+      let { title, fen, difficulty, solutionMoves, category, type = 'normal', rating, level } = puzzle;
+
+      // Auto-calculate level/difficulty if rating is present and they are missing
+      if (rating && (!difficulty || !level)) {
+        const calculated = determineLevelAndDifficulty(rating);
+        if (!level) level = calculated.level;
+        if (!difficulty) difficulty = calculated.difficulty;
+      }
 
       // Basic validation
-      if (!title || !fen || !difficulty || !category) {
+      // Start check: Title, Fen, Category are ALWAYS required.
+      // Difficulty is now conditional: required if we couldn't calculate it (i.e. no rating)
+      if (!title || !fen || !category) {
         results.failed++;
-        results.errors.push(`Puzzle #${i + 1}: Missing required fields`);
+        results.errors.push(`Puzzle #${i + 1}: Missing required fields (title, fen, or category)`);
+        continue;
+      }
+
+      if (!difficulty) {
+        results.failed++;
+        results.errors.push(`Puzzle #${i + 1} (${title}): Difficulty is missing and could not be calculated from Rating.`);
         continue;
       }
 
@@ -505,14 +546,14 @@ const bulkCreatePuzzles = async (req, res) => {
       puzzlesToInsert.push({
         title,
         fen,
-        difficulty,
+        difficulty, // Now ensured to be present
         category,
         solutionMoves,
         alternativeSolutions: puzzle.alternativeSolutions,
         description: puzzle.description,
         type,
-        level: puzzle.level || 1,
-        rating: puzzle.rating || 400,
+        level: level || 1, // Fallback to 1 if still missing (shouldn't be if logic holds, but safe)
+        rating: rating || 400,
         kidsConfig: puzzle.kidsConfig,
         createdBy: req.admin._id,
         source: 'manual',

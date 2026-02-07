@@ -27,13 +27,13 @@ To import puzzles effectively, please use the following JSON structure. The file
 |-------|------|----------|-------------|
 | **title** | String | Yes | A short title for the puzzle. |
 | **fen** | String | Yes | The FEN string representing the board state. |
-| **difficulty** | String | Yes | Difficulty level: `"easy"`, `"medium"`, or `"hard"`. |
+| **difficulty** | String | No (if rating provided) | Difficulty level: `"easy"`, `"medium"`, or `"hard"`. Auto-calculated from rating if missing. |
 | **category** | String | Yes | The puzzle category (e.g., `"Tactics"`, `"Endgame"`). |
 | **solutionMoves** | Array<String> | Yes (for normal) | Array of correct moves in UCI/SAN format (e.g., `"e2e4"`). |
 | **description** | String | No | Additional context or instructions for the puzzle. |
 | **type** | String | No | `"normal"` or `"kids"`. Defaults to `"normal"`. |
-| **level** | Number | No | Level of the puzzle (1-7). Defaults to `1`. |
-| **rating** | Number | No | Rating of the puzzle (e.g., 1200). Defaults to `400`. |
+| **level** | Number | No | Level of the puzzle (1-7). Auto-calculated from rating if missing. |
+| **rating** | Number | Yes | Rating of the puzzle (e.g., 1200). Used to calculate level/difficulty. |
 | **alternativeSolutions** | Array<Array<String>> | No | List of alternative correct move sequences. |
 
 ### For "kids" Type Puzzles
