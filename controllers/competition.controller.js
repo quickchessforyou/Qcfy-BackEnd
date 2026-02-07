@@ -85,6 +85,7 @@ export const getCompetitions = async (req, res) => {
 
     const competitions = await CompetitionModel.find(query)
       .populate("puzzles", "title difficulty category type")
+      .populate("participants.user", "name email")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -188,7 +189,8 @@ export const getCompetitionById = async (req, res) => {
 
     const competition = await CompetitionModel.findById(id)
       .populate("puzzles")
-      .populate("createdBy", "name email");
+      .populate("createdBy", "name email")
+      .populate("participants.user", "name email");
 
     if (!competition) {
       return res.status(404).json({

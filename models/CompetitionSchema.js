@@ -24,6 +24,26 @@ const CompetitionSchema = new mongoose.Schema({
     default: "UPCOMING"
   },
 
+  // Participants
+  participants: [{
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    },
+    score: {
+      type: Number,
+      default: 0
+    },
+    ENDEDPuzzles: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Puzzle"
+    }],
+    joinedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
 
   // Access Control
   accessCode: { type: String }, // Optional password/code to join
