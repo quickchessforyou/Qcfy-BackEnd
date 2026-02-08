@@ -1,144 +1,483 @@
+// import jwt from "jsonwebtoken";
+// import CompetitionModel from "../models/CompetitionSchema.js";
+// import ParticipantModel from "../models/ParticipantSchema.js";
+// import CompetitionRankingModel from "../models/CompetitionRankingSchema.js";
+
+// /* =========================================================
+//    HELPER: Get Live Leaderboard (DB = single source of truth)
+// ========================================================= */
+// const getCurrentLeaderboard = async (competitionId) => {
+//   try {
+//     const leaderboard = await ParticipantModel.find({ competitionId })
+//       .sort({ puzzlesSolved: -1, timeSpent: 1, score: -1 }) // Sort by puzzles solved, then time, then score
+//       .limit(100) // Increased limit for larger competitions
+//       .populate("userId", "name avatar")
+//       .select("userId username score puzzlesSolved timeSpent status submittedAt isSubmitted joinedAt") // Only select needed fields for performance
+//       .lean();
+
+//     return leaderboard.map((p, index) => ({
+//       rank: index + 1,
+//       userId: p.userId?._id,
+//       username: p.username,
+//       name: p.userId?.name,
+//       avatar: p.userId?.avatar,
+//       score: p.score || 0,
+//       puzzlesSolved: p.puzzlesSolved || 0,
+//       timeSpent: p.timeSpent || 0,
+//       status: p.status || (p.isSubmitted ? "SUBMITTED" : "JOINED"), // Fallback for older records
+//       submittedAt: p.submittedAt || null,
+//     }));
+//   } catch (err) {
+//     console.error("Leaderboard error:", err);
+//     return [];
+//   }
+// };
+
+// /* =========================================================
+//    AUTO START COMPETITION (SERVER CONTROL)
+// ========================================================= */
+// const autoStartCompetition = async (io, competition) => {
+//   const now = new Date();
+
+//   if (competition.status === "UPCOMING" && now >= competition.startTime) {
+//     competition.status = "LIVE";
+//     competition.isActive = true;
+//     await competition.save();
+
+//     console.log(`Competition ${competition._id} AUTO STARTED`);
+
+//     io.to(`competition_${competition._id}`).emit("competitionStarted");
+
+//     // schedule auto end
+//     scheduleCompetitionEnd(io, competition._id, competition.endTime);
+//   }
+// };
+
+// /* =========================================================
+//    HANDLE COMPETITION END (SERVER CONTROL)
+// ========================================================= */
+// const handleCompetitionEnd = async (io, competitionId) => {
+//   try {
+//     const finalLeaderboard = await getCurrentLeaderboard(competitionId);
+
+//     await CompetitionModel.findByIdAndUpdate(competitionId, {
+//       status: "ENDED",
+//       isActive: false,
+//       updatedAt: new Date(),
+//     });
+
+//     await CompetitionRankingModel.deleteMany({ competitionId });
+
+//     if (finalLeaderboard.length) {
+//       await CompetitionRankingModel.insertMany(
+//         finalLeaderboard.map((p) => ({
+//           competitionId,
+//           userId: p.userId,
+//           username: p.username,
+//           finalRank: p.rank,
+//           finalScore: p.score,
+//           puzzlesSolved: p.puzzlesSolved,
+//           totalTime: p.timeSpent,
+//           ENDEDAt: new Date(),
+//         }))
+//       );
+//     }
+
+//     io.to(`competition_${competitionId}`).emit("competitionEnded", {
+//       leaderboard: finalLeaderboard,
+//     });
+
+//     console.log(`Competition ${competitionId} ENDED`);
+//   } catch (err) {
+//     console.error("Competition end error:", err);
+//   }
+// };
+
+// /* =========================================================
+//    SCHEDULE AUTO END
+// ========================================================= */
+// const scheduleCompetitionEnd = (io, competitionId, endTime) => {
+//   const now = new Date();
+//   const delay = endTime.getTime() - now.getTime();
+
+//   if (delay > 0) {
+//     setTimeout(() => {
+//       handleCompetitionEnd(io, competitionId);
+//     }, delay);
+
+//     console.log(
+//       `Competition ${competitionId} scheduled to end in ${Math.round(
+//         delay / 1000
+//       )} seconds`
+//     );
+//   }
+// };
+
+// /* =========================================================
+//    SOCKET AUTH MIDDLEWARE
+// ========================================================= */
+// const authenticateSocket = (socket, next) => {
+//   try {
+//     const token = socket.handshake.auth.token;
+//     if (!token) return next(new Error("Auth token required"));
+
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//     socket.userId = decoded.id;
+//     next();
+//   } catch {
+//     next(new Error("Invalid token"));
+//   }
+// };
+
+// /* =========================================================
+//    INITIALIZE SOCKET HANDLERS
+// ========================================================= */
+// export const initializeSocketHandlers = (io) => {
+//   io.use(authenticateSocket);
+
+//   io.on("connection", (socket) => {
+//     console.log("Socket connected:", socket.id, socket.userId);
+
+//     /* ---------------- JOIN ROOM ---------------- */
+//     socket.on("joinCompetition", async ({ competitionId }) => {
+//       try {
+//         const participant = await ParticipantModel.findOne({
+//           competitionId,
+//           userId: socket.userId,
+//         });
+
+//         if (!participant) {
+//           socket.emit("error", {
+//             message: "Join competition first (REST API)",
+//           });
+//           return;
+//         }
+
+//         socket.join(`competition_${competitionId}`);
+
+//         // Send initial data immediately
+//         const leaderboard = await getCurrentLeaderboard(competitionId);
+
+//         // Send server time for synchronization
+//         socket.emit("competitionJoined", {
+//           serverTime: Date.now(),
+//           leaderboard
+//         });
+
+//         // Also send standard update (redundant but safe for existing clients)
+//         socket.emit("leaderboardUpdate", leaderboard);
+
+//       } catch (err) {
+//         console.error("joinCompetition error:", err);
+//         socket.emit("error", { message: "Join failed" });
+//       }
+//     });
+
+//     /* ---------------- SUBMIT COMPETITION ---------------- */
+//     // Queue for throttled updates
+//     // Map<competitionId, { timeout: Timer, lastUpdate: timestamp }>
+//     const leaderboardUpdateQueue = new Map();
+
+//     const scheduleLeaderboardUpdate = (competitionId) => {
+//       const now = Date.now();
+//       const queueItem = leaderboardUpdateQueue.get(competitionId) || { lastUpdate: 0, timeout: null };
+//       const THROTTLE_MS = 2000; // 2 seconds throttle
+
+//       if (queueItem.timeout) return; // Already scheduled
+
+//       const timeSinceLast = now - queueItem.lastUpdate;
+//       const delay = Math.max(0, THROTTLE_MS - timeSinceLast);
+
+//       queueItem.timeout = setTimeout(async () => {
+//         try {
+//           const leaderboard = await getCurrentLeaderboard(competitionId);
+//           io.to(`competition_${competitionId}`).emit("leaderboardUpdate", leaderboard);
+
+//           // Update tracking
+//           leaderboardUpdateQueue.set(competitionId, {
+//             lastUpdate: Date.now(),
+//             timeout: null
+//           });
+//         } catch (error) {
+//           console.error("Throttled leaderboard update failed:", error);
+//           // Clear timeout so we can try again next time
+//           leaderboardUpdateQueue.set(competitionId, {
+//             lastUpdate: Date.now(), // Treat failed attempt as update to avoid tight loops
+//             timeout: null
+//           });
+//         }
+//       }, delay);
+
+//       leaderboardUpdateQueue.set(competitionId, queueItem);
+//     };
+
+//     socket.on("submitCompetition", async ({ competitionId }) => {
+//       try {
+//         await ParticipantModel.findOneAndUpdate(
+//           { competitionId, userId: socket.userId },
+//           {
+//             status: "SUBMITTED",
+//             submittedAt: new Date(),
+//           }
+//         );
+
+//         // Replaced immediate broadcast with throttled schedule
+//         scheduleLeaderboardUpdate(competitionId);
+
+//       } catch (err) {
+//         console.error("submitCompetition error:", err);
+//       }
+//     });
+
+//     socket.on("disconnect", () => {
+//       console.log("Socket disconnected:", socket.id);
+//     });
+//   });
+
+//   /* =========================================================
+//      SERVER START / RESTART SAFETY
+//   ========================================================= */
+//   const recoverCompetitions = async () => {
+//     try {
+//       const competitions = await CompetitionModel.find({
+//         endTime: { $gt: new Date() },
+//       });
+
+//       for (const comp of competitions) {
+//         if (comp.status === "LIVE") {
+//           scheduleCompetitionEnd(io, comp._id, comp.endTime);
+//         }
+
+//         if (comp.status === "UPCOMING") {
+//           await autoStartCompetition(io, comp);
+//           // Schedule start if not already started
+//           const now = new Date();
+//           const startDelay = comp.startTime.getTime() - now.getTime();
+//           if (startDelay > 0 && comp.status === "UPCOMING") {
+//             setTimeout(async () => {
+//               const updatedComp = await CompetitionModel.findById(comp._id);
+//               if (updatedComp && updatedComp.status === "UPCOMING") {
+//                 await autoStartCompetition(io, updatedComp);
+//               }
+//             }, startDelay);
+//           }
+//         }
+//       }
+
+//       console.log(
+//         `Recovered ${competitions.length} competitions on server start`
+//       );
+//     } catch (err) {
+//       console.error("Recovery error:", err);
+//     }
+//   };
+
+//   recoverCompetitions();
+
+//   // Periodic check for competitions that should start (every 10 seconds)
+//   setInterval(async () => {
+//     try {
+//       const competitions = await CompetitionModel.find({
+//         status: "UPCOMING",
+//         startTime: { $lte: new Date() },
+//         endTime: { $gt: new Date() }
+//       });
+
+//       for (const comp of competitions) {
+//         await autoStartCompetition(io, comp);
+//       }
+//     } catch (err) {
+//       console.error("Auto-start check error:", err);
+//     }
+//   }, 10000); // Check every 10 seconds
+// };
+
+// /* =========================================================
+//    EXPORTS
+// ========================================================= */
+// export {
+//   getCurrentLeaderboard,
+//   handleCompetitionEnd,
+//   scheduleCompetitionEnd,
+// };
+
+// ==================== Redis Implemenatation starts form here onwards
+
 import jwt from "jsonwebtoken";
+import redis from "../config/redis.js";
 import CompetitionModel from "../models/CompetitionSchema.js";
 import ParticipantModel from "../models/ParticipantSchema.js";
 import CompetitionRankingModel from "../models/CompetitionRankingSchema.js";
 
 /* =========================================================
-   HELPER: Get Live Leaderboard (DB = single source of truth)
+   REDIS HELPERS
 ========================================================= */
-const getCurrentLeaderboard = async (competitionId) => {
-  try {
-    const leaderboard = await ParticipantModel.find({ competitionId })
-      .sort({ puzzlesSolved: -1, timeSpent: 1, score: -1 }) // Sort by puzzles solved, then time, then score
-      .limit(100) // Increased limit for larger competitions
-      .populate("userId", "name avatar")
-      .select("userId username score puzzlesSolved timeSpent status submittedAt isSubmitted joinedAt") // Only select needed fields for performance
-      .lean();
+const leaderboardKey = (competitionId) =>
+  `leaderboard:${competitionId}`;
 
-    return leaderboard.map((p, index) => ({
-      rank: index + 1,
-      userId: p.userId?._id,
-      username: p.username,
-      name: p.userId?.name,
-      avatar: p.userId?.avatar,
-      score: p.score || 0,
-      puzzlesSolved: p.puzzlesSolved || 0,
-      timeSpent: p.timeSpent || 0,
-      status: p.status || (p.isSubmitted ? "SUBMITTED" : "JOINED"), // Fallback for older records
-      submittedAt: p.submittedAt || null,
-    }));
-  } catch (err) {
-    console.error("Leaderboard error:", err);
-    return [];
-  }
-};
+const redisScore = (p) =>
+  p.puzzlesSolved * 1_000_000 -
+  p.timeSpent * 1000 +
+  p.score;
 
 /* =========================================================
-   AUTO START COMPETITION (SERVER CONTROL)
+   BUILD LEADERBOARD IN REDIS (ON START / RESTART)
 ========================================================= */
-const autoStartCompetition = async (io, competition) => {
-  const now = new Date();
+const buildRedisLeaderboard = async (competitionId) => {
+  const participants = await ParticipantModel.find({ competitionId }).lean();
+  if (!participants.length) return;
 
-  if (competition.status === "UPCOMING" && now >= competition.startTime) {
-    competition.status = "LIVE";
-    competition.isActive = true;
-    await competition.save();
+  const pipeline = redis.pipeline();
 
-    console.log(`Competition ${competition._id} AUTO STARTED`);
-
-    io.to(`competition_${competition._id}`).emit("competitionStarted");
-
-    // schedule auto end
-    scheduleCompetitionEnd(io, competition._id, competition.endTime);
-  }
-};
-
-/* =========================================================
-   HANDLE COMPETITION END (SERVER CONTROL)
-========================================================= */
-const handleCompetitionEnd = async (io, competitionId) => {
-  try {
-    const finalLeaderboard = await getCurrentLeaderboard(competitionId);
-
-    await CompetitionModel.findByIdAndUpdate(competitionId, {
-      status: "ENDED",
-      isActive: false,
-      updatedAt: new Date(),
-    });
-
-    await CompetitionRankingModel.deleteMany({ competitionId });
-
-    if (finalLeaderboard.length) {
-      await CompetitionRankingModel.insertMany(
-        finalLeaderboard.map((p) => ({
-          competitionId,
-          userId: p.userId,
-          username: p.username,
-          finalRank: p.rank,
-          finalScore: p.score,
-          puzzlesSolved: p.puzzlesSolved,
-          totalTime: p.timeSpent,
-          ENDEDAt: new Date(),
-        }))
-      );
-    }
-
-    io.to(`competition_${competitionId}`).emit("competitionEnded", {
-      leaderboard: finalLeaderboard,
-    });
-
-    console.log(`Competition ${competitionId} ENDED`);
-  } catch (err) {
-    console.error("Competition end error:", err);
-  }
-};
-
-/* =========================================================
-   SCHEDULE AUTO END
-========================================================= */
-const scheduleCompetitionEnd = (io, competitionId, endTime) => {
-  const now = new Date();
-  const delay = endTime.getTime() - now.getTime();
-
-  if (delay > 0) {
-    setTimeout(() => {
-      handleCompetitionEnd(io, competitionId);
-    }, delay);
-
-    console.log(
-      `Competition ${competitionId} scheduled to end in ${Math.round(
-        delay / 1000
-      )} seconds`
+  for (const p of participants) {
+    pipeline.zadd(
+      leaderboardKey(competitionId),
+      redisScore(p),
+      p.userId.toString()
     );
   }
+
+  await pipeline.exec();
 };
 
 /* =========================================================
-   SOCKET AUTH MIDDLEWARE
+   GET LEADERBOARD (REDIS → DB MAP)
+========================================================= */
+const getCurrentLeaderboard = async (competitionId, limit = 100) => {
+  const userIds = await redis.zrevrange(
+    leaderboardKey(competitionId),
+    0,
+    limit - 1
+  );
+
+  if (!userIds.length) return [];
+
+  const participants = await ParticipantModel.find({
+    competitionId,
+    userId: { $in: userIds },
+  })
+    .populate("userId", "name avatar")
+    .lean();
+
+  const map = new Map();
+  participants.forEach((p) =>
+    map.set(p.userId.toString(), p)
+  );
+
+  return userIds
+    .map((id, index) => {
+      const p = map.get(id);
+      if (!p) return null;
+
+      return {
+        rank: index + 1,
+        userId: id,
+        username: p.username,
+        name: p.userId?.name,
+        avatar: p.userId?.avatar,
+        score: p.score,
+        puzzlesSolved: p.puzzlesSolved,
+        timeSpent: p.timeSpent,
+        status: p.status,
+        submittedAt: p.submittedAt,
+      };
+    })
+    .filter(Boolean);
+};
+
+/* =========================================================
+   SOCKET AUTH
 ========================================================= */
 const authenticateSocket = (socket, next) => {
   try {
     const token = socket.handshake.auth.token;
-    if (!token) return next(new Error("Auth token required"));
+    if (!token) throw new Error();
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     socket.userId = decoded.id;
     next();
   } catch {
-    next(new Error("Invalid token"));
+    next(new Error("Authentication failed"));
   }
 };
 
 /* =========================================================
-   INITIALIZE SOCKET HANDLERS
+   AUTO START COMPETITION
+========================================================= */
+const autoStartCompetition = async (io, competition) => {
+  const now = new Date();
+  if (competition.status !== "UPCOMING") return;
+  if (now < competition.startTime) return;
+
+  competition.status = "LIVE";
+  competition.isActive = true;
+  await competition.save();
+
+  await buildRedisLeaderboard(competition._id);
+
+  io.to(`competition_${competition._id}`).emit("competitionStarted");
+
+  scheduleCompetitionEnd(io, competition._id, competition.endTime);
+};
+
+/* =========================================================
+   AUTO END COMPETITION
+========================================================= */
+const handleCompetitionEnd = async (io, competitionId) => {
+  const leaderboard = await getCurrentLeaderboard(competitionId);
+
+  await CompetitionModel.findByIdAndUpdate(competitionId, {
+    status: "ENDED",
+    isActive: false,
+    updatedAt: new Date(),
+  });
+
+  await CompetitionRankingModel.deleteMany({ competitionId });
+
+  if (leaderboard.length) {
+    await CompetitionRankingModel.insertMany(
+      leaderboard.map((p) => ({
+        competitionId,
+        userId: p.userId,
+        username: p.username,
+        finalRank: p.rank,
+        finalScore: p.score,
+        puzzlesSolved: p.puzzlesSolved,
+        totalTime: p.timeSpent,
+        ENDEDAt: new Date(),
+      }))
+    );
+  }
+
+  await redis.del(leaderboardKey(competitionId));
+
+  io.to(`competition_${competitionId}`).emit("competitionEnded", {
+    leaderboard,
+  });
+};
+
+/* =========================================================
+   SCHEDULE END
+========================================================= */
+const scheduleCompetitionEnd = (io, competitionId, endTime) => {
+  const delay = endTime.getTime() - Date.now();
+  if (delay <= 0) return;
+
+  setTimeout(() => {
+    handleCompetitionEnd(io, competitionId);
+  }, delay);
+};
+
+/* =========================================================
+   SOCKET INITIALIZER
 ========================================================= */
 export const initializeSocketHandlers = (io) => {
   io.use(authenticateSocket);
 
   io.on("connection", (socket) => {
-    console.log("Socket connected:", socket.id, socket.userId);
+    console.log("🔌 Connected:", socket.userId);
 
-    /* ---------------- JOIN ROOM ---------------- */
+    /* ---------- JOIN ---------- */
     socket.on("joinCompetition", async ({ competitionId }) => {
       try {
         const participant = await ParticipantModel.findOne({
@@ -147,149 +486,92 @@ export const initializeSocketHandlers = (io) => {
         });
 
         if (!participant) {
-          socket.emit("error", {
-            message: "Join competition first (REST API)",
+          return socket.emit("error", {
+            message: "Join competition via API first",
           });
-          return;
         }
 
         socket.join(`competition_${competitionId}`);
 
-        // Send initial data immediately
         const leaderboard = await getCurrentLeaderboard(competitionId);
 
-        // Send server time for synchronization
         socket.emit("competitionJoined", {
           serverTime: Date.now(),
-          leaderboard
+          leaderboard,
         });
-
-        // Also send standard update (redundant but safe for existing clients)
-        socket.emit("leaderboardUpdate", leaderboard);
-
       } catch (err) {
-        console.error("joinCompetition error:", err);
-        socket.emit("error", { message: "Join failed" });
+        console.error("joinCompetition:", err);
       }
     });
 
-    /* ---------------- SUBMIT COMPETITION ---------------- */
-    // Queue for throttled updates
-    // Map<competitionId, { timeout: Timer, lastUpdate: timestamp }>
-    const leaderboardUpdateQueue = new Map();
-
-    const scheduleLeaderboardUpdate = (competitionId) => {
-      const now = Date.now();
-      const queueItem = leaderboardUpdateQueue.get(competitionId) || { lastUpdate: 0, timeout: null };
-      const THROTTLE_MS = 2000; // 2 seconds throttle
-
-      if (queueItem.timeout) return; // Already scheduled
-
-      const timeSinceLast = now - queueItem.lastUpdate;
-      const delay = Math.max(0, THROTTLE_MS - timeSinceLast);
-
-      queueItem.timeout = setTimeout(async () => {
-        try {
-          const leaderboard = await getCurrentLeaderboard(competitionId);
-          io.to(`competition_${competitionId}`).emit("leaderboardUpdate", leaderboard);
-
-          // Update tracking
-          leaderboardUpdateQueue.set(competitionId, {
-            lastUpdate: Date.now(),
-            timeout: null
-          });
-        } catch (error) {
-          console.error("Throttled leaderboard update failed:", error);
-          // Clear timeout so we can try again next time
-          leaderboardUpdateQueue.set(competitionId, {
-            lastUpdate: Date.now(), // Treat failed attempt as update to avoid tight loops
-            timeout: null
-          });
-        }
-      }, delay);
-
-      leaderboardUpdateQueue.set(competitionId, queueItem);
-    };
-
+    /* ---------- SUBMIT ---------- */
     socket.on("submitCompetition", async ({ competitionId }) => {
       try {
-        await ParticipantModel.findOneAndUpdate(
+        const participant = await ParticipantModel.findOneAndUpdate(
           { competitionId, userId: socket.userId },
           {
             status: "SUBMITTED",
             submittedAt: new Date(),
-          }
+          },
+          { new: true }
         );
 
-        // Replaced immediate broadcast with throttled schedule
-        scheduleLeaderboardUpdate(competitionId);
+        await redis.zadd(
+          leaderboardKey(competitionId),
+          redisScore(participant),
+          participant.userId.toString()
+        );
 
+        const leaderboard = await getCurrentLeaderboard(competitionId);
+        io.to(`competition_${competitionId}`).emit(
+          "leaderboardUpdate",
+          leaderboard
+        );
       } catch (err) {
-        console.error("submitCompetition error:", err);
+        console.error("submitCompetition:", err);
       }
     });
 
     socket.on("disconnect", () => {
-      console.log("Socket disconnected:", socket.id);
+      console.log("❌ Disconnected:", socket.userId);
     });
   });
 
   /* =========================================================
-     SERVER START / RESTART SAFETY
+     SERVER RESTART RECOVERY
   ========================================================= */
-  const recoverCompetitions = async () => {
-    try {
-      const competitions = await CompetitionModel.find({
-        endTime: { $gt: new Date() },
-      });
+  const recover = async () => {
+    const competitions = await CompetitionModel.find({
+      endTime: { $gt: new Date() },
+    });
 
-      for (const comp of competitions) {
-        if (comp.status === "LIVE") {
-          scheduleCompetitionEnd(io, comp._id, comp.endTime);
-        }
-
-        if (comp.status === "UPCOMING") {
-          await autoStartCompetition(io, comp);
-          // Schedule start if not already started
-          const now = new Date();
-          const startDelay = comp.startTime.getTime() - now.getTime();
-          if (startDelay > 0 && comp.status === "UPCOMING") {
-            setTimeout(async () => {
-              const updatedComp = await CompetitionModel.findById(comp._id);
-              if (updatedComp && updatedComp.status === "UPCOMING") {
-                await autoStartCompetition(io, updatedComp);
-              }
-            }, startDelay);
-          }
-        }
+    for (const comp of competitions) {
+      if (comp.status === "LIVE") {
+        await buildRedisLeaderboard(comp._id);
+        scheduleCompetitionEnd(io, comp._id, comp.endTime);
       }
 
-      console.log(
-        `Recovered ${competitions.length} competitions on server start`
-      );
-    } catch (err) {
-      console.error("Recovery error:", err);
+      if (comp.status === "UPCOMING") {
+        autoStartCompetition(io, comp);
+      }
     }
+
+    console.log(`♻️ Recovered ${competitions.length} competitions`);
   };
 
-  recoverCompetitions();
+  recover();
 
-  // Periodic check for competitions that should start (every 10 seconds)
   setInterval(async () => {
-    try {
-      const competitions = await CompetitionModel.find({
-        status: "UPCOMING",
-        startTime: { $lte: new Date() },
-        endTime: { $gt: new Date() }
-      });
+    const comps = await CompetitionModel.find({
+      status: "UPCOMING",
+      startTime: { $lte: new Date() },
+      endTime: { $gt: new Date() },
+    });
 
-      for (const comp of competitions) {
-        await autoStartCompetition(io, comp);
-      }
-    } catch (err) {
-      console.error("Auto-start check error:", err);
+    for (const c of comps) {
+      await autoStartCompetition(io, c);
     }
-  }, 10000); // Check every 10 seconds
+  }, 10000);
 };
 
 /* =========================================================
@@ -300,3 +582,4 @@ export {
   handleCompetitionEnd,
   scheduleCompetitionEnd,
 };
+
