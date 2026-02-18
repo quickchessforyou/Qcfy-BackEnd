@@ -6,6 +6,8 @@ const UserSchema = new mongoose.Schema({
     email: { type: String, unique: true },
     password: String,
     avatar: String,
+    googleId: { type: String, sparse: true },
+    authProvider: { type: String, enum: ['local', 'google'], default: 'local' },
 
     rating: { type: Number, default: 1200 },
     wins: { type: Number, default: 0 },

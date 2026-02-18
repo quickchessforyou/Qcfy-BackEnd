@@ -611,5 +611,91 @@ const deleteUserById = async (req, res) => {
   }
 };
 
-export { register, login, sendOTP, verifyOTP, resetPassword, sendSignupOTP, verifySignupOTP, getAllPuzzles, getCurrentUser, updateUser, getAllUsers, deleteUserById }
+// Google OAuth authentication
+const googleAuth = async (req, res) => {
+  try {
+    const { credential } = req.body;
+
+    if (!credential) {
+      return res.status(400).json({ message: "Google credential is required" });
+    }
+
+    // Verify Google ID token using Google's token verification endpoint
+    const response = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`
+    );
+
+    if (!response.ok) {
+      return res.status(401).json({ message: "Invalid Google token" });
+    }
+
+    const googleUser = await response.json();
+
+    // Verify the token is for our app
+    if (googleUser.aud !== process.env.GOOGLE_CLIENT_ID) {
+      return res.status(401).json({ message: "Token not intended for this app" });
+    }
+
+    const { sub: googleId, email, name, picture } = googleUser;
+
+    // Try to find existing user by Google ID or email
+    let user = await User.findOne({
+      $or: [{ googleId }, { email }]
+    });
+
+    if (user) {
+      // If user exists but doesn't have googleId, link the account
+      if (!user.googleId) {
+        user.googleId = googleId;
+        user.authProvider = 'google';
+        if (!user.avatar && picture) {
+          user.avatar = picture;
+        }
+        await user.save();
+      }
+    } else {
+      // Create new user
+      // Generate a unique username from email
+      let baseUsername = email.split('@')[0];
+      let username = baseUsername;
+      let counter = 1;
+
+      // Ensure unique username
+      while (await User.findOne({ username })) {
+        username = `${baseUsername}${counter}`;
+        counter++;
+      }
+
+      user = await User.create({
+        name: name || email.split('@')[0],
+        email,
+        username,
+        googleId,
+        authProvider: 'google',
+        avatar: picture || ''
+      });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    return res.status(200).json({
+      message: "Google authentication successful",
+      user,
+      token
+    });
+  } catch (error) {
+    console.error("Google auth error:", error);
+    return res.status(500).json({
+      message: "Internal server error",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+export { register, login, sendOTP, verifyOTP, resetPassword, sendSignupOTP, verifySignupOTP, getAllPuzzles, getCurrentUser, updateUser, getAllUsers, deleteUserById, googleAuth }
 

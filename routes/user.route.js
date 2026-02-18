@@ -2,7 +2,7 @@ import express from "express";
 const router = express.Router();
 //import { isAuthenticated,allowedRoles } from "../middleware/auth.middleware.js";
 import upload from "../middleware/multer.middleware.js";
-import { register, login, sendOTP, verifyOTP, resetPassword, sendSignupOTP, verifySignupOTP, getAllPuzzles, getCurrentUser, updateUser } from "../controllers/user.controller.js";
+import { register, login, sendOTP, verifyOTP, resetPassword, sendSignupOTP, verifySignupOTP, getAllPuzzles, getCurrentUser, updateUser, googleAuth } from "../controllers/user.controller.js";
 
 
 router.post("/register", upload.single("avatar"), register);
@@ -11,6 +11,7 @@ router.post("/send-otp", sendOTP);
 router.post("/verify-otp", verifyOTP);
 router.post("/send-signup-otp", sendSignupOTP);
 router.post("/verify-signup-otp", verifySignupOTP);
+router.post("/google-auth", googleAuth);
 
 router.get("/get-puzzles", getAllPuzzles);
 

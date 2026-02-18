@@ -310,6 +310,13 @@ import ParticipantModel from "../models/ParticipantSchema.js";
 import CompetitionRankingModel from "../models/CompetitionRankingSchema.js";
 
 /* =========================================================
+   MODULE STATE
+========================================================= */
+let _io = null; // Store io reference for use in exported helpers
+
+const getIO = () => _io;
+
+/* =========================================================
    REDIS HELPERS
 ========================================================= */
 const leaderboardKey = (competitionId) =>
@@ -344,14 +351,53 @@ const buildRedisLeaderboard = async (competitionId) => {
    GET LEADERBOARD (REDIS → DB MAP)
 ========================================================= */
 const getCurrentLeaderboard = async (competitionId, limit = 100) => {
-  const userIds = await redis.zrevrange(
+  let userIds = await redis.zrevrange(
     leaderboardKey(competitionId),
     0,
     limit - 1
   );
 
-  if (!userIds.length) return [];
+  // ---- DB FALLBACK if Redis is empty ----
+  // This can happen if the backend was restarted and buildRedisLeaderboard
+  // wasn't called, or if participants joined before the competition was "LIVE".
+  if (!userIds.length) {
+    console.log(`[Leaderboard] Redis empty for ${competitionId}, falling back to DB`);
 
+    const participants = await ParticipantModel.find({ competitionId })
+      .sort({ puzzlesSolved: -1, timeSpent: 1, score: -1 })
+      .limit(limit)
+      .populate("userId", "name avatar")
+      .lean();
+
+    if (!participants.length) return [];
+
+    // Rebuild Redis for future calls
+    const pipeline = redis.pipeline();
+    for (const p of participants) {
+      pipeline.zadd(
+        leaderboardKey(competitionId),
+        redisScore(p),
+        p.userId._id.toString()
+      );
+    }
+    await pipeline.exec();
+    console.log(`[Leaderboard] Rebuilt Redis for ${competitionId} with ${participants.length} participants`);
+
+    return participants.map((p, index) => ({
+      rank: index + 1,
+      userId: p.userId?._id?.toString() || p.userId.toString(),
+      username: p.username,
+      name: p.userId?.name,
+      avatar: p.userId?.avatar,
+      score: p.score || 0,
+      puzzlesSolved: p.puzzlesSolved || 0,
+      timeSpent: p.timeSpent || 0,
+      status: p.status,
+      submittedAt: p.submittedAt,
+    }));
+  }
+
+  // ---- Normal Redis path ----
   const participants = await ParticipantModel.find({
     competitionId,
     userId: { $in: userIds },
@@ -361,7 +407,7 @@ const getCurrentLeaderboard = async (competitionId, limit = 100) => {
 
   const map = new Map();
   participants.forEach((p) =>
-    map.set(p.userId.toString(), p)
+    map.set(p.userId._id.toString(), p)
   );
 
   return userIds
@@ -472,6 +518,7 @@ const scheduleCompetitionEnd = (io, competitionId, endTime) => {
    SOCKET INITIALIZER
 ========================================================= */
 export const initializeSocketHandlers = (io) => {
+  _io = io; // Store for use in exported helpers
   io.use(authenticateSocket);
 
   io.on("connection", (socket) => {
@@ -532,6 +579,17 @@ export const initializeSocketHandlers = (io) => {
       }
     });
 
+    /* ---------- REFRESH LEADERBOARD ---------- */
+    socket.on("refreshLeaderboard", async ({ competitionId }) => {
+      try {
+        if (!competitionId) return;
+        const leaderboard = await getCurrentLeaderboard(competitionId);
+        socket.emit("leaderboardUpdate", leaderboard);
+      } catch (err) {
+        console.error("refreshLeaderboard:", err);
+      }
+    });
+
     socket.on("disconnect", () => {
       console.log("❌ Disconnected:", socket.userId);
     });
@@ -575,11 +633,35 @@ export const initializeSocketHandlers = (io) => {
 };
 
 /* =========================================================
+   ADD PARTICIPANT TO LEADERBOARD
+========================================================= */
+export const addParticipantToLeaderboard = async (competitionId, participant) => {
+  await redis.zadd(
+    leaderboardKey(competitionId),
+    redisScore(participant),
+    participant.userId.toString()
+  );
+
+  // Broadcast updated leaderboard to all clients in the room
+  if (_io) {
+    try {
+      const leaderboard = await getCurrentLeaderboard(competitionId);
+      _io.to(`competition_${competitionId}`).emit("leaderboardUpdate", leaderboard);
+    } catch (err) {
+      console.error("addParticipantToLeaderboard broadcast error:", err);
+    }
+  }
+};
+
+/* =========================================================
    EXPORTS
 ========================================================= */
 export {
   getCurrentLeaderboard,
   handleCompetitionEnd,
   scheduleCompetitionEnd,
+  getIO,
+  leaderboardKey,
+  redisScore,
 };
 

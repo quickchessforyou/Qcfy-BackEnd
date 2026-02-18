@@ -5,8 +5,9 @@ import PuzzleAttemptModel from "../models/PuzzleAttemptSchema.js";
 import PuzzleModel from "../models/PuzzleSchema.js";
 import UserModel from "../models/UserSchema.js";
 import { io } from "../index.js";
+import redis from "../config/redis.js";
 
-import { scheduleCompetitionEnd, getCurrentLeaderboard, handleCompetitionEnd } from "../utils/socketHandlers.js";
+import { scheduleCompetitionEnd, getCurrentLeaderboard, handleCompetitionEnd, addParticipantToLeaderboard, getIO, leaderboardKey, redisScore } from "../utils/socketHandlers.js";
 
 // Participate in live competition (REST API validation)
 export const participateInCompetition = async (req, res) => {
@@ -89,6 +90,30 @@ export const participateInCompetition = async (req, res) => {
 
     if (existingParticipant) {
       console.log('User already participated, returning existing data');
+
+      // Ensure they are in Redis (recover from potential sync issues)
+      if (competition.status === 'LIVE' || competition.status === 'live') {
+        try {
+          await addParticipantToLeaderboard(competition._id, existingParticipant);
+        } catch (redisErr) {
+          console.error('Redis recovery error:', redisErr);
+        }
+      }
+
+      // Emit participantJoined event so other players see them immediately
+      try {
+        const roomName = `competition_${competitionId}`;
+        io.to(roomName).emit('participantJoined', {
+          username: existingParticipant.username,
+          userId: existingParticipant.userId.toString(),
+        });
+        // Also send fresh leaderboard to all
+        const leaderboard = await getCurrentLeaderboard(competitionId);
+        io.to(roomName).emit('leaderboardUpdate', leaderboard);
+      } catch (emitErr) {
+        console.error('Socket emit on re-join error:', emitErr);
+      }
+
       return res.json({
         success: true,
         message: 'Already participating',
@@ -132,8 +157,32 @@ export const participateInCompetition = async (req, res) => {
     await participant.save();
     console.log('Participant created successfully:', participant._id);
 
+    // Sync with Redis if competition is live
+    if (competition.status === 'LIVE' || competition.status === 'live') {
+      try {
+        await addParticipantToLeaderboard(competition._id, participant);
+        console.log('Participant added to Redis leaderboard');
+      } catch (redisErr) {
+        console.error('Redis sync error:', redisErr);
+      }
+    }
+
     // Populate puzzles for response
     await competition.populate('puzzles');
+
+    // Emit participantJoined + leaderboardUpdate for all connected clients
+    try {
+      const roomName = `competition_${competitionId}`;
+      io.to(roomName).emit('participantJoined', {
+        username: participant.username,
+        userId: participant.userId.toString(),
+      });
+      const leaderboard = await getCurrentLeaderboard(competitionId);
+      io.to(roomName).emit('leaderboardUpdate', leaderboard);
+      console.log('Emitted participantJoined + leaderboardUpdate to room:', roomName);
+    } catch (emitErr) {
+      console.error('Socket emit on join error:', emitErr);
+    }
 
     // Return competition details
     res.json({
@@ -147,7 +196,7 @@ export const participateInCompetition = async (req, res) => {
         endTime: competition.endTime,
         duration: competition.duration,
         puzzles: competition.puzzles,
-        maxScore: competition.puzzles.length * 10, // Assuming max 10 points per puzzle
+        maxScore: competition.puzzles.length * 10,
         status: competition.status,
         participantCount: await ParticipantModel.countDocuments({ competitionId })
       }
@@ -395,7 +444,14 @@ export const submitPuzzleSolution = async (req, res) => {
         { new: true }
       );
 
-      /* ================= LEADERBOARD UPDATE ================= */
+      /* ================= UPDATE REDIS + BROADCAST ================= */
+      // Sync Redis sorted set with fresh score BEFORE reading leaderboard
+      await redis.zadd(
+        leaderboardKey(competitionId),
+        redisScore(updatedParticipant),
+        userId.toString()
+      );
+
       const leaderboard = await getCurrentLeaderboard(competitionId);
       io.to(`competition_${competitionId}`).emit("leaderboardUpdate", leaderboard);
 
