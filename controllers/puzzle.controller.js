@@ -131,7 +131,7 @@ export const validateSolutionMoves = (fen, moves = []) => {
 
 const createPuzzle = async (req, res) => {
   try {
-    const { title, fen, difficulty, solutionMoves, description, category, type, kidsConfig, level, rating } = req.body;
+    const { title, fen, difficulty, solutionMoves, description, category, type, kidsConfig, level, rating, firstMoveBy } = req.body;
 
     // --- REQUIRED FIELDS CHECK ---
     const missingFields = [];
@@ -194,12 +194,11 @@ const createPuzzle = async (req, res) => {
       description,
       category,
       createdBy: req.admin._id,
-      category,
-      createdBy: req.admin._id,
       type: type || 'normal',
       source: 'manual',
       level: level || 1,
-      rating: rating || 400
+      rating: rating || 400,
+      firstMoveBy: firstMoveBy === 'computer' ? 'computer' : 'human'
     };
 
     if (solutionMoves) puzzleData.solutionMoves = solutionMoves;
@@ -555,6 +554,8 @@ const bulkCreatePuzzles = async (req, res) => {
         level: level || 1, // Fallback to 1 if still missing (shouldn't be if logic holds, but safe)
         rating: rating || 400,
         kidsConfig: puzzle.kidsConfig,
+        initialMove: undefined,
+        firstMoveBy: puzzle.firstMoveBy === 'computer' ? 'computer' : 'human',
         createdBy: req.admin._id,
         source: 'manual',
         createdAt: new Date()
@@ -592,7 +593,8 @@ const exportPuzzles = async (req, res) => {
       type: 1,
       level: 1,
       rating: 1,
-      kidsConfig: 1
+      kidsConfig: 1,
+      firstMoveBy: 1
     });
 
     res.status(200).json(puzzles);
@@ -602,12 +604,27 @@ const exportPuzzles = async (req, res) => {
   }
 };
 
+// Delete all puzzles
+const deleteAllPuzzles = async (req, res) => {
+  try {
+    const result = await PuzzleModel.deleteMany({});
+    res.status(200).json({
+      message: `Successfully deleted ${result.deletedCount} puzzles`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error("Error deleting all puzzles:", error);
+    res.status(500).json({ message: "Failed to delete all puzzles" });
+  }
+};
+
 export {
   createPuzzle,
   getPuzzles,
   getPuzzleById,
   updatePuzzle,
   deletePuzzle,
+  deleteAllPuzzles,
   getPuzzlesWithFilters,
   getPuzzleStats,
   getRandomPuzzle,

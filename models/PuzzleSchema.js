@@ -45,6 +45,9 @@ const PuzzleSchema = new mongoose.Schema({
     default: "Tactics"
   },
 
+  // Who plays the first solution move: 'human' (default) or 'computer'
+  firstMoveBy: { type: String, enum: ["human", "computer"], default: "human" },
+
   createdAt: { type: Date, default: Date.now }
 });
 

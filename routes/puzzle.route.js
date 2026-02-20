@@ -5,6 +5,7 @@ import {
   getPuzzleById,
   updatePuzzle,
   deletePuzzle,
+  deleteAllPuzzles,
   getPuzzlesWithFilters,
   getPuzzleStats,
   getRandomPuzzle,
@@ -22,6 +23,7 @@ router.get("/export-puzzles", isAdmin, exportPuzzles);
 router.get("/get-puzzles", getPuzzles);
 router.get("/get-puzzle/:id", getPuzzleById);
 router.put("/update-puzzle/:id", isAdmin, updatePuzzle);
+router.delete("/delete-all-puzzles", isAdmin, deleteAllPuzzles);
 router.delete("/delete-puzzle/:id", isAdmin, deletePuzzle);
 
 // Lichess import routes
