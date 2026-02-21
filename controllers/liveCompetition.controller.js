@@ -196,6 +196,7 @@ export const participateInCompetition = async (req, res) => {
         endTime: competition.endTime,
         duration: competition.duration,
         puzzles: competition.puzzles,
+        chapters: competition.chapters || [],
         maxScore: competition.puzzles.length * 10,
         status: competition.status,
         participantCount: await ParticipantModel.countDocuments({ competitionId })
@@ -727,7 +728,8 @@ export const getCompetitionPuzzles = async (req, res) => {
         status: competition.status,
         startTime: competition.startTime,
         endTime: competition.endTime,
-        totalPuzzles: competition.puzzles.length // Add total puzzle count
+        totalPuzzles: competition.puzzles.length,
+        chapters: competition.chapters || []
       },
       puzzles: puzzlesWithStatus,
       participant: {

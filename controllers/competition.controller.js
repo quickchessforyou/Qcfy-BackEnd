@@ -4,7 +4,7 @@ import PuzzleModel from "../models/PuzzleSchema.js";
 // Create a new competition
 export const createCompetition = async (req, res) => {
   try {
-    const { name, description, startTime, duration, puzzles, maxParticipants, accessCode } =
+    const { name, description, startTime, duration, puzzles, maxParticipants, accessCode, chapters } =
       req.body;
     console.log(req.body);
 
@@ -51,6 +51,7 @@ export const createCompetition = async (req, res) => {
       endTime: end,
       duration: durationInMinutes,
       puzzles: puzzles || [],
+      chapters: chapters || [],
       maxParticipants,
       status,
       isActive,
@@ -277,7 +278,7 @@ export const updateCompetition = async (req, res) => {
     updates.updatedAt = new Date();
 
     // Only assign valid fields to prevent schema validation errors
-    const allowedFields = ['name', 'description', 'startTime', 'endTime', 'duration', 'puzzles', 'maxParticipants', 'status', 'isActive', 'accessCode', 'updatedAt'];
+    const allowedFields = ['name', 'description', 'startTime', 'endTime', 'duration', 'puzzles', 'chapters', 'maxParticipants', 'status', 'isActive', 'accessCode', 'updatedAt'];
     const validUpdates = {};
     allowedFields.forEach(field => {
       if (updates[field] !== undefined) {

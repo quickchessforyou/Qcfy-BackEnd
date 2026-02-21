@@ -15,6 +15,12 @@ const CompetitionSchema = new mongoose.Schema({
     ref: "Puzzle"
   }],
 
+  // Chapters — organizes puzzles into named groups
+  chapters: [{
+    name: { type: String, required: true },
+    puzzleIds: [{ type: String }] // Store as strings (puzzle _id hex strings)
+  }],
+
   // Competition settings
   maxParticipants: { type: Number },
   isActive: { type: Boolean, default: false },
