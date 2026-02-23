@@ -385,7 +385,7 @@ const getCurrentLeaderboard = async (competitionId, limit = 100) => {
 
     return participants.map((p, index) => ({
       rank: index + 1,
-      userId: p.userId?._id?.toString() || p.userId.toString(),
+      userId: p.userId?._id?.toString() || (p.userId ? p.userId.toString() : null),
       username: p.username,
       name: p.userId?.name,
       avatar: p.userId?.avatar,
@@ -406,9 +406,12 @@ const getCurrentLeaderboard = async (competitionId, limit = 100) => {
     .lean();
 
   const map = new Map();
-  participants.forEach((p) =>
-    map.set(p.userId._id.toString(), p)
-  );
+  participants.forEach((p) => {
+    if (p.userId) {
+      const uid = p.userId._id ? p.userId._id.toString() : p.userId.toString();
+      map.set(uid, p);
+    }
+  });
 
   return userIds
     .map((id, index) => {

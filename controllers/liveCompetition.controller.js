@@ -875,7 +875,7 @@ export const getLobbyState = async (req, res) => {
 
     // 3. Competition state - check time-based status
     const now = new Date();
-    let competitionState = competition.status.toUpperCase();
+    let competitionState = competition.status ? competition.status.toUpperCase() : "UPCOMING";
 
     // Update status based on current time if needed
     if (competitionState === "UPCOMING" && now >= competition.startTime && now <= competition.endTime) {
@@ -914,7 +914,7 @@ export const getLobbyState = async (req, res) => {
         startTime: competition.startTime,
         endTime: competition.endTime,
         duration: competition.duration,
-        totalPuzzles: competition.puzzles.length, // Add total puzzle count
+        totalPuzzles: Array.isArray(competition.puzzles) ? competition.puzzles.length : 0, // Add total puzzle count
         requiresAccessCode: !!(competition.accessCode && competition.accessCode.trim() !== '')
       },
       competitionState,
