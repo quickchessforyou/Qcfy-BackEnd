@@ -447,11 +447,15 @@ export const submitPuzzleSolution = async (req, res) => {
 
       /* ================= UPDATE REDIS + BROADCAST ================= */
       // Sync Redis sorted set with fresh score BEFORE reading leaderboard
-      await redis.zadd(
-        leaderboardKey(competitionId),
-        redisScore(updatedParticipant),
-        userId.toString()
-      );
+      try {
+        await redis.zadd(
+          leaderboardKey(competitionId),
+          redisScore(updatedParticipant),
+          userId.toString()
+        );
+      } catch (redisError) {
+        console.error(`[Leaderboard] Redis zadd error in submit:`, redisError);
+      }
 
       const leaderboard = await getCurrentLeaderboard(competitionId);
       io.to(`competition_${competitionId}`).emit("leaderboardUpdate", leaderboard);
