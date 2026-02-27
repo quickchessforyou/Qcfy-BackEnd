@@ -10,7 +10,8 @@ import {
   getPuzzleStats,
   getRandomPuzzle,
   bulkCreatePuzzles,
-  exportPuzzles
+  exportPuzzles,
+  deleteMultiplePuzzles
 } from "../controllers/puzzle.controller.js";
 import isAdmin from "../middleware/admin.middleware.js";
 
@@ -24,6 +25,7 @@ router.get("/get-puzzles", getPuzzles);
 router.get("/get-puzzle/:id", getPuzzleById);
 router.put("/update-puzzle/:id", isAdmin, updatePuzzle);
 router.delete("/delete-all-puzzles", isAdmin, deleteAllPuzzles);
+router.post("/delete-multiple-puzzles", isAdmin, deleteMultiplePuzzles);
 router.delete("/delete-puzzle/:id", isAdmin, deletePuzzle);
 
 // Lichess import routes
