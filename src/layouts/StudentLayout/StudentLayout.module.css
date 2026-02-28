@@ -1,0 +1,638 @@
+/* StudentLayout.module.css */
+/* Chess-Themed Gaming Sidebar */
+
+/* --- BASE CONTAINER --- */
+.container {
+    display: flex;
+    min-height: 100vh;
+    transition: background-color 0.3s ease;
+}
+
+/* Light Mode Container - Clean White */
+[data-theme="light"] .container {
+    background-color: #fafafa;
+    color: #2d2520;
+}
+
+/* Dark Mode Container - Deep Black */
+[data-theme="dark"] .container {
+    background-color: #0a0a0a;
+    color: #f5f0eb;
+}
+
+/* --- DESKTOP SIDEBAR --- */
+.sidebar {
+    width: 260px;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 50;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
+}
+
+/* Light Mode Sidebar - Pure White with Chess Gold Accents */
+[data-theme="light"] .sidebar {
+    background: #ffffff;
+    border-right: 2px solid #e5d5c5;
+    box-shadow: 4px 0 16px rgba(181, 136, 99, 0.08);
+}
+
+/* Dark Mode Sidebar - Deep Black with Chess Gold Accents */
+[data-theme="dark"] .sidebar {
+    background: #0f0f0f;
+    border-right: 2px solid #3a3028;
+    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.5);
+}
+
+.sidebar.collapsed {
+    width: 72px;
+}
+
+/* --- LOGO SECTION --- */
+.logoSection {
+    height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 1rem;
+    transition: border-color 0.3s ease;
+}
+
+[data-theme="light"] .logoSection {
+    border-bottom: 2px solid #e5d5c5;
+}
+
+[data-theme="dark"] .logoSection {
+    border-bottom: 2px solid #3a3028;
+}
+
+.logoImg {
+    height: 60px;
+    object-fit: contain;
+    transition: transform 0.3s ease;
+    filter: drop-shadow(0 2px 4px rgba(181, 136, 99, 0.2));
+}
+
+.logoImg:hover {
+    transform: scale(1.05);
+}
+
+.toggleBtn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    margin-left: auto;
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+[data-theme="light"] .toggleBtn {
+    color: #8b6242;
+}
+
+[data-theme="light"] .toggleBtn:hover {
+    background: #f5f0eb;
+    color: #b58863;
+}
+
+[data-theme="dark"] .toggleBtn {
+    color: #d4a373;
+}
+
+[data-theme="dark"] .toggleBtn:hover {
+    background: #1a1a1a;
+    color: #b58863;
+}
+
+/* --- NAVIGATION LINKS --- */
+.navLinks {
+    flex: 1;
+    padding: 1rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    overflow-y: auto;
+}
+
+/* Custom Scrollbar - Chess Gold */
+.navLinks::-webkit-scrollbar {
+    width: 6px;
+}
+
+[data-theme="light"] .navLinks::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+[data-theme="light"] .navLinks::-webkit-scrollbar-thumb {
+    background: #e5d5c5;
+    border-radius: 3px;
+}
+
+[data-theme="light"] .navLinks::-webkit-scrollbar-thumb:hover {
+    background: #d4a373;
+}
+
+[data-theme="dark"] .navLinks::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+[data-theme="dark"] .navLinks::-webkit-scrollbar-thumb {
+    background: #3a3028;
+    border-radius: 3px;
+}
+
+[data-theme="dark"] .navLinks::-webkit-scrollbar-thumb:hover {
+    background: #b58863;
+}
+
+.navItem {
+    display: flex;
+    align-items: center;
+    padding: 0.85rem 1rem;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+    /* Button reset for action items */
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+}
+
+
+/* Light Mode Nav Item */
+[data-theme="light"] .navItem {
+    color: #5a4a3a;
+}
+
+[data-theme="light"] .navItem:hover {
+    background: linear-gradient(135deg, #faf8f5 0%, #f5f0eb 100%);
+    color: #2d2520;
+    transform: translateX(4px);
+}
+
+[data-theme="light"] .navItem.active {
+    background: linear-gradient(135deg, #d4a373 0%, #b58863 100%);
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(181, 136, 99, 0.35);
+}
+
+[data-theme="light"] .navItem.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 60%;
+    background: linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.7) 100%);
+    border-radius: 0 4px 4px 0;
+}
+
+/* Dark Mode Nav Item */
+[data-theme="dark"] .navItem {
+    color: #d4a373;
+}
+
+[data-theme="dark"] .navItem:hover {
+    background: linear-gradient(135deg, #1a1a1a 0%, #252525 100%);
+    color: #f5f0eb;
+    transform: translateX(4px);
+}
+
+[data-theme="dark"] .navItem.active {
+    background: linear-gradient(135deg, #b58863 0%, #8b6242 100%);
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(181, 136, 99, 0.5);
+}
+
+[data-theme="dark"] .navItem.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 60%;
+    background: linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.7) 100%);
+    border-radius: 0 4px 4px 0;
+}
+
+.navIcon {
+    font-size: 1.2rem;
+    min-width: 24px;
+    display: flex;
+    justify-content: center;
+    transition: transform 0.2s ease;
+}
+
+.navItem:hover .navIcon {
+    transform: scale(1.1);
+}
+
+.navItem.active .navIcon {
+    transform: scale(1.15);
+}
+
+.navLabel {
+    margin-left: 1rem;
+    white-space: nowrap;
+}
+
+/* Separator - Chess Gold */
+.separator {
+    height: 1px;
+    margin: 0.5rem 1rem;
+}
+
+[data-theme="light"] .separator {
+    background: linear-gradient(90deg, transparent 0%, #e5d5c5 50%, transparent 100%);
+}
+
+[data-theme="dark"] .separator {
+    background: linear-gradient(90deg, transparent 0%, #3a3028 50%, transparent 100%);
+}
+
+/* --- SIDEBAR FOOTER --- */
+.sidebarFooter {
+    padding: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+[data-theme="light"] .sidebarFooter {
+    border-top: 2px solid #e5d5c5;
+    background: linear-gradient(180deg, transparent 0%, #fafafa 100%);
+}
+
+[data-theme="dark"] .sidebarFooter {
+    border-top: 2px solid #3a3028;
+    background: linear-gradient(180deg, transparent 0%, #0a0a0a 100%);
+}
+
+.themeToggleBtn {
+    background: transparent;
+    border: 1px solid transparent;
+    width: 100%;
+    padding: 0.6rem;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    margin-bottom: 0.75rem;
+}
+
+[data-theme="light"] .themeToggleBtn {
+    color: #8b6242;
+    border-color: #e5d5c5;
+}
+
+[data-theme="light"] .themeToggleBtn:hover {
+    background: #f5f0eb;
+    color: #5a4a3a;
+}
+
+[data-theme="dark"] .themeToggleBtn {
+    color: #d4a373;
+    border-color: #3a3028;
+}
+
+[data-theme="dark"] .themeToggleBtn:hover {
+    background: #1a1a1a;
+    color: #f5f0eb;
+}
+
+.sidebar.collapsed .themeToggleBtn span {
+    display: none;
+}
+
+.sidebar.collapsed .themeToggleBtn {
+    padding: 0.6rem 0;
+}
+
+.userProfile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0.5rem;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+}
+
+[data-theme="light"] .userProfile:hover {
+    background: #f5f0eb;
+}
+
+[data-theme="dark"] .userProfile:hover {
+    background: #1a1a1a;
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+[data-theme="light"] .avatar {
+    background: linear-gradient(135deg, #d4a373 0%, #b58863 100%);
+    color: #ffffff;
+    box-shadow: 0 3px 10px rgba(181, 136, 99, 0.4);
+}
+
+[data-theme="dark"] .avatar {
+    background: linear-gradient(135deg, #b58863 0%, #8b6242 100%);
+    color: #ffffff;
+    box-shadow: 0 3px 10px rgba(181, 136, 99, 0.5);
+}
+
+.avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.userDetails {
+    font-size: 0.9rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.userName {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+[data-theme="light"] .userName {
+    color: #2d2520;
+}
+
+[data-theme="dark"] .userName {
+    color: #f5f0eb;
+}
+
+/* Collapsed State */
+.sidebar.collapsed .navLabel,
+.sidebar.collapsed .userDetails,
+.sidebar.collapsed .logoLink {
+    display: none;
+}
+
+.sidebar.collapsed .navItem {
+    justify-content: center;
+    padding: 0.85rem 0.5rem;
+}
+
+.sidebar.collapsed .userProfile {
+    justify-content: center;
+}
+
+/* --- MAIN CONTENT --- */
+.mainContent {
+    flex: 1;
+    margin-left: 260px;
+    padding: 2rem;
+    width: calc(100% - 260px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mainContent.expanded {
+    margin-left: 72px;
+    width: calc(100% - 72px);
+}
+
+/* --- MOBILE STYLES --- */
+.mobileHeader,
+.bottomNav {
+    display: none;
+}
+
+@media (max-width: 768px) {
+
+    /* Hide Desktop Sidebar */
+    .sidebar {
+        display: none;
+    }
+
+    .mainContent {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 1rem;
+        padding-top: 70px;
+        padding-bottom: 80px;
+    }
+
+    /* --- MOBILE HEADER --- */
+    .mobileHeader {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 60px;
+        padding: 0 1rem;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        transition: all 0.3s ease;
+    }
+
+    [data-theme="light"] .mobileHeader {
+        background: #ffffff;
+        border-bottom: 2px solid #e5d5c5;
+        box-shadow: 0 2px 12px rgba(181, 136, 99, 0.1);
+    }
+
+    [data-theme="dark"] .mobileHeader {
+        background: #0f0f0f;
+        border-bottom: 2px solid #3a3028;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+    }
+
+    .mobileLogo img {
+        height: 40px;
+    }
+
+    .mobileHeaderActions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .mobileAvatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        font-weight: bold;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    [data-theme="light"] .mobileAvatar {
+        background: linear-gradient(135deg, #d4a373 0%, #b58863 100%);
+        color: #ffffff;
+        box-shadow: 0 2px 8px rgba(181, 136, 99, 0.4);
+    }
+
+    [data-theme="dark"] .mobileAvatar {
+        background: linear-gradient(135deg, #b58863 0%, #8b6242 100%);
+        color: #ffffff;
+        box-shadow: 0 2px 8px rgba(181, 136, 99, 0.5);
+    }
+
+    .mobileAvatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* --- BOTTOM NAVIGATION --- */
+    .bottomNav {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        align-items: center;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 65px;
+        z-index: 100;
+        padding-bottom: env(safe-area-inset-bottom);
+        transition: all 0.3s ease;
+    }
+
+    [data-theme="light"] .bottomNav {
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(10px);
+        border-top: 2px solid #e5d5c5;
+        box-shadow: 0 -2px 12px rgba(181, 136, 99, 0.1);
+    }
+
+    [data-theme="dark"] .bottomNav {
+        background: rgba(15, 15, 15, 0.98);
+        backdrop-filter: blur(10px);
+        border-top: 2px solid #3a3028;
+        box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.5);
+    }
+
+    .bottomNavItem {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        flex: 1;
+        height: 100%;
+        transition: all 0.2s ease;
+        position: relative;
+        /* Button reset for action items */
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        font-family: inherit;
+        padding: 0;
+    }
+
+
+    [data-theme="light"] .bottomNavItem {
+        color: #8b6242;
+    }
+
+    [data-theme="dark"] .bottomNavItem {
+        color: #d4a373;
+    }
+
+    .bottomNavIcon {
+        font-size: 1.3rem;
+        margin-bottom: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .bottomNavLabel {
+        font-size: 0.7rem;
+        font-weight: 500;
+    }
+
+    /* Active State - Chess Gold */
+    [data-theme="light"] .bottomNavActive {
+        color: #b58863;
+    }
+
+    [data-theme="dark"] .bottomNavActive {
+        color: #b58863;
+    }
+
+    .bottomNavActive .bottomNavIcon {
+        transform: translateY(-2px);
+    }
+
+    /* Special Play Button - Chess Gold */
+    .specialNavItem .bottomNavIcon {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        margin-bottom: 2px;
+        transform: translateY(-12px);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    [data-theme="light"] .specialNavItem .bottomNavIcon {
+        background: linear-gradient(135deg, #d4a373 0%, #b58863 100%);
+        color: #ffffff;
+        box-shadow: 0 4px 16px rgba(181, 136, 99, 0.5);
+    }
+
+    [data-theme="dark"] .specialNavItem .bottomNavIcon {
+        background: linear-gradient(135deg, #b58863 0%, #8b6242 100%);
+        color: #ffffff;
+        box-shadow: 0 4px 16px rgba(181, 136, 99, 0.6);
+    }
+
+    .specialNavItem.bottomNavActive .bottomNavIcon {
+        transform: translateY(-14px) scale(1.08);
+    }
+
+    [data-theme="light"] .specialNavItem {
+        color: #b58863;
+    }
+
+    [data-theme="dark"] .specialNavItem {
+        color: #b58863;
+    }
+}

@@ -1,0 +1,1701 @@
+/* PuzzlePage.module.css - Chess Gold Theme */
+
+/* --- CONTAINER --- */
+.container {
+  min-height: 100vh;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  display: flex;
+  flex-direction: column;
+  transition: background-color 0.3s ease;
+}
+
+/* Light Mode */
+[data-theme="light"] .container {
+  background-color: #fafafa;
+  color: #2d2520;
+}
+
+/* Dark Mode */
+[data-theme="dark"] .container {
+  background-color: #0a0a0a;
+  color: #f5f0eb;
+}
+
+/* --- LIVE/REVIEW INDICATORS --- */
+.liveIndicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.liveStatus,
+.reviewStatus {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.4rem 0.85rem;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid transparent;
+}
+
+/* Light Mode Live Status */
+[data-theme="light"] .liveStatus {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46;
+  border-color: #6ee7b7;
+}
+
+/* Dark Mode Live Status */
+[data-theme="dark"] .liveStatus {
+  background: linear-gradient(135deg, rgba(5, 150, 105, 0.25) 0%, rgba(5, 150, 105, 0.15) 100%);
+  color: #6ee7b7;
+  border-color: rgba(110, 231, 183, 0.3);
+}
+
+/* Light Mode Review Status */
+[data-theme="light"] .reviewStatus {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  color: #4b5563;
+  border-color: #d1d5db;
+}
+
+/* Dark Mode Review Status */
+[data-theme="dark"] .reviewStatus {
+  background: linear-gradient(135deg, rgba(75, 85, 99, 0.25) 0%, rgba(75, 85, 99, 0.15) 100%);
+  color: #9ca3af;
+  border-color: rgba(156, 163, 175, 0.3);
+}
+
+/* --- MAIN LAYOUT --- */
+.mainContent {
+  display: grid;
+  grid-template-areas:
+    "timer board puzzleNav"
+    "submit board puzzleInfo"
+    "race race race";
+  grid-template-columns: minmax(240px, 1fr) minmax(auto, 70vh) minmax(280px, 1fr);
+  grid-template-rows: auto auto auto;
+  gap: 1.5rem;
+  max-width: 1800px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1rem 2rem;
+  align-items: start;
+}
+
+.timerCard {
+  grid-area: timer;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.turnIndicator {
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.submitCard {
+  grid-area: submit;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  margin-top: -90px;
+  /* Removed negative margin for better flow */
+}
+
+.boardArea {
+  grid-area: board;
+  justify-self: center;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.puzzleInfoPanel {
+  grid-area: puzzleInfo;
+  display: flex;
+  flex-direction: column;
+}
+
+.puzzleNavPanel {
+  grid-area: puzzleNav;
+  display: flex;
+  flex-direction: column;
+}
+
+.raceContainer {
+  grid-area: race;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+/* --- PANELS --- */
+.statCard,
+.controlCard {
+  border-radius: 14px;
+  padding: 1.5rem;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+/* Light Mode Cards */
+[data-theme="light"] .statCard,
+[data-theme="light"] .controlCard {
+  background: #ffffff;
+  border-color: #e5d5c5;
+  box-shadow: 0 2px 8px rgba(181, 136, 99, 0.1);
+}
+
+/* Dark Mode Cards */
+[data-theme="dark"] .statCard,
+[data-theme="dark"] .controlCard {
+  background: #1a1a1a;
+  border-color: #3a3028;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* --- PUZZLE INFO CARD (redesigned) --- */
+.puzzleInfoCard {
+  border-radius: 16px;
+  padding: 1.25rem;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+[data-theme="light"] .puzzleInfoCard {
+  background: linear-gradient(135deg, #ffffff 0%, #fdf8f2 100%);
+  border-color: #e5d5c5;
+  box-shadow: 0 4px 16px rgba(181, 136, 99, 0.12);
+}
+
+[data-theme="dark"] .puzzleInfoCard {
+  background: linear-gradient(135deg, #1e1a16 0%, #252018 100%);
+  border-color: #3a3028;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+}
+
+/* Chess king emoji on the left */
+.puzzleKingIcon {
+  font-size: 3.2rem;
+  line-height: 1;
+  flex-shrink: 0;
+  width: 76px;
+  height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ffffff 0%, #faebd7 100%);
+  background-color: #fdf8f2;
+  /* Fallback */
+  color: #2d2520;
+  /* Fixed dark color for the icon */
+  box-shadow: 0 4px 12px rgba(181, 136, 99, 0.25);
+  animation: kingFloat 3s ease-in-out infinite;
+}
+
+@keyframes kingFloat {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.puzzleInfoRight {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.puzzleCardTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-theme="light"] .puzzleCardTitle {
+  color: #2d2520;
+}
+
+[data-theme="dark"] .puzzleCardTitle {
+  color: #f5f0eb;
+}
+
+/* Category badge above card */
+.categoryBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 6px;
+  align-self: flex-start;
+}
+
+[data-theme="light"] .categoryBadge {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  border: 1px solid #fbbf24;
+}
+
+[data-theme="dark"] .categoryBadge {
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.25), rgba(217, 119, 6, 0.12));
+  color: #fcd34d;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.categoryDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+/* Puzzle Metadata row */
+.puzzleMetadata {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.metadataItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metadataLabel {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+[data-theme="light"] .metadataLabel {
+  color: #8b6242;
+}
+
+[data-theme="dark"] .metadataLabel {
+  color: #d4a373;
+}
+
+.metadataValue {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #b58863;
+  text-transform: capitalize;
+}
+
+/* Vertical divider between metadata items */
+.metadataDivider {
+  width: 1px;
+  height: 32px;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+[data-theme="light"] .metadataDivider {
+  background: #e5d5c5;
+}
+
+[data-theme="dark"] .metadataDivider {
+  background: #3a3028;
+}
+
+/* Difficulty colour coding */
+.diff_easy {
+  color: #22c55e !important;
+}
+
+.diff_medium {
+  color: #f59e0b !important;
+}
+
+.diff_hard {
+  color: #ef4444 !important;
+}
+
+/* --- TURN PILL (above nav card) --- */
+.turnPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  padding: 6px 14px;
+  border-radius: 30px;
+  border: 1.5px solid transparent;
+  margin-bottom: 8px;
+  align-self: flex-start;
+}
+
+.turnWhite {
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(255, 255, 255, 0.8);
+  color: #1a1a1a;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
+}
+
+.turnBlack {
+  background: rgba(26, 26, 26, 1);
+  border-color: rgba(60, 60, 60, 0.8);
+  color: #f5f0eb;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.6);
+}
+
+.turnDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dotWhite {
+  background: #ffffff;
+  border: 1.5px solid #ccc;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
+}
+
+.dotBlack {
+  background: #1a1a1a;
+  border: 1.5px solid #555;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
+}
+
+/* Inline turn pill that lives inside the puzzle info card */
+.turnPillInline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  /* Larger font size replacing title */
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1.5px solid transparent;
+  margin-bottom: 12px;
+  align-self: flex-start;
+}
+
+/* --- TIMER & STATS --- */
+.timerDisplay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.timerIcon {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+[data-theme="light"] .timerIcon {
+  color: #b58863;
+}
+
+[data-theme="dark"] .timerIcon {
+  color: #d4a373;
+}
+
+.timerBadge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #b58863;
+  text-shadow: 0 0 20px rgba(181, 136, 99, 0.3);
+}
+
+.statLabel {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+[data-theme="light"] .statLabel {
+  color: #8b6242;
+}
+
+[data-theme="dark"] .statLabel {
+  color: #d4a373;
+}
+
+.statsRow {
+  display: flex;
+  justify-content: space-between;
+  text-align: center;
+  gap: 1rem;
+}
+
+.statItem {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 10px;
+}
+
+[data-theme="light"] .statItem {
+  background: #f5f0eb;
+}
+
+[data-theme="dark"] .statItem {
+  background: #252525;
+}
+
+.statValue {
+  font-size: 1.25rem;
+  font-weight: 700;
+  display: block;
+}
+
+[data-theme="light"] .statValue {
+  color: #2d2520;
+}
+
+[data-theme="dark"] .statValue {
+  color: #f5f0eb;
+}
+
+.statValue.highlight {
+  color: #b58863;
+}
+
+.statValue.red {
+  color: #ff5252;
+}
+
+/* --- BOARD AREA --- */
+.boardArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.puzzleInfoBar {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 1rem;
+  padding: 0 0.5rem;
+  gap: 1rem;
+}
+
+.topTitleArea {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1;
+}
+
+.puzzleTitle {
+  font-size: 1.4rem;
+  margin: 0;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #b58863;
+}
+
+.puzzleSubtitle {
+  font-size: 0.9rem;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+[data-theme="light"] .puzzleSubtitle {
+  color: #8b6242;
+}
+
+[data-theme="dark"] .puzzleSubtitle {
+  color: #d4a373;
+}
+
+.puzzleToMove {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border-radius: 50px;
+  border: 2px solid transparent;
+}
+
+[data-theme="light"] .puzzleToMove {
+  background: #ffffff;
+  border-color: #e5d5c5;
+}
+
+[data-theme="dark"] .puzzleToMove {
+  background: #1a1a1a;
+  border-color: #3a3028;
+}
+
+.colorIndicator {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(181, 136, 99, 0.3);
+}
+
+.colorIndicator.white {
+  background: #fff;
+}
+
+.colorIndicator.black {
+  background: #000;
+}
+
+.moveText {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+[data-theme="light"] .moveText {
+  color: #2d2520;
+}
+
+[data-theme="dark"] .moveText {
+  color: #f5f0eb;
+}
+
+.boardWrapper {
+  width: min(85vw, 65vh, 600px);
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  border: 6px solid transparent;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+[data-theme="light"] .boardWrapper {
+  border-color: #e5d5c5;
+  box-shadow: 0 8px 24px rgba(181, 136, 99, 0.15);
+}
+
+[data-theme="dark"] .boardWrapper {
+  border-color: #3a3028;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* --- CONTROLS --- */
+.controlHeader {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 1.5rem 0;
+  text-align: center;
+  font-weight: 600;
+  color: #b58863;
+}
+
+/* Navigation Grid */
+.navGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.navGrid::-webkit-scrollbar {
+  width: 6px;
+}
+
+[data-theme="light"] .navGrid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-theme="light"] .navGrid::-webkit-scrollbar-thumb {
+  background: #e5d5c5;
+  border-radius: 3px;
+}
+
+[data-theme="dark"] .navGrid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-theme="dark"] .navGrid::-webkit-scrollbar-thumb {
+  background: #3a3028;
+  border-radius: 3px;
+}
+
+.navItem {
+  aspect-ratio: 1;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+[data-theme="light"] .navItem {
+  background: #f5f0eb;
+  color: #8b6242;
+}
+
+[data-theme="light"] .navItem:hover {
+  background: #e5d5c5;
+  color: #2d2520;
+  border-color: #b58863;
+}
+
+[data-theme="dark"] .navItem {
+  background: #252525;
+  color: #d4a373;
+}
+
+[data-theme="dark"] .navItem:hover {
+  background: #3a3028;
+  color: #f5f0eb;
+  border-color: #b58863;
+}
+
+.navItem.active {
+  background: linear-gradient(135deg, #d4a373 0%, #b58863 100%);
+  color: #ffffff;
+  border-color: #b58863;
+  box-shadow: 0 0 10px rgba(181, 136, 99, 0.4);
+}
+
+.navItem.success {
+  background-color: rgba(102, 187, 106, 0.25) !important;
+  color: #66bb6a !important;
+  border-color: #66bb6a !important;
+}
+
+.navItem.danger {
+  background-color: rgba(255, 82, 82, 0.25) !important;
+  color: #ff5252 !important;
+  border-color: #ff5252 !important;
+}
+
+.navItem.locked {
+  cursor: not-allowed !important;
+  opacity: 0.4;
+  background-color: rgba(102, 102, 102, 0.15) !important;
+  color: #999 !important;
+  border-color: rgba(102, 102, 102, 0.3) !important;
+}
+
+/* Control Buttons */
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.actionBtn {
+  padding: 0.8rem 1rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 2px solid transparent;
+}
+
+[data-theme="light"] .actionBtn {
+  background: #f5f0eb;
+  border-color: #e5d5c5;
+  color: #2d2520;
+}
+
+[data-theme="light"] .actionBtn:hover {
+  background: #e5d5c5;
+  border-color: #b58863;
+}
+
+[data-theme="dark"] .actionBtn {
+  background: #252525;
+  border-color: #3a3028;
+  color: #f5f0eb;
+}
+
+[data-theme="dark"] .actionBtn:hover {
+  background: #3a3028;
+  border-color: #b58863;
+}
+
+.btnPrimary {
+  background: linear-gradient(135deg, #d4a373 0%, #b58863 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.btnPrimary:hover {
+  background: linear-gradient(135deg, #c49d6b 0%, #a37651 100%) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(181, 136, 99, 0.4);
+}
+
+.btnSubmit {
+  background: linear-gradient(45deg, #ff6b6b, #ee5a52) !important;
+  color: white !important;
+  border: none !important;
+}
+
+.btnSubmit:hover {
+  background: linear-gradient(45deg, #ff5252, #e53935) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4) !important;
+}
+
+/* --- RANK CARD --- */
+.rankCard {
+  margin-top: 1rem;
+  border-radius: 14px;
+  padding: 1rem;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Light Mode Rank Card */
+[data-theme="light"] .rankCard {
+  background: linear-gradient(145deg, #fffbf0 0%, #fff7e6 50%, #fef3d6 100%);
+  border-color: #e5c07b;
+  box-shadow: 0 4px 16px rgba(181, 136, 99, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* Dark Mode Rank Card */
+[data-theme="dark"] .rankCard {
+  background: linear-gradient(145deg, #1f1a14 0%, #1a1510 50%, #211c15 100%);
+  border-color: rgba(212, 163, 115, 0.35);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(212, 163, 115, 0.08);
+}
+
+.rankHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  justify-content: center;
+}
+
+.rankTrophy {
+  font-size: 1.3rem;
+  filter: drop-shadow(0 0 6px rgba(255, 193, 7, 0.5));
+  animation: trophyGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes trophyGlow {
+  0% {
+    filter: drop-shadow(0 0 4px rgba(255, 193, 7, 0.3));
+  }
+
+  100% {
+    filter: drop-shadow(0 0 10px rgba(255, 193, 7, 0.7));
+  }
+}
+
+.rankTitle {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+[data-theme="light"] .rankTitle {
+  color: #8b6242;
+}
+
+[data-theme="dark"] .rankTitle {
+  color: #d4a373;
+}
+
+.rankBody {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.rankNumber {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  background: linear-gradient(135deg, #d4a373 0%, #b58863 40%, #e8c9a0 60%, #b58863 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: rankShimmer 3s ease-in-out infinite;
+}
+
+@keyframes rankShimmer {
+
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.rankDivider {
+  width: 2px;
+  height: 36px;
+  border-radius: 1px;
+}
+
+[data-theme="light"] .rankDivider {
+  background: linear-gradient(to bottom, transparent, #d4a373, transparent);
+}
+
+[data-theme="dark"] .rankDivider {
+  background: linear-gradient(to bottom, transparent, rgba(212, 163, 115, 0.4), transparent);
+}
+
+.rankMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.rankMetaItem {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.rankMetaValue {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+[data-theme="light"] .rankMetaValue {
+  color: #2d2520;
+}
+
+[data-theme="dark"] .rankMetaValue {
+  color: #f5f0eb;
+}
+
+.rankMetaLabel {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+[data-theme="light"] .rankMetaLabel {
+  color: #8b6242;
+}
+
+[data-theme="dark"] .rankMetaLabel {
+  color: #a88b6e;
+}
+
+.rankFooter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.rankProgressBar {
+  width: 100%;
+  height: 5px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+[data-theme="light"] .rankProgressBar {
+  background: #e5d5c5;
+}
+
+[data-theme="dark"] .rankProgressBar {
+  background: rgba(58, 48, 40, 0.6);
+}
+
+.rankProgressFill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #d4a373, #b58863, #d4a373);
+  background-size: 200% 100%;
+  animation: progressShimmer 2s ease-in-out infinite;
+  transition: width 0.5s ease;
+  min-width: 2px;
+}
+
+@keyframes progressShimmer {
+
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.rankParticipants {
+  font-size: 0.65rem;
+  font-weight: 500;
+  text-align: right;
+}
+
+[data-theme="light"] .rankParticipants {
+  color: #8b6242;
+}
+
+[data-theme="dark"] .rankParticipants {
+  color: #7a6a5a;
+}
+
+
+.paginationInfo {
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #b58863;
+  opacity: 0.9;
+}
+
+[data-theme="light"] .paginationInfo {
+  color: #8b6242;
+}
+
+[data-theme="dark"] .paginationInfo {
+  color: #d4a373;
+}
+
+
+
+.paginationContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid transparent;
+  flex-wrap: wrap;
+}
+
+[data-theme="light"] .paginationContainer {
+  border-top-color: #e5d5c5;
+}
+
+[data-theme="dark"] .paginationContainer {
+  border-top-color: #3a3028;
+}
+
+.pageBtn {
+  min-width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  color: inherit;
+}
+
+[data-theme="light"] .pageBtn {
+  color: #8b6242;
+  border-color: #e5d5c5;
+}
+
+[data-theme="light"] .pageBtn:hover:not(:disabled) {
+  background: #e5d5c5;
+  color: #2d2520;
+  border-color: #b58863;
+}
+
+[data-theme="dark"] .pageBtn {
+  color: #d4a373;
+  border-color: #3a3028;
+}
+
+[data-theme="dark"] .pageBtn:hover:not(:disabled) {
+  background: #3a3028;
+  color: #f5f0eb;
+  border-color: #b58863;
+}
+
+.pageBtn.activePage {
+  background: linear-gradient(135deg, #d4a373 0%, #b58863 100%) !important;
+  color: #ffffff !important;
+  border-color: #b58863 !important;
+  box-shadow: 0 2px 6px rgba(181, 136, 99, 0.4);
+}
+
+.pageBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  border-color: transparent;
+}
+
+.navControls {
+  display: flex;
+  justify-content: center;
+  /* Center the controls */
+  gap: 0.5rem;
+  /* Add gap between buttons */
+  margin-top: 0.5rem;
+  /* Reduced margin as pagination handles page switching */
+  padding-top: 0.5rem;
+  /* border-top removed as pagination has it */
+}
+
+[data-theme="light"] .navControls {
+  border-top-color: #e5d5c5;
+}
+
+[data-theme="dark"] .navControls {
+  border-top-color: #3a3028;
+}
+
+.navArrow {
+  background: transparent;
+  border: 2px solid transparent;
+  width: 36px;
+  /* Slightly smaller to fit more buttons */
+  height: 36px;
+  border-radius: 8px;
+  /* Square with rounded corners looks better for rows */
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  font-size: 1rem;
+}
+
+[data-theme="light"] .navArrow {
+  border-color: #e5d5c5;
+  color: #8b6242;
+}
+
+[data-theme="light"] .navArrow:hover {
+  background: linear-gradient(135deg, #d4a373 0%, #b58863 100%);
+  color: #ffffff;
+  border-color: #b58863;
+  transform: translateY(-2px);
+}
+
+[data-theme="dark"] .navArrow {
+  border-color: #3a3028;
+  color: #d4a373;
+}
+
+[data-theme="dark"] .navArrow:hover {
+  background: linear-gradient(135deg, #b58863 0%, #8b6242 100%);
+  color: #ffffff;
+  border-color: #b58863;
+  transform: translateY(-2px);
+}
+
+.navArrow:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+  transform: none !important;
+  background: transparent !important;
+}
+
+/* Feedback Messages */
+.feedbackMessage {
+  text-align: center;
+  padding: 1rem;
+  border-radius: 10px;
+  margin-top: 1rem;
+  font-weight: 600;
+  animation: fadeIn 0.3s ease;
+  border: 1px solid transparent;
+}
+
+.feedbackSuccess {
+  background: rgba(102, 187, 106, 0.15);
+  color: #66bb6a;
+  border-color: rgba(102, 187, 106, 0.3);
+}
+
+.feedbackError {
+  background: rgba(255, 82, 82, 0.15);
+  color: #ff5252;
+  border-color: rgba(255, 82, 82, 0.3);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading */
+.loading {
+  display: flex;
+  height: 100vh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+[data-theme="light"] .loading {
+  background: #fafafa;
+  color: #b58863;
+}
+
+[data-theme="dark"] .loading {
+  background: #0a0a0a;
+  color: #b58863;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid transparent;
+  border-top-color: #b58863;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+[data-theme="light"] .spinner {
+  border-color: #e5d5c5;
+  border-top-color: #b58863;
+}
+
+[data-theme="dark"] .spinner {
+  border-color: #3a3028;
+  border-top-color: #b58863;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.modalContent {
+  border-radius: 14px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  border: 2px solid transparent;
+}
+
+[data-theme="light"] .modalContent {
+  background: #ffffff;
+  border-color: #e5d5c5;
+  box-shadow: 0 20px 60px rgba(181, 136, 99, 0.3);
+}
+
+[data-theme="dark"] .modalContent {
+  background: #1a1a1a;
+  border-color: #3a3028;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+}
+
+.modalContent h3 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+[data-theme="light"] .modalContent h3 {
+  color: #2d2520;
+}
+
+[data-theme="dark"] .modalContent h3 {
+  color: #f5f0eb;
+}
+
+.modalStats {
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+[data-theme="light"] .modalStats {
+  background: #f5f0eb;
+}
+
+[data-theme="dark"] .modalStats {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.modalStat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.modalStat:last-child {
+  margin-bottom: 0;
+}
+
+.modalStatLabel {
+  font-size: 0.9rem;
+}
+
+[data-theme="light"] .modalStatLabel {
+  color: #8b6242;
+}
+
+[data-theme="dark"] .modalStatLabel {
+  color: #d4a373;
+}
+
+.modalStatValue {
+  color: #b58863;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.modalWarning {
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  text-align: center;
+  background: rgba(255, 193, 7, 0.15);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  color: #ffc107;
+}
+
+.modalText {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+[data-theme="light"] .modalText {
+  color: #8b6242;
+}
+
+[data-theme="dark"] .modalText {
+  color: #d4a373;
+}
+
+.modalActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.modalCancel,
+.modalSubmit {
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 2px solid transparent;
+}
+
+.modalCancel {
+  background: transparent;
+}
+
+[data-theme="light"] .modalCancel {
+  border-color: #e5d5c5;
+  color: #2d2520;
+}
+
+[data-theme="light"] .modalCancel:hover {
+  background: #f5f0eb;
+  border-color: #b58863;
+}
+
+[data-theme="dark"] .modalCancel {
+  border-color: #3a3028;
+  color: #f5f0eb;
+}
+
+[data-theme="dark"] .modalCancel:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #b58863;
+}
+
+.modalSubmit {
+  background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+  border: none;
+  color: white;
+}
+
+.modalSubmit:hover {
+  background: linear-gradient(45deg, #ff5252, #e53935);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+}
+
+.modalSubmit:disabled,
+.modalCancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .mainContent {
+    grid-template-columns: 200px 1fr 280px;
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .timerBadge {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  .mainContent {
+    grid-template-areas:
+      "timer timer"
+      "board board"
+      "puzzleInfo puzzleNav"
+      "submit submit"
+      "race race";
+    grid-template-columns: 1fr 1fr;
+    max-width: 700px;
+  }
+
+  .boardArea {
+    width: 100%;
+  }
+
+  .boardWrapper {
+    width: min(90vw, 550px);
+  }
+
+  .puzzleInfoBar {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .mainContent {
+    grid-template-areas:
+      "timer"
+      "board"
+      "puzzleInfo"
+      "puzzleNav"
+      "submit"
+      "race";
+    grid-template-columns: 1fr;
+  }
+
+  .timerBadge {
+    font-size: 1.8rem;
+  }
+
+  .statValue {
+    font-size: 1.05rem;
+  }
+
+  .timerIcon {
+    font-size: 1.2rem;
+  }
+
+  .statItem {
+    padding: 0.5rem;
+  }
+
+  .liveIndicator {
+    display: none;
+  }
+
+  .modalContent {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+
+  .modalActions {
+    flex-direction: column;
+  }
+
+  .modalCancel,
+  .modalSubmit {
+    width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+
+  .leftPanel,
+  .rightPanel {
+    flex-direction: column;
+  }
+
+  .statsRow {
+    gap: 0.5rem;
+  }
+
+  .statItem {
+    padding: 0.5rem;
+  }
+
+  .statValue {
+    font-size: 1.2rem;
+  }
+
+  .navGrid {
+    grid-template-columns: repeat(5, 1fr) !important;
+  }
+}
+
+/* ============================================
+   CHAPTER TABS (PuzzlePage student view)
+   ============================================ */
+
+/* Tab bar sits above the control card */
+.chapterTabBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+/* Individual tab pill */
+.chapterTab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1.5px solid transparent;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+/* Light mode default tab */
+[data-theme="light"] .chapterTab {
+  background: #f5f0eb;
+  color: #8b6242;
+  border-color: #e5d5c5;
+}
+
+[data-theme="light"] .chapterTab:hover {
+  background: #e5d5c5;
+  border-color: #b58863;
+  color: #2d2520;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(181, 136, 99, 0.2);
+}
+
+/* Dark mode default tab */
+[data-theme="dark"] .chapterTab {
+  background: #252525;
+  color: #d4a373;
+  border-color: #3a3028;
+}
+
+[data-theme="dark"] .chapterTab:hover {
+  background: #3a3028;
+  border-color: #b58863;
+  color: #f5f0eb;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Active tab — gold gradient */
+.chapterTabActive {
+  background: linear-gradient(135deg, #d4a373 0%, #b58863 100%) !important;
+  color: #ffffff !important;
+  border-color: #b58863 !important;
+  box-shadow: 0 4px 14px rgba(181, 136, 99, 0.45) !important;
+  transform: translateY(-1px);
+}
+
+/* Tab name text */
+.chapterTabName {
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* solved/total badge inside tab */
+.chapterTabBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.12);
+  color: inherit;
+  flex-shrink: 0;
+}
+
+.chapterTabActive .chapterTabBadge {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+/* ========================================= */
+/* Countdown Overlay Styles for 10s Buffer   */
+/* ========================================= */
+.countdownOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background: rgba(15, 12, 10, 0.6);
+  border-radius: 12px;
+}
+
+.blurBoard {
+  filter: blur(4px);
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.countdownCircle {
+  width: 180px;
+  height: 180px;
+  background: linear-gradient(135deg, rgba(212, 163, 115, 0.2) 0%, rgba(139, 98, 66, 0.4) 100%);
+  border: 2px solid rgba(212, 163, 115, 0.6);
+  border-radius: 50%;
+  box-shadow: 0 0 30px rgba(212, 163, 115, 0.3);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  animation: pulse 1s infinite alternate;
+}
+
+.countdownNumber {
+  font-size: 5rem;
+  font-weight: 800;
+  color: #f5f0eb;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  line-height: 1;
+  margin-bottom: 5px;
+}
+
+.countdownText {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #d4a373;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 20px rgba(212, 163, 115, 0.3);
+  }
+
+  100% {
+    transform: scale(1.05);
+    box-shadow: 0 0 40px rgba(212, 163, 115, 0.6);
+  }
+}
+
+/* Responsive adjustments for countdown */
+@media (max-width: 768px) {
+  .countdownCircle {
+    width: 140px;
+    height: 140px;
+  }
+
+  .countdownNumber {
+    font-size: 4rem;
+  }
+
+  .countdownText {
+    font-size: 1rem;
+  }
+}

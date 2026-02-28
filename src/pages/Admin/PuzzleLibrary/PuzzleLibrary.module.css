@@ -1,0 +1,348 @@
+.puzzleLibrary {
+  max-width: 1600px;
+  width: 100%;
+}
+
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 25px;
+  background: white;
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.tab {
+  padding: 12px 24px;
+  border: none;
+  background: transparent;
+  color: #666;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.3s;
+  font-size: 1rem;
+}
+
+.tab:hover {
+  background: #ffd9d9;
+}
+
+.tab.active {
+  background: #d2b561;
+  color: white;
+}
+
+.actionsBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.leftActions,
+.rightActions {
+  display: flex;
+  gap: 10px;
+}
+
+.filters {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 25px;
+  flex-wrap: wrap;
+}
+
+.searchWrapper {
+  flex: 1;
+  min-width: 250px;
+  position: relative;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 12px 20px 12px 45px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #d2b561;
+  box-shadow: 0 0 0 3px rgba(210, 181, 97, 0.1);
+}
+
+.filterSelect {
+  padding: 12px 20px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.3s;
+  white-space: nowrap;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: #d2b561;
+  box-shadow: 0 0 0 3px rgba(210, 181, 97, 0.1);
+}
+
+/* Grid Layout */
+.puzzleGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.puzzleCard {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  border: 2px solid transparent;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  cursor: pointer;
+}
+
+.puzzleCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.puzzleCard.selected {
+  border-color: #d2b561;
+  background: #fffdf5;
+}
+
+.cardSelectionOverlay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #d2b561;
+}
+
+.boardPreview {
+  width: 100%;
+  aspect-ratio: 1;
+  background: #f0d9b5;
+  position: relative;
+  /* Prevent interaction with board */
+  pointer-events: none;
+}
+
+.cardContent {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.puzzleTitle {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #1a1a2e;
+  line-height: 1.3;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.badge.category {
+  background: #ffd9d9;
+  color: #8b7332;
+}
+
+.badge.type {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.badge.difficulty {
+  color: white;
+}
+
+.cardFooter {
+  margin-top: auto;
+  /* Push to bottom */
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Reusing old button styles */
+.actionBtn {
+  background: #f5f5f5;
+  border: none;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #555;
+  transition: all 0.2s;
+  /* Enable pointer events since parent might be clickable/non-clickable depending on implementation */
+  pointer-events: auto;
+}
+
+.actionBtn:hover {
+  background: #e0e0e0;
+  color: #000;
+}
+
+.actionBtn.addBtn {
+  background: #fff3cd;
+  color: #d2b561;
+}
+
+.actionBtn.addBtn:hover {
+  background: #ffe69c;
+}
+
+/* Loading & Empty States */
+.loading,
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #666;
+  gap: 20px;
+  min-height: 300px;
+}
+
+.empty svg {
+  font-size: 4rem;
+  color: #d2b561;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 0;
+}
+
+.pageBtn {
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.pageBtn:hover:not(:disabled) {
+  border-color: #d2b561;
+  color: #d2b561;
+}
+
+.pageBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pageInfo {
+  font-weight: 500;
+  color: #666;
+}
+
+@media (max-width: 768px) {
+  .actionsBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .leftActions,
+  .rightActions {
+    width: 100%;
+  }
+
+  .leftActions button,
+  .rightActions button {
+    flex: 1;
+  }
+
+  .filters {
+    flex-direction: column;
+  }
+
+  .searchWrapper,
+  .filterSelect {
+    width: 100%;
+  }
+
+  .puzzleGrid {
+    grid-template-columns: repeat(auto-fill, minmax(100%, 1fr));
+  }
+}

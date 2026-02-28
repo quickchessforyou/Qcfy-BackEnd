@@ -1,0 +1,129 @@
+.servicesStrip {
+  width: 100%;
+  height: 60px;
+  background: #b58863;
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+  /* Add fade out effect on edges for a cleaner marquee */
+  -webkit-mask-image: linear-gradient(90deg,
+      transparent,
+      #000 5%,
+      #000 95%,
+      transparent);
+  mask-image: linear-gradient(90deg,
+      transparent,
+      #000 5%,
+      #000 95%,
+      transparent);
+}
+
+
+
+.item {
+  font-style: normal;
+  font-weight: 600;
+  /* Bolder font weight */
+  font-size: 24px;
+  letter-spacing: 1px;
+  /* Improved letter spacing */
+  line-height: 36px;
+  color: #000000;
+  white-space: nowrap;
+}
+
+:global([data-theme='light']) .item {
+  color: #ffffff;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  background: var(--bg-primary, #000);
+  /* Use dark variable if available */
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+:global([data-theme='light']) .dot {
+  background: #ffffff;
+}
+
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    /* Since we have 12 sets, and we want to scroll smoothly forever.
+       For a perfect loop with duplicated content, we usually scroll 
+       -33.33% if we have 3 sets, or -50% if we have 2 sets.
+       Here we have 12 sets. 
+       Let's stick to a large scroll range for a long seamless effect. 
+       Scrolling -1/3 (4 sets) is -33.333% 
+    */
+    transform: translateX(-33.333%);
+  }
+}
+
+/* Since measuring percentage of "one set" in pure CSS without a container for just "one set" is tricky if we just dumped them all in .track.
+   Let's adjust the CSS to be more robust:
+   Use simply a very long animation?
+   Or better: Update JSX to have TWO containers for the content inside the track?
+   No, let's stick to a simpler known method:
+   Animation moves from 0 to -100%? No that moves everything away.
+   Let's change the JSX to structure it: <Track><Content /><Content /></Track> layout.
+   Let's rewrite the CSS to just handle the translation logic correctly for the "quadrupled" list?
+   Actually, the simplest reliable loop without JS measuring is:
+   <div class="marquee">
+     <div class="marquee-content">
+       ...items...
+     </div>
+     <div class="marquee-content" aria-hidden="true">
+       ...items...
+     </div>
+   </div>
+   Then animate the parent or the contents.
+   Let's adhere to the previous JSX update which put everything in one .track.
+   Let's try translateX(-50%) assuming I reduce the JSX to just 2 sets.
+   Let's re-update the JSX to be cleaner: 2 sets of items.
+*/
+
+/* Tablet Styles */
+@media (max-width: 1024px) {
+  .track {
+    gap: 40px;
+    padding-left: 40px;
+  }
+
+  .item {
+    font-size: 18px;
+    line-height: 27px;
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+  }
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+  .servicesStrip {
+    height: auto;
+    padding: 12px 0;
+  }
+
+  .track {
+    gap: 20px;
+    padding-left: 20px;
+  }
+
+  .item {
+    font-size: 16px;
+    line-height: 24px;
+  }
+}

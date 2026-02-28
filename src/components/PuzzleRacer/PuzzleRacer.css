@@ -1,0 +1,966 @@
+/* ---------- Container ---------- */
+.puzzle-racer-container {
+    width: 100%;
+    background: radial-gradient(ellipse at 85% 50%, #111d33 0%, #0a1220 40%, #050a12 70%, #020408 100%);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 18px;
+    padding: 20px 24px 18px;
+    margin-top: 24px;
+    box-shadow:
+        0 12px 40px rgba(0, 0, 0, 0.6),
+        inset 0 0 60px rgba(80, 120, 200, 0.03);
+    position: relative;
+    overflow: hidden;
+}
+
+/* ---------- Starfield ---------- */
+.puzzle-racer-container::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+        radial-gradient(1px 1px at 8% 12%, rgba(255, 255, 255, 0.7), transparent),
+        radial-gradient(1px 1px at 18% 78%, rgba(255, 255, 255, 0.5), transparent),
+        radial-gradient(1.5px 1.5px at 32% 28%, rgba(200, 220, 255, 0.6), transparent),
+        radial-gradient(1px 1px at 45% 8%, rgba(255, 255, 255, 0.4), transparent),
+        radial-gradient(1px 1px at 58% 62%, rgba(255, 255, 255, 0.6), transparent),
+        radial-gradient(1.5px 1.5px at 72% 18%, rgba(200, 220, 255, 0.5), transparent),
+        radial-gradient(1px 1px at 12% 52%, rgba(255, 255, 255, 0.3), transparent),
+        radial-gradient(1px 1px at 82% 88%, rgba(255, 255, 255, 0.5), transparent),
+        radial-gradient(1px 1px at 28% 92%, rgba(200, 220, 255, 0.4), transparent),
+        radial-gradient(1.5px 1.5px at 65% 42%, rgba(255, 255, 255, 0.3), transparent),
+        radial-gradient(1px 1px at 4% 38%, rgba(255, 255, 255, 0.5), transparent),
+        radial-gradient(1px 1px at 78% 95%, rgba(200, 220, 255, 0.6), transparent),
+        radial-gradient(1px 1px at 50% 70%, rgba(255, 255, 255, 0.35), transparent),
+        radial-gradient(1px 1px at 90% 45%, rgba(200, 220, 255, 0.4), transparent),
+        radial-gradient(1px 1px at 22% 33%, rgba(255, 255, 255, 0.45), transparent),
+        radial-gradient(1px 1px at 38% 55%, rgba(200, 220, 255, 0.3), transparent),
+        radial-gradient(1px 1px at 55% 85%, rgba(255, 255, 255, 0.4), transparent),
+        radial-gradient(1px 1px at 95% 15%, rgba(255, 255, 255, 0.5), transparent),
+        radial-gradient(1px 1px at 15% 68%, rgba(200, 220, 255, 0.35), transparent),
+        radial-gradient(1px 1px at 85% 55%, rgba(255, 255, 255, 0.3), transparent);
+    animation: twinkle 8s ease-in-out infinite alternate;
+    pointer-events: none;
+    z-index: 0;
+}
+
+@keyframes twinkle {
+    0% {
+        opacity: 0.5;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.65;
+    }
+}
+
+/* ---------- Header ---------- */
+.racer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    position: relative;
+    z-index: 10;
+}
+
+.racer-header h4 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    background: linear-gradient(90deg, #ffd475, #ff8a65, #e57373);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.race-icon {
+    font-size: 1.2rem;
+    -webkit-text-fill-color: initial;
+}
+
+.race-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.82rem;
+    color: #8fa3b8;
+}
+
+.puzzle-count {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-weight: 600;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: #b0bec5;
+}
+
+.others-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    color: #81d4fa;
+    border: 1px solid rgba(129, 212, 250, 0.15);
+}
+
+.others-icon {
+    font-size: 0.85rem;
+}
+
+/* ========================================
+   SOLAR SYSTEM SCENE
+   ======================================== */
+.solar-system-scene {
+    position: relative;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    min-height: 220px;
+    padding: 15px 0;
+}
+
+/* Orbit SVG curves (decorative) */
+.orbit-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* ---------- Comets ---------- */
+.comet {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: #fff;
+    border-radius: 50%;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.comet::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 3px;
+    width: 45px;
+    height: 1.5px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.45), transparent);
+    border-radius: 2px;
+}
+
+.comet-1 {
+    top: 14%;
+    left: 30%;
+    animation: cometFly1 14s linear infinite;
+    opacity: 0;
+}
+
+.comet-2 {
+    bottom: 18%;
+    left: 55%;
+    animation: cometFly2 18s linear infinite 7s;
+    opacity: 0;
+}
+
+@keyframes cometFly1 {
+    0% {
+        opacity: 0;
+        transform: translate(80px, -40px);
+    }
+
+    4% {
+        opacity: 0.8;
+    }
+
+    20% {
+        opacity: 0;
+        transform: translate(-250px, 120px);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(-250px, 120px);
+    }
+}
+
+@keyframes cometFly2 {
+    0% {
+        opacity: 0;
+        transform: translate(60px, -25px);
+    }
+
+    5% {
+        opacity: 0.6;
+    }
+
+    25% {
+        opacity: 0;
+        transform: translate(-220px, 90px);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(-220px, 90px);
+    }
+}
+
+/* ========================================
+   PLANETS LINEUP (Left → Center)
+   ======================================== */
+.planets-lineup {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    z-index: 5;
+    position: relative;
+    padding: 10px 4px 10px 10px;
+    justify-content: space-around;
+}
+
+.planet-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    min-width: 50px;
+    flex-shrink: 0;
+    transition: transform 0.3s ease;
+}
+
+.planet-slot:hover {
+    transform: translateY(-4px);
+}
+
+.planet-slot-empty {
+    opacity: 1;
+}
+
+.planet-slot-you .planet-orb {
+    box-shadow: 0 0 16px rgba(100, 181, 246, 0.6), 0 0 32px rgba(100, 181, 246, 0.2) !important;
+}
+
+/* ---------- Planet Orb ---------- */
+.planet-orb {
+    border-radius: 50%;
+    position: relative;
+    flex-shrink: 0;
+}
+
+/* Shine highlight on planet */
+.planet-shine {
+    position: absolute;
+    top: 15%;
+    left: 20%;
+    width: 30%;
+    height: 20%;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(255, 255, 255, 0.35), transparent 70%);
+    pointer-events: none;
+}
+
+/* Saturn ring – colorful like reference */
+.saturn-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 180%;
+    height: 22px;
+    transform: translate(-50%, -50%) rotateX(25deg);
+    border-radius: 50%;
+    pointer-events: none;
+    background: linear-gradient(180deg,
+            transparent 20%,
+            rgba(220, 180, 255, 0.5) 30%,
+            rgba(200, 160, 220, 0.4) 45%,
+            rgba(180, 200, 220, 0.35) 55%,
+            rgba(220, 200, 170, 0.3) 70%,
+            transparent 80%);
+    box-shadow: 0 0 6px rgba(200, 170, 230, 0.3);
+}
+
+.saturn-ring::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    background: linear-gradient(180deg,
+            transparent 25%,
+            rgba(180, 140, 200, 0.2) 40%,
+            rgba(160, 180, 200, 0.15) 60%,
+            transparent 75%);
+}
+
+/* Jupiter bands – prominent stripes */
+.jupiter-bands {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    overflow: hidden;
+    pointer-events: none;
+    background: repeating-linear-gradient(180deg,
+            transparent 0%,
+            transparent 12%,
+            rgba(180, 100, 40, 0.35) 13%,
+            rgba(200, 120, 50, 0.25) 17%,
+            transparent 18%,
+            transparent 28%,
+            rgba(160, 80, 30, 0.3) 29%,
+            rgba(190, 110, 45, 0.2) 33%,
+            transparent 34%,
+            transparent 45%,
+            rgba(140, 70, 25, 0.35) 46%,
+            rgba(170, 95, 40, 0.25) 52%,
+            transparent 53%,
+            transparent 64%,
+            rgba(180, 100, 40, 0.3) 65%,
+            rgba(200, 120, 50, 0.2) 70%,
+            transparent 71%,
+            transparent 82%,
+            rgba(160, 80, 30, 0.25) 83%,
+            rgba(190, 110, 45, 0.18) 88%,
+            transparent 89%);
+}
+
+/* Earth land – vivid green continents */
+.earth-land {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.earth-land::before {
+    content: '';
+    position: absolute;
+    top: 20%;
+    left: 15%;
+    width: 35%;
+    height: 40%;
+    background: rgba(40, 180, 60, 0.45);
+    border-radius: 50% 30% 50% 40%;
+    filter: blur(1px);
+}
+
+.earth-land::after {
+    content: '';
+    position: absolute;
+    top: 45%;
+    left: 55%;
+    width: 25%;
+    height: 30%;
+    background: rgba(50, 160, 50, 0.4);
+    border-radius: 40% 50% 30% 50%;
+    filter: blur(1px);
+}
+
+/* ---------- Floating Animations ---------- */
+.planet-float-1 {
+    animation: pFloat1 7.5s ease-in-out infinite;
+}
+
+.planet-float-2 {
+    animation: pFloat2 8.2s ease-in-out infinite;
+}
+
+.planet-float-3 {
+    animation: pFloat3 6.8s ease-in-out infinite;
+}
+
+.planet-float-4 {
+    animation: pFloat4 7.0s ease-in-out infinite;
+}
+
+.planet-float-5 {
+    animation: pFloat5 8.5s ease-in-out infinite;
+}
+
+.planet-float-6 {
+    animation: pFloat6 7.8s ease-in-out infinite;
+}
+
+.planet-float-7 {
+    animation: pFloat7 6.5s ease-in-out infinite;
+}
+
+.planet-float-8 {
+    animation: pFloat8 8.0s ease-in-out infinite;
+}
+
+@keyframes pFloat1 {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-3px);
+    }
+}
+
+@keyframes pFloat2 {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(3px);
+    }
+}
+
+@keyframes pFloat3 {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    40% {
+        transform: translateY(-4px);
+    }
+
+    80% {
+        transform: translateY(1px);
+    }
+}
+
+@keyframes pFloat4 {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-2.5px);
+    }
+}
+
+@keyframes pFloat5 {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    30% {
+        transform: translateY(3px);
+    }
+
+    70% {
+        transform: translateY(-2px);
+    }
+}
+
+@keyframes pFloat6 {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-3.5px);
+    }
+}
+
+@keyframes pFloat7 {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    40% {
+        transform: translateY(2.5px);
+    }
+
+    80% {
+        transform: translateY(-1.5px);
+    }
+}
+
+@keyframes pFloat8 {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(3px);
+    }
+}
+
+/* ---------- Planet Labels ---------- */
+.planet-slot-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    min-height: 28px;
+}
+
+.planet-slot-name {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #d0d8e4;
+    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.7);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 65px;
+    text-align: center;
+}
+
+.planet-slot-name.name-you {
+    color: #90caf9;
+    text-shadow: 0 0 8px rgba(100, 181, 246, 0.4), 0 1px 5px rgba(0, 0, 0, 0.7);
+}
+
+.planet-slot-score {
+    font-size: 0.55rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.35);
+}
+
+.planet-slot-planet-name {
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.25);
+    font-style: italic;
+}
+
+/* ========================================
+   SUN (Right Side)
+   ======================================== */
+.sun-region {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    z-index: 5;
+    padding: 0 15px 0 25px;
+}
+
+.sun-body {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 40%, #fff8e0, #ffcc33 20%, #ff9900 50%, #dd6600 75%, #aa4400);
+    box-shadow:
+        0 0 35px rgba(255, 170, 0, 0.55),
+        0 0 70px rgba(255, 140, 0, 0.3),
+        0 0 110px rgba(255, 100, 0, 0.15),
+        inset 0 0 25px rgba(255, 220, 120, 0.3);
+    animation: sunPulse 4s ease-in-out infinite, sunFloat 9s ease-in-out infinite;
+    position: relative;
+    z-index: 3;
+}
+
+.sun-corona {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 160px;
+    height: 160px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 180, 50, 0.12) 0%, rgba(255, 140, 30, 0.04) 50%, transparent 70%);
+    animation: coronaPulse 3.5s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.sun-outer-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 220px;
+    height: 220px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 150, 30, 0.06) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.sun-crown-icon {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.4rem;
+    filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.7));
+    animation: crownBob 2.5s ease-in-out infinite;
+    z-index: 10;
+}
+
+@keyframes sunPulse {
+
+    0%,
+    100% {
+        box-shadow:
+            0 0 35px rgba(255, 170, 0, 0.55),
+            0 0 70px rgba(255, 140, 0, 0.3),
+            0 0 110px rgba(255, 100, 0, 0.15),
+            inset 0 0 25px rgba(255, 220, 120, 0.3);
+    }
+
+    50% {
+        box-shadow:
+            0 0 45px rgba(255, 170, 0, 0.7),
+            0 0 85px rgba(255, 140, 0, 0.4),
+            0 0 130px rgba(255, 100, 0, 0.22),
+            inset 0 0 30px rgba(255, 220, 120, 0.4);
+    }
+}
+
+@keyframes sunFloat {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+@keyframes coronaPulse {
+
+    0%,
+    100% {
+        opacity: 0.7;
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.06);
+    }
+}
+
+@keyframes crownBob {
+
+    0%,
+    100% {
+        transform: translateX(-50%) translateY(0);
+    }
+
+    50% {
+        transform: translateX(-50%) translateY(-4px);
+    }
+}
+
+/* Sun labels */
+.sun-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 10px;
+    gap: 2px;
+    z-index: 5;
+}
+
+.sun-player-name {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #ffd475;
+    text-shadow: 0 0 12px rgba(255, 212, 117, 0.4), 0 1px 4px rgba(0, 0, 0, 0.6);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 110px;
+    text-align: center;
+}
+
+.sun-player-score {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: rgba(255, 200, 100, 0.5);
+}
+
+.sun-waiting {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.2);
+    font-style: italic;
+    margin-top: 8px;
+}
+
+/* ========================================
+   CURRENT USER OUTSIDE TOP SLOTS
+   ======================================== */
+.current-user-star-3d {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    z-index: 10;
+    margin-top: 8px;
+    padding: 8px 14px;
+    background: rgba(100, 181, 246, 0.06);
+    border: 1px solid rgba(100, 181, 246, 0.15);
+    border-radius: 12px;
+    animation: starFloat3d 3s ease-in-out infinite;
+}
+
+.star-glow-3d {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #64b5f6 0%, #1565c0 60%, transparent 100%);
+    box-shadow: 0 0 10px rgba(100, 181, 246, 0.7), 0 0 20px rgba(100, 181, 246, 0.3);
+    animation: starPulse3d 2s ease-in-out infinite;
+    flex-shrink: 0;
+}
+
+.star-info-3d {
+    display: flex;
+    flex-direction: column;
+}
+
+.star-username-3d {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #90caf9;
+    text-shadow: 0 0 6px rgba(100, 181, 246, 0.4);
+}
+
+.star-rank-3d {
+    font-size: 0.62rem;
+    color: rgba(144, 202, 249, 0.65);
+    font-weight: 600;
+}
+
+@keyframes starFloat3d {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-3px);
+    }
+}
+
+@keyframes starPulse3d {
+
+    0%,
+    100% {
+        box-shadow: 0 0 10px rgba(100, 181, 246, 0.7), 0 0 20px rgba(100, 181, 246, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 0 16px rgba(100, 181, 246, 0.9), 0 0 30px rgba(100, 181, 246, 0.4);
+    }
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+@media (max-width: 900px) {
+    .planets-lineup {
+        gap: 6px;
+        padding-left: 5px;
+    }
+
+    .planet-slot {
+        min-width: 40px;
+    }
+
+    .sun-body {
+        width: 75px;
+        height: 75px;
+    }
+
+    .sun-corona {
+        width: 120px;
+        height: 120px;
+    }
+
+    .sun-outer-glow {
+        width: 170px;
+        height: 170px;
+    }
+
+    .sun-region {
+        padding: 0 10px 0 15px;
+    }
+}
+
+@media (max-width: 680px) {
+    .puzzle-racer-container {
+        padding: 16px 12px 12px;
+        border-radius: 14px;
+    }
+
+    .solar-system-scene {
+        flex-direction: column-reverse;
+        min-height: auto;
+        gap: 12px;
+        padding: 10px 0;
+    }
+
+    .sun-region {
+        flex-direction: row;
+        gap: 14px;
+        padding: 8px 12px;
+        background: rgba(255, 170, 0, 0.04);
+        border-radius: 14px;
+        border: 1px solid rgba(255, 170, 0, 0.08);
+        width: 100%;
+        justify-content: center;
+    }
+
+    .sun-body {
+        width: 52px;
+        height: 52px;
+    }
+
+    .sun-corona {
+        width: 80px;
+        height: 80px;
+    }
+
+    .sun-outer-glow {
+        width: 100px;
+        height: 100px;
+    }
+
+    .sun-crown-icon {
+        font-size: 1rem;
+        top: -4px;
+    }
+
+    .sun-label {
+        margin-top: 0;
+        align-items: flex-start;
+    }
+
+    .planets-lineup {
+        flex-wrap: nowrap;
+        justify-content: space-between;
+        gap: 0px;
+        padding: 5px;
+        overflow-x: auto;
+    }
+
+    .planet-slot {
+        min-width: unset;
+        width: 12.5%;
+        /* Fit 8 planets */
+        transform: scale(0.7);
+        transform-origin: center center;
+    }
+
+    .planet-slot-name {
+        font-size: 0.65rem;
+        max-width: 60px;
+    }
+
+    .planet-progress-wrap {
+        margin-top: 4px;
+    }
+
+    .racer-header h4 {
+        font-size: 0.88rem;
+    }
+}
+
+@media (max-width: 420px) {
+    .planets-lineup {
+        gap: 2px;
+    }
+
+    .planet-slot {
+        transform: scale(0.6);
+        min-width: unset;
+    }
+
+    .planet-slot-name {
+        font-size: 0.65rem;
+        max-width: 60px;
+    }
+
+    .planet-slot-score {
+        font-size: 0.55rem;
+    }
+
+    .sun-body {
+        width: 44px;
+        height: 44px;
+    }
+}
+
+/* ---- "you" planet highlight ---- */
+.planet-orb-you {
+    outline: 2px solid rgba(100, 200, 255, 0.55);
+    outline-offset: 3px;
+}
+
+/* ---- per-planet solved progress bar ---- */
+.planet-progress-wrap {
+    width: 90%;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 0px;
+}
+
+.planet-progress-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.4s ease;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* ---- crown badge on planet ---- */
+.planet-crown {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.75rem;
+    filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.7));
+    animation: crownBob 2.5s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 10;
+}
+
+/* ---- "You" score highlight ---- */
+.planet-slot-score.score-you {
+    color: #81d4fa;
+    font-weight: 700;
+    font-size: 0.62rem;
+    text-shadow: 0 0 6px rgba(100, 181, 246, 0.5);
+}

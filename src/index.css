@@ -1,0 +1,324 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&display=swap');
+/* Tall Gaming Font */
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap');
+/* Gaming Font */
+
+/* Global Reset & Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+  /* Navbar height + buffer */
+}
+
+/* Shared Variables (Layout, Shadows, etc.) */
+:root {
+  /* Brand Colors - Modern Grandmaster Palette */
+  --brand-primary: #b58863;
+  --brand-light: #f0d9b5;
+  --brand-accent: #fbbf24;
+  --surface-dark: #1a1614;
+
+  /* Legacy Support (keep for backward compatibility) */
+  --primary: #b58863;
+  --primary-hover: #a07552;
+  --primary-light: #d4a574;
+
+  --success: #629924;
+  --error: #cc3333;
+  --warning: #bf811d;
+  --info: #3692e7;
+
+  --sidebar-width: 240px;
+  --top-header-height: 60px;
+  --bottom-nav-height: 60px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-full: 9999px;
+
+  --transition-fast: 150ms ease;
+  --transition-normal: 300ms ease;
+
+  /* Default Dark Theme Variables */
+  --bg-light: #161512;
+  --bg-white: #262421;
+  --bg-secondary: #302e2c;
+  --bg-hover: #3e3c39;
+
+  --text-primary: #bababa;
+  --text-secondary: #ffffff;
+  --text-muted: #999999;
+  --text-inverse: #161512;
+  --text-heading: #e0e0e0;
+  /* New variable for headings */
+
+  --border-color: #404040;
+  --border-light: #303030;
+  --white-or-black-alpha: rgba(255, 255, 255, 0.05);
+  /* For glass panels/hovers */
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(181, 136, 99, 0.1);
+}
+
+/* Light Theme Overrides */
+[data-theme='light'] {
+  --bg-light: #f8f9fa;
+  /* Main App Background (Off-white) */
+  --bg-white: #ffffff;
+  /* Card/Container Background (Pure White) */
+  --bg-secondary: #e9ecef;
+  /* Input/Secondary Background (Light Grey) */
+  --bg-hover: #dee2e6;
+  /* Hover Background */
+
+  --text-primary: #495057;
+  /* Main Text (Dark Grey) */
+  --text-secondary: #212529;
+  /* Secondary Text (Almost Black) */
+  --text-muted: #6c757d;
+  /* Muted Text */
+  --text-inverse: #ffffff;
+  /* Text on dark backgrounds */
+  --text-heading: #212529;
+  /* Headings (Almost Black) */
+
+  --border-color: #dee2e6;
+  --border-light: #ced4da;
+  --white-or-black-alpha: rgba(0, 0, 0, 0.05);
+  /* For glass panels/hovers */
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.12);
+  --shadow-glow: 0 0 20px rgba(181, 136, 99, 0.15);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-light);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar Styling - Dark */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-light);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #404040;
+  border-radius: 5px;
+  border: 2px solid var(--bg-light);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #505050;
+}
+
+/* Typography Utilities - Reduced Sizes for Web App feel */
+h1 {
+  font-size: 1.75rem;
+}
+
+h2 {
+  font-size: 1.5rem;
+}
+
+h3 {
+  font-size: 1.25rem;
+}
+
+h4 {
+  font-size: 1.1rem;
+}
+
+h5 {
+  font-size: 1rem;
+}
+
+h6 {
+  font-size: 0.875rem;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-bottom: 0.5em;
+  color: var(--text-heading);
+  /* Brighter heading text */
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--primary-light);
+}
+
+/* Utility Classes */
+.text-gradient {
+  color: var(--primary);
+  /* Gradient text often looks bad on dark unless specific */
+}
+
+.glass-panel {
+  background: rgba(38, 36, 33, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.9rem;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.6s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.4s ease-out forwards;
+}
+
+/* Scroll Animation Utilities */
+.scroll-animate {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.scroll-animate.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.scroll-animate-left {
+  opacity: 0;
+  transform: translateX(-40px);
+  transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+}
+
+.scroll-animate-left.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.scroll-animate-right {
+  opacity: 0;
+  transform: translateX(40px);
+  transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+}
+
+.scroll-animate-right.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.scroll-animate-scale {
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+
+.scroll-animate-scale.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  :root {
+    --header-height: 50px;
+  }
+}

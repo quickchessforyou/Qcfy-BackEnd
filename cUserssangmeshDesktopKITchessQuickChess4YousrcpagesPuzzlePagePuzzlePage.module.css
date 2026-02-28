@@ -1,0 +1,54 @@
+
+/* --- RANK CARD --- */
+.rankCard {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 12px;
+  text-align: center;
+  border: 1px solid transparent;
+  transition: all 0.3s ease;
+  animation: slideIn 0.5s ease;
+}
+
+[data-theme="light"] .rankCard {
+  background: linear-gradient(135deg, #f0f7ff 0%, #e0effe 100%);
+  border-color: #bae1ff;
+  color: #0056b3;
+  box-shadow: 0 4px 12px rgba(0, 86, 179, 0.08);
+}
+
+[data-theme="dark"] .rankCard {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.05) 100%);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #93c5fd;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.rankTitle {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 0.25rem;
+  opacity: 0.8;
+}
+
+.rankValue {
+  font-size: 1.5rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.rankTotal {
+  font-size: 1rem;
+  opacity: 0.7;
+  font-weight: 500;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

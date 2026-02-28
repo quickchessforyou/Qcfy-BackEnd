@@ -1,0 +1,235 @@
+.casualPuzzlePage {
+  min-height: 100vh;
+  background-color: #161512;
+  /* Lichess Dark Theme style */
+  color: #fff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 20px;
+}
+
+/* Loading State */
+.loading {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #8c8c8c;
+}
+
+.loadingIcon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.5;
+  }
+}
+
+/* Header */
+.header {
+  max-width: 1000px;
+  margin: 0 auto 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #262421;
+  padding: 15px 25px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.headerIcon {
+  font-size: 2.5rem;
+  color: #629924;
+  /* Chess Green */
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.header p {
+  margin: 0;
+  color: #8c8c8c;
+  font-size: 0.9rem;
+}
+
+.statBox {
+  text-align: right;
+}
+
+.statBox span {
+  display: block;
+  font-size: 0.8rem;
+  color: #8c8c8c;
+}
+
+.statBox strong {
+  font-size: 1.5rem;
+  color: #e2e2e2;
+}
+
+/* Main Content Grid */
+.content {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  /* Info : Board */
+  gap: 30px;
+}
+
+/* Puzzle Info Sidebar */
+.puzzleInfo {
+  background: #262421;
+  padding: 25px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  height: fit-content;
+}
+
+.statusHeader h2 {
+  margin: 0;
+  font-size: 1.8rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.textRed {
+  color: #d32f2f;
+}
+
+.textGreen {
+  color: #629924;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 15px;
+  border-radius: 6px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  justify-content: flex-end;
+}
+
+.tag {
+  background: #3c3934;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: #bababa;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn {
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #363431;
+  color: #bababa;
+  transition: 0.2s;
+}
+
+.btn:hover {
+  background: #45423e;
+  color: #fff;
+}
+
+.btnPrimary {
+  background: #629924;
+  color: white;
+}
+
+.btnPrimary:hover {
+  background: #75b030;
+}
+
+.btnSkip {
+  background: transparent;
+  border: 1px solid #363431;
+}
+
+.solutionBox {
+  background: #2d3820;
+  padding: 15px;
+  border-radius: 6px;
+  color: #98c968;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  line-height: 1.4;
+}
+
+/* Board Container */
+.boardContainer {
+  background: #262421;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+  /* Ensures the board is square and responsive */
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .content {
+    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column-reverse;
+    /* Board on top */
+  }
+
+  .header {
+    flex-direction: column;
+    text-align: center;
+    gap: 15px;
+  }
+}

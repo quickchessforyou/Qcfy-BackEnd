@@ -1,0 +1,21 @@
+.mainWrapper {
+  width: 100%;
+  overflow-x: hidden;
+  background-color: var(--bg-light);
+}
+
+.sectionWrapper {
+  width: 100%;
+  /* No default padding here, let components handle it */
+  position: relative;
+}
+
+/* Ensure smooth scrolling for anchor links */
+:global(html) {
+  scroll-behavior: smooth;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  /* Any global mobile adjustments */
+}

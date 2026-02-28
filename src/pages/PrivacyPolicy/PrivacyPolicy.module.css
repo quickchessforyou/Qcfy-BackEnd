@@ -1,0 +1,197 @@
+.wrapper {
+    min-height: 100vh;
+    background: var(--bg-light);
+    padding: 120px 20px 60px;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: var(--bg-white);
+    padding: 60px;
+    border-radius: 20px;
+    box-shadow: var(--shadow-lg);
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 60px;
+    padding-bottom: 30px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.header h1 {
+    font-size: 2.5rem;
+    color: var(--text-heading);
+    margin-bottom: 10px;
+    font-weight: 800;
+}
+
+.lastUpdated {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
+.section {
+    margin-bottom: 50px;
+}
+
+.section:last-child {
+    margin-bottom: 0;
+}
+
+.section h2 {
+    font-size: 1.75rem;
+    color: var(--primary);
+    margin-bottom: 20px;
+    font-weight: 700;
+}
+
+.section p {
+    color: var(--text-primary);
+    font-size: 1rem;
+    line-height: 1.8;
+    margin-bottom: 16px;
+}
+
+.section p:last-child {
+    margin-bottom: 0;
+}
+
+.section ul {
+    margin: 16px 0;
+    padding-left: 30px;
+}
+
+.section ul li {
+    color: var(--text-primary);
+    font-size: 1rem;
+    line-height: 1.8;
+    margin-bottom: 10px;
+}
+
+.contactInfo {
+    background: var(--bg-secondary);
+    padding: 25px;
+    border-radius: 12px;
+    border-left: 4px solid var(--primary);
+}
+
+.contactInfo p {
+    margin-bottom: 12px;
+    font-size: 1.05rem;
+    color: var(--text-primary);
+}
+
+.contactInfo p:last-child {
+    margin-bottom: 0;
+}
+
+.contactInfo strong {
+    color: var(--text-secondary);
+}
+
+/* Explicit theme overrides to ensure proper text colors */
+[data-theme='light'] .section p,
+[data-theme='light'] .section ul li,
+[data-theme='light'] .contactInfo p {
+    color: #495057 !important; /* Dark grey for light theme */
+}
+
+[data-theme='light'] .lastUpdated {
+    color: #6c757d !important; /* Muted grey for light theme */
+}
+
+[data-theme='light'] .contactInfo strong {
+    color: #212529 !important; /* Almost black for light theme */
+}
+
+[data-theme='light'] .header h1 {
+    color: #212529 !important; /* Almost black for headings in light theme */
+}
+
+/* Dark theme explicit overrides */
+[data-theme='dark'] .section p,
+[data-theme='dark'] .section ul li,
+[data-theme='dark'] .contactInfo p {
+    color: #bababa !important; /* Light grey for dark theme */
+}
+
+[data-theme='dark'] .lastUpdated {
+    color: #999999 !important; /* Muted grey for dark theme */
+}
+
+[data-theme='dark'] .contactInfo strong {
+    color: #ffffff !important; /* White for dark theme */
+}
+
+[data-theme='dark'] .header h1 {
+    color: #e0e0e0 !important; /* Light grey for headings in dark theme */
+}
+
+/* Fallback for when no theme attribute is set (default to light theme) */
+:root:not([data-theme]) .section p,
+:root:not([data-theme]) .section ul li,
+:root:not([data-theme]) .contactInfo p {
+    color: #495057 !important; /* Dark grey for default/light theme */
+}
+
+:root:not([data-theme]) .lastUpdated {
+    color: #6c757d !important; /* Muted grey for default/light theme */
+}
+
+:root:not([data-theme]) .contactInfo strong {
+    color: #212529 !important; /* Almost black for default/light theme */
+}
+
+:root:not([data-theme]) .header h1 {
+    color: #212529 !important; /* Almost black for headings in default/light theme */
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .wrapper {
+        padding: 100px 20px 40px;
+    }
+
+    .container {
+        padding: 40px 30px;
+    }
+
+    .header h1 {
+        font-size: 2rem;
+    }
+
+    .section h2 {
+        font-size: 1.5rem;
+    }
+
+    .section p,
+    .section ul li {
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 30px 20px;
+    }
+
+    .header {
+        margin-bottom: 40px;
+        padding-bottom: 20px;
+    }
+
+    .header h1 {
+        font-size: 1.75rem;
+    }
+
+    .section {
+        margin-bottom: 40px;
+    }
+
+    .section h2 {
+        font-size: 1.35rem;
+    }
+}

@@ -1,0 +1,437 @@
+/* Main Container */
+.competition-leaderboard {
+  background: #18191a;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  color: #e4e6eb;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  height: 100%;
+  max-height: 600px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.leaderboard-header-stylish {
+  background: linear-gradient(135deg, #242526 0%, #3a3b3c 100%);
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.leaderboard-header-stylish h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #d2b561;
+  letter-spacing: 0.5px;
+}
+
+.leaderboard-header-stylish .subtitle {
+  margin: 2px 0 0 0;
+  font-size: 0.75rem;
+  color: #b0b3b8;
+  font-weight: 500;
+}
+
+.refresh-btn-stylish {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: #e4e6eb;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.refresh-btn-stylish:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: rotate(180deg);
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* List Container */
+.leaderboard-list-stylish {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  background: #18191a;
+  /* Scrollbar Styling */
+  scrollbar-width: thin;
+  scrollbar-color: #4e4f50 #18191a;
+}
+
+.leaderboard-list-stylish::-webkit-scrollbar {
+  width: 6px;
+}
+
+.leaderboard-list-stylish::-webkit-scrollbar-track {
+  background: #18191a;
+}
+
+.leaderboard-list-stylish::-webkit-scrollbar-thumb {
+  background-color: #4e4f50;
+  border-radius: 10px;
+}
+
+/* Leaderboard Card */
+.leaderboard-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #242526;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: slideIn 0.3s ease-out forwards;
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+@keyframes slideIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.leaderboard-card:hover {
+  transform: translateY(-2px) scale(1.01);
+  background: #3a3b3c;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border-color: rgba(210, 181, 97, 0.2);
+}
+
+.leaderboard-card.current-user-card {
+  background: rgba(210, 181, 97, 0.1);
+  border: 1px solid rgba(210, 181, 97, 0.3);
+}
+
+/* Left components (Rank + User) */
+.card-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.rank-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+}
+
+.rank-number {
+  font-weight: 700;
+  color: #6c7075;
+  font-size: 1rem;
+}
+
+.rank-icon {
+  font-size: 1.25rem;
+}
+
+.rank-icon.gold {
+  color: #FFD700;
+  filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.3));
+}
+
+.rank-icon.silver {
+  color: #C0C0C0;
+  filter: drop-shadow(0 0 5px rgba(192, 192, 192, 0.3));
+}
+
+.rank-icon.bronze {
+  color: #CD7F32;
+  filter: drop-shadow(0 0 5px rgba(205, 127, 50, 0.3));
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-avatar {
+  font-size: 1.5rem;
+  color: #4e4f50;
+  display: flex;
+}
+
+.username {
+  font-weight: 600;
+  color: #e4e6eb;
+  font-size: 0.95rem;
+}
+
+.you-badge {
+  background: rgba(210, 181, 97, 0.2);
+  color: #d2b561;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+/* Right components (Stats) */
+.card-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.stat-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.stat-value {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #e4e6eb;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-label {
+  font-size: 0.65rem;
+  color: #b0b3b8;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.stat-group.primary .stat-value {
+  color: #d2b561;
+  font-size: 1.1rem;
+}
+
+.stat-divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.icon-small {
+  font-size: 0.8rem;
+  color: #b0b3b8;
+}
+
+/* Loading State */
+.loading-pulse {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+}
+
+.competition-leaderboard.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+
+/* Empty State */
+.empty-state-stylish {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+  color: #b0b3b8;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  color: #3a3b3c;
+  margin-bottom: 16px;
+}
+
+.join-btn-stylish {
+  background: #d2b561;
+  color: #18191a;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  margin-top: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.join-btn-stylish:hover {
+  background: #eacb76;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(210, 181, 97, 0.3);
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .leaderboard-card {
+    padding: 10px;
+  }
+
+  .username {
+    font-size: 0.85rem;
+  }
+
+  .stat-group.primary .stat-value {
+    font-size: 1rem;
+  }
+
+  .stat-label {
+    display: none;
+  }
+
+  .rank-display {
+    width: 24px;
+  }
+}
+
+/* Light Theme Support */
+.competition-leaderboard.light-theme {
+  background: #ffffff;
+  color: #1a1a2e;
+  border: none;
+  box-shadow: none;
+}
+
+.competition-leaderboard.light-theme .leaderboard-header-stylish {
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.competition-leaderboard.light-theme .leaderboard-header-stylish h3 {
+  color: #1a1a2e;
+}
+
+.competition-leaderboard.light-theme .leaderboard-header-stylish .subtitle {
+  color: #6c757d;
+}
+
+.competition-leaderboard.light-theme .refresh-btn-stylish {
+  background: white;
+  color: #495057;
+  border: 1px solid #dee2e6;
+}
+
+.competition-leaderboard.light-theme .refresh-btn-stylish:hover {
+  background: #e9ecef;
+  transform: rotate(180deg);
+}
+
+.competition-leaderboard.light-theme .leaderboard-list-stylish {
+  background: #ffffff;
+  scrollbar-color: #ced4da #f1f3f5;
+}
+
+.competition-leaderboard.light-theme .leaderboard-list-stylish::-webkit-scrollbar-track {
+  background: #f1f3f5;
+}
+
+.competition-leaderboard.light-theme .leaderboard-list-stylish::-webkit-scrollbar-thumb {
+  background-color: #ced4da;
+}
+
+.competition-leaderboard.light-theme .leaderboard-card {
+  background: #ffffff;
+  border: 1px solid #e9ecef;
+}
+
+.competition-leaderboard.light-theme .leaderboard-card:hover {
+  background: #f8f9fa;
+  border-color: #adb5bd;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.competition-leaderboard.light-theme .leaderboard-card.current-user-card {
+  background: #fff9db;
+  /* Light yellow for current user */
+  border: 1px solid #ffe066;
+}
+
+.competition-leaderboard.light-theme .rank-number {
+  color: #6c757d;
+}
+
+.competition-leaderboard.light-theme .user-avatar {
+  color: #adb5bd;
+}
+
+.competition-leaderboard.light-theme .username {
+  color: #1a1a2e;
+}
+
+.competition-leaderboard.light-theme .you-badge {
+  background: rgba(210, 181, 97, 0.2);
+  color: #bfa34a;
+}
+
+.competition-leaderboard.light-theme .stat-value {
+  color: #1a1a2e;
+}
+
+.competition-leaderboard.light-theme .stat-label {
+  color: #6c757d;
+}
+
+.competition-leaderboard.light-theme .stat-group.primary .stat-value {
+  color: #d2b561;
+}
+
+.competition-leaderboard.light-theme .stat-divider {
+  background: #e9ecef;
+}
+
+.competition-leaderboard.light-theme .icon-small {
+  color: #adb5bd;
+}
+
+.competition-leaderboard.light-theme .empty-state-stylish {
+  color: #6c757d;
+}
+
+.competition-leaderboard.light-theme .empty-icon {
+  color: #dee2e6;
+}

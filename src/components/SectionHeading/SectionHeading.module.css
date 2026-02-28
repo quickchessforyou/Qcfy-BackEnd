@@ -1,0 +1,42 @@
+/* =============================================
+   SECTION HEADING — Unified Typography
+   Responsive: 45px → 34px → 28px
+   ============================================= */
+
+.sectionHeading {
+  font-family: 'Inter', 'DM Sans', -apple-system, sans-serif;
+  font-weight: 800;
+  font-size: 2.8125rem;
+  /* 45px */
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, var(--text-heading, #1a1d26), var(--primary, #b58863));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.center {
+  text-align: center;
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .sectionHeading {
+    font-size: 2.125rem;
+    /* 34px */
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .sectionHeading {
+    font-size: 1.75rem;
+    /* 28px */
+  }
+
+  .center {
+    text-align: left;
+  }
+}

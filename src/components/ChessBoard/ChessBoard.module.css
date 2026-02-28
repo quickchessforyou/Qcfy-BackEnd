@@ -1,0 +1,317 @@
+.boardContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--gray);
+  position: relative;
+}
+
+.feedback {
+  position: absolute;
+  top: 20px;
+  padding: 12px 30px;
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  font-weight: 700;
+  z-index: 100;
+  animation: slideDown 0.3s ease-out;
+  box-shadow: var(--shadow-lg);
+  letter-spacing: 0.3px;
+}
+
+.correct {
+  background: linear-gradient(135deg, var(--success), #2ecc71);
+  color: var(--white);
+}
+
+.wrong {
+  background: linear-gradient(135deg, var(--error), #c0392b);
+  color: var(--white);
+}
+
+.solved {
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: var(--white);
+  font-size: 18px;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.board {
+  display: flex;
+  flex-direction: column;
+  border: 4px solid var(--primary-dark);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(139, 115, 85, 0.25);
+  overflow: hidden;
+}
+
+.row {
+  display: flex;
+}
+
+.square {
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+/* Square colors are now applied via inline styles from theme context */
+
+/* .square:hover {
+  filter: brightness(0.92);
+} */
+
+.selected {
+  background-color: #baca44 !important;
+  box-shadow: inset 0 0 0 3px #829769;
+}
+
+.possibleMove::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background-color: rgba(139, 111, 71, 0.3);
+  border-radius: 50%;
+  border: 2px solid rgba(139, 111, 71, 0.5);
+  transition: all 0.15s ease;
+}
+
+.lastMove {
+  position: relative;
+}
+
+.lastMove::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(20, 180, 180, 0.45);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.piece {
+  width: 90%;
+  height: 90%;
+  user-select: none;
+  z-index: 2;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  transition: transform 0.15s ease;
+  cursor: grab;
+}
+
+.piece:active {
+  cursor: grabbing;
+}
+
+/* removed hover scale */
+
+
+/* Ensure smooth dragging */
+.boardContainer {
+  user-select: none;
+}
+
+.board {
+  user-select: none;
+}
+
+
+
+
+.square.dragOver {
+  background-color: rgba(186, 202, 68, 0.3) !important;
+  box-shadow: inset 0 0 0 2px rgba(130, 151, 105, 0.5);
+  transition: all 0.1s ease;
+}
+
+.possibleMove:hover::after {
+  transform: scale(1.1);
+  background-color: rgba(139, 111, 71, 0.5);
+}
+
+.rankLabel {
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  font-size: 12px;
+  font-weight: 700;
+  z-index: 5;
+  pointer-events: none;
+  line-height: 1;
+}
+
+.fileLabel {
+  position: absolute;
+  bottom: 2px;
+  right: 3px;
+  font-size: 12px;
+  font-weight: 700;
+  z-index: 5;
+  pointer-events: none;
+  line-height: 1;
+}
+
+/* Media queries removed for board sizing - relying on JS transform scale */
+
+
+
+/* Square where piece is being dragged from */
+.dragSource {
+  position: relative;
+}
+
+.dragSource::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(186, 202, 68, 0.3);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* The piece that remains on the source square should have reduced opacity */
+.dragSourcePiece {
+  opacity: 0.3 !important;
+  cursor: grabbing !important;
+}
+
+/* Floating piece that follows the cursor */
+.floatingPiece {
+  position: absolute;
+  width: 49px;
+  height: 49px;
+  z-index: 1000;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+  opacity: 1 !important;
+  /* Full opacity for the dragging piece */
+  transition: none;
+  /* No transition for smooth following */
+  user-select: none;
+}
+
+/* Media queries removed to rely on JS scaling for responsiveness */
+/* This ensures the logical coordinate system matches the visual sizing */
+
+/* --- PROMOTION MODAL --- */
+.promotionOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.promotionModal {
+  background: white;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  /* border: 1px solid var(--border-color); */
+  animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.promotionHeader {
+  font-weight: 700;
+  color: #333;
+  text-align: center;
+  font-size: 1rem;
+}
+
+.promotionOptions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.promotionOption {
+  width: 60px;
+  height: 60px;
+  /* background: #f0f0f0; */
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.2s;
+  border: 2px solid transparent;
+}
+
+.promotionOption:hover {
+  background: #f3f4f6;
+  border-color: #b58863;
+  transform: translateY(-2px);
+}
+
+.promotionOption img {
+  width: 80%;
+  height: 80%;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.promotionCancel {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #999;
+  cursor: pointer;
+  margin-top: -0.5rem;
+}
+
+.promotionCancel:hover {
+  color: #666;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes popIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

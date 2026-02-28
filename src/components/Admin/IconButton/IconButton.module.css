@@ -1,0 +1,54 @@
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 1.1rem;
+  text-decoration: none;
+  background: transparent;
+}
+
+.iconButton:hover {
+  transform: scale(1.1);
+}
+
+.default {
+  color: #666;
+}
+
+.default:hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.primary {
+  color: #ff9800;
+}
+
+.primary:hover {
+  background: #fff3e0;
+  color: #ff6f00;
+}
+
+.danger {
+  color: #f44336;
+}
+
+.danger:hover {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.success {
+  color: #4caf50;
+}
+
+.success:hover {
+  background: #e8f5e9;
+  color: #2e7d32;
+}

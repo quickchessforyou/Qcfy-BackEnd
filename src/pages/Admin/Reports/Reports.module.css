@@ -1,0 +1,103 @@
+.reports {
+  max-width: 1400px;
+}
+
+.header {
+  margin-bottom: 30px;
+}
+
+.header h2 {
+  font-size: 2rem;
+  margin: 0 0 5px 0;
+  color: #1a1a2e;
+}
+
+.header p {
+  color: #666;
+  margin: 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 25px;
+  margin-bottom: 40px;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+}
+
+.card h3 {
+  margin: 0 0 15px 0;
+  font-size: 1.3rem;
+  color: #1a1a2e;
+}
+
+.card p {
+  color: #666;
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+.viewBtn {
+  background: #d2b561;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.viewBtn:hover {
+  background: #b58863;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(210, 181, 97, 0.35);
+}
+
+.exportSection {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.exportSection h3 {
+  margin: 0 0 20px 0;
+  font-size: 1.5rem;
+  color: #1a1a2e;
+}
+
+.exportOptions {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.exportBtn {
+  background: #f8f9fa;
+  color: #333;
+  padding: 12px 24px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.exportBtn:hover {
+  background: #d2b561;
+  color: white;
+  border-color: #d2b561;
+}

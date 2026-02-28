@@ -1,0 +1,17 @@
+/* App.css 
+   Most styles have been moved to index.css for global availability.
+   Keep this file for App-specific root layout adjustments if necessary.
+*/
+
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    padding-bottom: var(--bottom-nav-height);
+    /* Make space for sticky bottom nav */
+  }
+}

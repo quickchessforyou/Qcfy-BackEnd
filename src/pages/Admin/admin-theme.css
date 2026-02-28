@@ -1,0 +1,86 @@
+/* Global Light Gold Theme for Admin Panel */
+
+:root {
+  --admin-primary: #d2b561;
+  --admin-primary-dark: #b58863;
+  --admin-primary-darker: #8b7332;
+  --admin-primary-light: #e5d9a8;
+  --admin-primary-lighter: #ffd9d9;
+  --admin-bg: #faf8f3;
+  --admin-card-bg: #ffffff;
+  --admin-text: #2d2416;
+  --admin-text-light: #666;
+  --admin-border: #e8e3d5;
+  --admin-hover: #ffd9d9;
+}
+
+/* Primary Buttons */
+.admin-primary-btn {
+  background: var(--admin-primary) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(210, 181, 97, 0.25) !important;
+  border: none !important;
+}
+
+.admin-primary-btn:hover {
+  background: var(--admin-primary-dark) !important;
+  box-shadow: 0 4px 12px rgba(210, 181, 97, 0.35) !important;
+  transform: translateY(-1px);
+}
+
+/* Primary Color */
+.admin-primary-color {
+  color: var(--admin-primary) !important;
+}
+
+/* Primary Background */
+.admin-primary-bg {
+  background: var(--admin-primary) !important;
+}
+
+/* Primary Border */
+.admin-primary-border {
+  border-color: var(--admin-primary) !important;
+}
+
+/* Focus States */
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--admin-primary) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(210, 181, 97, 0.1) !important;
+}
+
+/* Text Styles */
+.admin-text {
+  color: var(--admin-text) !important;
+}
+
+.admin-text-light {
+  color: var(--admin-text-light) !important;
+}
+
+/* Table Headers */
+.admin-table-header {
+  background: var(--admin-primary-lighter) !important;
+  color: var(--admin-text) !important;
+}
+
+/* Hover States */
+.admin-hover-bg:hover {
+  background: var(--admin-hover) !important;
+}
+
+/* Card Styles */
+.admin-card {
+  background: var(--admin-card-bg) !important;
+  border: 1px solid var(--admin-border) !important;
+  border-radius: 8px !important;
+}
+
+/* Badge Styles */
+.admin-badge-primary {
+  background: var(--admin-primary-lighter) !important;
+  color: var(--admin-primary-darker) !important;
+}

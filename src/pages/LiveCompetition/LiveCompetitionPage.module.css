@@ -1,0 +1,919 @@
+/* Container */
+.live-competition-page {
+    width: 100%;
+    min-height: 100vh;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.game-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    background-color: var(--background-color);
+}
+
+/* Loading & Error */
+.live-competition-loading,
+.live-competition-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    text-align: center;
+}
+
+.loading-spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border-left-color: var(--primary-color);
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Participation Screen */
+.participation-screen,
+.lobby-screen {
+    max-width: 800px;
+    margin: 40px auto;
+    background: var(--card-bg);
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.competition-info h1,
+.competition-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    color: var(--primary-color);
+}
+
+.competition-description {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin-bottom: 30px;
+}
+
+.competition-details {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin-bottom: 40px;
+    text-align: left;
+    background: var(--background-secondary);
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.detail-item .label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.detail-item .value {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.participation-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.participate-btn,
+.submit-finish-btn,
+.correct-solution-btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-weight: 600;
+}
+
+.participate-btn:hover,
+.submit-finish-btn:hover {
+    background-color: var(--primary-color-dark);
+}
+
+.participate-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.back-btn,
+.leave-btn {
+    background-color: transparent;
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 12px 24px;
+    font-size: 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.back-btn:hover,
+.leave-btn:hover {
+    background-color: var(--background-secondary);
+}
+
+/* Lobby Screen */
+.status-badge {
+    display: inline-block;
+    background: var(--background-secondary);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 500;
+    margin-top: 10px;
+    font-size: 0.9rem;
+    border: 1px solid var(--border-color);
+}
+
+.countdown-section {
+    margin: 30px 0;
+    padding: 20px;
+    background: var(--primary-light-bg);
+    border-radius: 8px;
+}
+
+.participants-section {
+    margin-bottom: 30px;
+}
+
+/* Game Interface Layout */
+.game-header {
+    height: 70px;
+    padding: 0 24px;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.header-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.header-info h1 {
+    font-size: 1.2rem;
+    margin: 0;
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.score-display {
+    font-size: 1.1rem;
+    font-weight: 700;
+    background: var(--background-secondary);
+    padding: 8px 16px;
+    border-radius: 6px;
+}
+
+.game-layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Left: Board Section */
+.board-section {
+    flex: 1;
+    background: var(--background-secondary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    overflow: hidden;
+    position: relative;
+}
+
+.active-puzzle-board {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 800px;
+    height: 100%;
+}
+
+.board-header {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+    justify-content: center;
+}
+
+.board-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.difficulty-badge {
+    font-size: 0.8rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.difficulty-badge.easy {
+    background: #4caf50;
+    color: white;
+}
+
+.difficulty-badge.medium {
+    background: #ff9800;
+    color: white;
+}
+
+.difficulty-badge.hard {
+    background: #f44336;
+    color: white;
+}
+
+.chess-board-wrapper {
+    /* Let logic inside board handle sizing via scale, but limit container */
+    max-width: 90vh;
+    max-height: 80vh;
+    width: 100%;
+    aspect-ratio: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.puzzle-success-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(46, 125, 50, 0.95);
+    color: white;
+    padding: 20px 40px;
+    border-radius: 12px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    animation: fadeInOut 2s ease-in-out forwards;
+    pointer-events: none;
+    z-index: 10;
+}
+
+@keyframes fadeInOut {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -40%);
+    }
+
+    20% {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+
+    80% {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -60%);
+    }
+}
+
+.no-puzzle-selected {
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    background: var(--card-bg);
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Right: Sidebar Section */
+.sidebar-section {
+    width: 350px;
+    background: var(--card-bg);
+    border-left: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.puzzle-list-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.puzzle-list-container h3 {
+    padding: 15px 20px;
+    margin: 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 1rem;
+    font-weight: 600;
+    background: var(--background-secondary);
+}
+
+.puzzle-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+}
+
+.puzzle-list-item {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: background-color 0.2s;
+}
+
+.puzzle-list-item:hover {
+    background-color: var(--background-secondary);
+}
+
+.puzzle-list-item.active {
+    background-color: var(--primary-light-bg);
+    border-left: 3px solid var(--primary-color);
+}
+
+.puzzle-list-item.solved {
+    opacity: 0.7;
+    background-color: rgba(76, 175, 80, 0.05);
+    border-left: 3px solid #4caf50;
+}
+
+.puzzle-list-item.failed {
+    opacity: 0.7;
+    background-color: rgba(244, 67, 54, 0.05);
+    border-left: 3px solid #f44336;
+}
+
+.puzzle-list-item.locked {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.puzzle-list-item.in-progress {
+    background-color: rgba(255, 152, 0, 0.05);
+    border-left: 3px solid #ff9800;
+}
+
+.puzzle-index {
+    font-weight: bold;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    width: 25px;
+}
+
+.puzzle-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.puzzle-name {
+    font-weight: 500;
+    font-size: 0.95rem;
+    margin-bottom: 2px;
+}
+
+.puzzle-points {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.check-icon {
+    color: #4caf50;
+    font-weight: bold;
+}
+
+.mini-leaderboard {
+    flex-shrink: 0;
+    max-height: 40%;
+    display: flex;
+    flex-direction: column;
+}
+
+.toggle-leaderboard {
+    width: 100%;
+    padding: 12px;
+    background: none;
+    border: none;
+    border-top: 1px solid var(--border-color);
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.leaderboard-scroll {
+    flex: 1;
+    overflow-y: auto;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .game-layout {
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .game-container {
+        height: auto;
+        overflow-y: auto;
+    }
+
+    .board-section {
+        min-height: 60vh;
+    }
+
+    .sidebar-section {
+        width: 100%;
+        height: auto;
+        border-left: none;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .puzzle-list {
+        max-height: 300px;
+    }
+}
+
+/* Competition Header */
+.competition-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 15px 20px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    gap: 20px;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+}
+
+.header-center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.header-center h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    text-align: center;
+}
+
+.connection-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.indicator {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.indicator.connected {
+    background-color: rgba(76, 175, 80, 0.1);
+    color: #4caf50;
+}
+
+.indicator.disconnected {
+    background-color: rgba(244, 67, 54, 0.1);
+    color: #f44336;
+}
+
+.header-actions {
+    display: flex;
+    gap: 10px;
+    flex: 0 0 auto;
+}
+
+.toggle-leaderboard-btn,
+.leave-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+}
+
+.toggle-leaderboard-btn:hover,
+.leave-btn:hover {
+    background-color: var(--background-secondary);
+}
+
+/* Error and Status Banners */
+.error-banner,
+.competition-ended-banner {
+    padding: 12px 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.error-banner {
+    background-color: rgba(244, 67, 54, 0.1);
+    color: #f44336;
+    border: 1px solid rgba(244, 67, 54, 0.2);
+}
+
+.competition-ended-banner {
+    background-color: rgba(76, 175, 80, 0.1);
+    color: #4caf50;
+    border: 1px solid rgba(76, 175, 80, 0.2);
+}
+
+/* Competition Content Layout */
+.competition-content {
+    display: flex;
+    gap: 20px;
+    flex: 1;
+}
+
+.main-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.right-panel {
+    width: 350px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Race Section Below Board */
+.race-section {
+    width: 100%;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Participant Stats */
+.participant-stats {
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.participant-stats h3 {
+    margin: 0 0 15px 0;
+    font-size: 1.1rem;
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.stats-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 12px;
+    background: var(--background-secondary);
+    border-radius: 8px;
+    transition: transform 0.2s;
+}
+
+.stat-item:hover {
+    transform: translateY(-2px);
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Leaderboard Container */
+.leaderboard-container {
+    background: var(--card-bg);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    flex: 1;
+}
+
+/* Puzzles Section */
+.puzzles-section {
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    flex: 1;
+}
+
+.puzzles-section h3 {
+    margin: 0 0 20px 0;
+    font-size: 1.2rem;
+    color: var(--primary-color);
+}
+
+.puzzles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.puzzle-card {
+    background: var(--background-secondary);
+    padding: 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+    position: relative;
+}
+
+.puzzle-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.puzzle-card.solved {
+    border-color: #4caf50;
+    background-color: rgba(76, 175, 80, 0.05);
+}
+
+.puzzle-card.failed {
+    border-color: #f44336;
+    background-color: rgba(244, 67, 54, 0.05);
+}
+
+.puzzle-card.locked {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.puzzle-card.locked:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.puzzle-card.disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+}
+
+.puzzle-number {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.puzzle-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: var(--text-color);
+}
+
+.puzzle-difficulty {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+}
+
+.solved-indicator {
+    background-color: rgba(76, 175, 80, 0.1);
+    color: #4caf50;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.failed-indicator {
+    background-color: rgba(244, 67, 54, 0.1);
+    color: #f44336;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.in-progress-indicator {
+    background-color: rgba(255, 152, 0, 0.1);
+    color: #ff9800;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Puzzle Solving Interface */
+.puzzle-solving-interface {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.puzzle-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.puzzle-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--primary-color);
+}
+
+.puzzle-info {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.difficulty,
+.category {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.difficulty {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.category {
+    background-color: var(--background-secondary);
+    color: var(--text-secondary);
+}
+
+.puzzle-content {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background: var(--background-secondary);
+}
+
+.chess-board-placeholder {
+    background: var(--card-bg);
+    padding: 40px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.temp-solution-buttons {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.correct-solution-btn {
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.wrong-solution-btn {
+    background-color: #f44336;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .competition-content {
+        flex-direction: column;
+    }
+
+    .right-panel {
+        width: 100%;
+    }
+
+    .puzzles-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .competition-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+
+    .header-actions {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .puzzles-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .puzzle-solving-interface {
+        height: auto;
+        min-height: 100vh;
+    }
+}

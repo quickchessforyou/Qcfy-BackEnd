@@ -1,0 +1,258 @@
+/* Competition List Premium Styles */
+.competitionList {
+  width: 100%;
+  max-width: 100%;
+  padding: 30px 40px;
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  box-sizing: border-box;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 30px;
+  background: white;
+  padding: 8px;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+  width: fit-content;
+}
+
+.tab {
+  padding: 10px 24px;
+  border: none;
+  background: transparent;
+  color: #6c757d;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 14px;
+}
+
+.tab:hover {
+  background: #f8f9fa;
+  color: #212529;
+}
+
+.tab.active {
+  background: #1a1a2e;
+  color: white;
+  box-shadow: 0 4px 6px rgba(26, 26, 46, 0.2);
+}
+
+.loading {
+  text-align: center;
+  padding: 80px 20px;
+  color: #adb5bd;
+  font-size: 1.1rem;
+}
+
+/* Modal Styles */
+.modalOverlay,
+.previewOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 40px;
+}
+
+.modal,
+.puzzleModal,
+.viewModal,
+.previewModal,
+.confirmModal {
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.viewModal {
+  max-width: 700px;
+}
+
+.confirmModal {
+  max-width: 480px;
+}
+
+.puzzleModal {
+  max-width: 1100px;
+  height: 85vh;
+}
+
+.previewModal {
+  max-width: 600px;
+}
+
+@keyframes modalPop {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modalHeader,
+.previewHeader,
+.confirmHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 32px;
+  border-bottom: 1px solid #e9ecef;
+  background: white;
+}
+
+.modalHeader h3,
+.previewHeader h3,
+.confirmHeader h3 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a2e;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.closeBtn {
+  background: #f8f9fa;
+  border: none;
+  font-size: 18px;
+  color: #495057;
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.closeBtn:hover {
+  background: #e9ecef;
+  transform: rotate(90deg);
+}
+
+.modalBody,
+.previewBody,
+.confirmBody {
+  padding: 32px;
+  overflow-y: auto;
+}
+
+/* View Modal Specifics */
+.viewDetailsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.detailCard {
+  background: #f8f9fa;
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid #e9ecef;
+}
+
+.detailCard.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.detailLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #868e96;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.detailValue {
+  color: #1a1a2e;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.modalFooter,
+.confirmActions {
+  padding: 24px 32px;
+  border-top: 1px solid #e9ecef;
+  background: #f8f9fa;
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+/* Badge Styles */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Puzzle Filters & List - reusing styles concepts */
+.puzzleFilters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 24px;
+  background: #f8f9fa;
+  border-radius: 16px;
+}
+
+.puzzleCount {
+  margin: 0 0 20px 0;
+  color: #6c757d;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: right;
+}
+
+/* Confirm Delete */
+.dangerIcon {
+  color: #fa5252;
+  font-size: 24px;
+  background: #fff5f5;
+  padding: 12px;
+  border-radius: 12px;
+}
+
+.warningText {
+  color: #fa5252;
+  background: #fff5f5;
+  padding: 12px;
+  border-radius: 8px;
+  margin-top: 16px;
+  font-size: 14px;
+}
