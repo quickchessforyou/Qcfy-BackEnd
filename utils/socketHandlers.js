@@ -550,6 +550,19 @@ const scheduleCompetitionEnd = (io, competitionId, endTime) => {
   }, delay);
 };
 
+const formatLeaderboardFromRedis = (redisData) => {
+  const result = [];
+
+  for (let i = 0; i < redisData.length; i += 2) {
+    result.push({
+      rank: i / 2 + 1,
+      userId: redisData[i],
+      score: Number(redisData[i + 1]),
+    });
+  }
+
+  return result;
+};
 /* =========================================================
    SOCKET INITIALIZER
 ========================================================= */
@@ -561,31 +574,29 @@ export const initializeSocketHandlers = (io) => {
     console.log("🔌 Connected:", socket.userId);
 
     /* ---------- JOIN ---------- */
-    socket.on("joinCompetition", async ({ competitionId }) => {
-      try {
-        const participant = await ParticipantModel.findOne({
-          competitionId,
-          userId: socket.userId,
-        });
+   socket.on("joinCompetition", async ({ competitionId }) => {
+  try {
+    socket.join(`competition_${competitionId}`);
 
-        if (!participant) {
-          return socket.emit("error", {
-            message: "Join competition via API first",
-          });
-        }
+    // Get leaderboard directly from Redis
+    const leaderboard = await redis.zrevrange(
+      leaderboardKey(competitionId),
+      0,
+      49,
+      "WITHSCORES"
+    );
 
-        socket.join(`competition_${competitionId}`);
+    const formatted = formatLeaderboardFromRedis(leaderboard);
 
-        const leaderboard = await getCurrentLeaderboard(competitionId);
-
-        socket.emit("competitionJoined", {
-          serverTime: Date.now(),
-          leaderboard,
-        });
-      } catch (err) {
-        console.error("joinCompetition:", err);
-      }
+    socket.emit("competitionJoined", {
+      serverTime: Date.now(),
+      leaderboard: formatted,
     });
+
+  } catch (err) {
+    console.error("joinCompetition:", err);
+  }
+});
 
     /* ---------- SUBMIT ---------- */
     socket.on("submitCompetition", async ({ competitionId }) => {
