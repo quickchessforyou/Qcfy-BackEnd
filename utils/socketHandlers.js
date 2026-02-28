@@ -490,40 +490,52 @@ const autoStartCompetition = async (io, competition) => {
    AUTO END COMPETITION
 ========================================================= */
 const handleCompetitionEnd = async (io, competitionId) => {
+  // Get final leaderboard fast from Redis/DB
   const leaderboard = await getCurrentLeaderboard(competitionId);
 
-  await CompetitionModel.findByIdAndUpdate(competitionId, {
-    status: "ENDED",
-    isActive: false,
-    updatedAt: new Date(),
-  });
-
-  await CompetitionRankingModel.deleteMany({ competitionId });
-
-  if (leaderboard.length) {
-    await CompetitionRankingModel.insertMany(
-      leaderboard.map((p) => ({
-        competitionId,
-        userId: p.userId,
-        username: p.username,
-        finalRank: p.rank,
-        finalScore: p.score,
-        puzzlesSolved: p.puzzlesSolved,
-        totalTime: p.timeSpent,
-        ENDEDAt: new Date(),
-      }))
-    );
-  }
-
-  try {
-    await redis.del(leaderboardKey(competitionId));
-  } catch (error) {
-    console.error(`[Leaderboard] Redis del error for ${competitionId}:`, error);
-  }
-
+  // 1. Emit immediately to frontend so players see it instantly without 5-6s delay!
   io.to(`competition_${competitionId}`).emit("competitionEnded", {
     leaderboard,
+    message: "Competition ended! Calculating final results...",
   });
+
+  // 2. Perform heavy DB updates in the background (fire and forget)
+  (async () => {
+    try {
+      await CompetitionModel.findByIdAndUpdate(competitionId, {
+        status: "ENDED",
+        isActive: false,
+        updatedAt: new Date(),
+      });
+
+      await CompetitionRankingModel.deleteMany({ competitionId });
+
+      if (leaderboard.length) {
+        await CompetitionRankingModel.insertMany(
+          leaderboard.map((p) => ({
+            competitionId,
+            userId: p.userId,
+            username: p.username,
+            finalRank: p.rank,
+            finalScore: p.score,
+            puzzlesSolved: p.puzzlesSolved,
+            totalTime: p.timeSpent,
+            ENDEDAt: new Date(),
+          }))
+        );
+      }
+
+      try {
+        await redis.del(leaderboardKey(competitionId));
+      } catch (error) {
+        console.error(`[Leaderboard] Redis del error for ${competitionId}:`, error);
+      }
+
+      console.log(`Competition ${competitionId} final results saved and cleaned up.`);
+    } catch (err) {
+      console.error(`Error saving final results for ${competitionId}:`, err);
+    }
+  })();
 };
 
 /* =========================================================
