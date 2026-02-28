@@ -3,7 +3,11 @@
 /* --- CONTAINER --- */
 .container {
   min-height: 100vh;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    sans-serif;
   display: flex;
   flex-direction: column;
   transition: background-color 0.3s ease;
@@ -48,7 +52,11 @@
 
 /* Dark Mode Live Status */
 [data-theme="dark"] .liveStatus {
-  background: linear-gradient(135deg, rgba(5, 150, 105, 0.25) 0%, rgba(5, 150, 105, 0.15) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(5, 150, 105, 0.25) 0%,
+    rgba(5, 150, 105, 0.15) 100%
+  );
   color: #6ee7b7;
   border-color: rgba(110, 231, 183, 0.3);
 }
@@ -62,7 +70,11 @@
 
 /* Dark Mode Review Status */
 [data-theme="dark"] .reviewStatus {
-  background: linear-gradient(135deg, rgba(75, 85, 99, 0.25) 0%, rgba(75, 85, 99, 0.15) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(75, 85, 99, 0.25) 0%,
+    rgba(75, 85, 99, 0.15) 100%
+  );
   color: #9ca3af;
   border-color: rgba(156, 163, 175, 0.3);
 }
@@ -193,7 +205,6 @@
 }
 
 @keyframes kingFloat {
-
   0%,
   100% {
     transform: translateY(0px);
@@ -266,7 +277,11 @@
 }
 
 [data-theme="dark"] .categoryBadge {
-  background: linear-gradient(135deg, rgba(217, 119, 6, 0.25), rgba(217, 119, 6, 0.12));
+  background: linear-gradient(
+    135deg,
+    rgba(217, 119, 6, 0.25),
+    rgba(217, 119, 6, 0.12)
+  );
   color: #fcd34d;
   border: 1px solid rgba(251, 191, 36, 0.3);
 }
@@ -468,7 +483,7 @@
 }
 
 .timerBadge {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 2.2rem; /* Slightly smaller to fit side-by-side */
   font-weight: 700;
   line-height: 1;
@@ -845,14 +860,18 @@
 [data-theme="light"] .rankCard {
   background: linear-gradient(145deg, #fffbf0 0%, #fff7e6 50%, #fef3d6 100%);
   border-color: #e5c07b;
-  box-shadow: 0 4px 16px rgba(181, 136, 99, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 4px 16px rgba(181, 136, 99, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 /* Dark Mode Rank Card */
 [data-theme="dark"] .rankCard {
   background: linear-gradient(145deg, #1f1a14 0%, #1a1510 50%, #211c15 100%);
   border-color: rgba(212, 163, 115, 0.35);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(212, 163, 115, 0.08);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(212, 163, 115, 0.08);
 }
 
 .rankHeader {
@@ -903,11 +922,17 @@
 }
 
 .rankNumber {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
   font-size: 2rem;
   font-weight: 800;
   line-height: 1;
-  background: linear-gradient(135deg, #d4a373 0%, #b58863 40%, #e8c9a0 60%, #b58863 100%);
+  background: linear-gradient(
+    135deg,
+    #d4a373 0%,
+    #b58863 40%,
+    #e8c9a0 60%,
+    #b58863 100%
+  );
   background-size: 200% 200%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -916,7 +941,6 @@
 }
 
 @keyframes rankShimmer {
-
   0%,
   100% {
     background-position: 0% 50%;
@@ -938,7 +962,12 @@
 }
 
 [data-theme="dark"] .rankDivider {
-  background: linear-gradient(to bottom, transparent, rgba(212, 163, 115, 0.4), transparent);
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(212, 163, 115, 0.4),
+    transparent
+  );
 }
 
 .rankMeta {
@@ -1013,7 +1042,6 @@
 }
 
 @keyframes progressShimmer {
-
   0%,
   100% {
     background-position: 0% 50%;
@@ -1038,7 +1066,6 @@
   color: #7a6a5a;
 }
 
-
 .paginationInfo {
   text-align: center;
   font-size: 0.75rem; /* Reduced font size */
@@ -1055,8 +1082,6 @@
 [data-theme="dark"] .paginationInfo {
   color: #d4a373;
 }
-
-
 
 .paginationContainer {
   display: flex;
@@ -1473,12 +1498,13 @@
     grid-template-columns: 1fr 1fr;
     max-width: 900px;
   }
-  
+
   /* On medium screens, board takes full width top, columns stack below */
-  .leftColumn, .rightColumn {
+  .leftColumn,
+  .rightColumn {
     grid-column: span 1;
   }
-  
+
   .boardArea {
     grid-column: 1 / -1;
     grid-row: 1;
@@ -1503,8 +1529,10 @@
     grid-template-columns: 1fr;
     gap: 20px;
   }
-  
-  .leftColumn, .rightColumn, .boardArea {
+
+  .leftColumn,
+  .rightColumn,
+  .boardArea {
     grid-column: 1 / -1;
   }
 
@@ -1544,7 +1572,6 @@
 }
 
 @media (max-width: 600px) {
-
   .leftPanel,
   .rightPanel {
     flex-direction: column;
@@ -1571,12 +1598,63 @@
    CHAPTER TABS (PuzzlePage student view)
    ============================================ */
 
-/* Tab bar sits above the control card */
+/* Tab bar container wrapped around tabs and minimal scroll indicator */
+.chapterNavContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+/* Scrollable area hiding the scrollbar */
+.chapterScrollWrapper {
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+}
+
+.chapterScrollWrapper::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
+/* Tab bar now stays in a single line */
 .chapterTabBar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
-  margin-bottom: 14px;
+  width: max-content;
+}
+
+/* Minimalist Scroll Indicator */
+.scrollIndicatorTrack {
+  width: 100%;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.08); /* fallback for light mode */
+  position: relative;
+  margin-top: -2px; /* Pull it slightly closer to the tabs */
+  overflow: hidden;
+}
+
+[data-theme="dark"] .scrollIndicatorTrack {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.scrollIndicatorThumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 15%; /* Thumb size relative to the track */
+  border-radius: 2px;
+  background: linear-gradient(90deg, #d4a373, #b58863);
+  transition: transform 0.15s ease-out;
+  will-change: transform;
 }
 
 /* Individual tab pill */
@@ -1593,6 +1671,7 @@
   border: 1.5px solid transparent;
   white-space: nowrap;
   font-family: inherit;
+  scroll-snap-align: start;
 }
 
 /* Light mode default tab */
@@ -1692,7 +1771,11 @@
 .countdownCircle {
   width: 180px;
   height: 180px;
-  background: linear-gradient(135deg, rgba(212, 163, 115, 0.2) 0%, rgba(139, 98, 66, 0.4) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(212, 163, 115, 0.2) 0%,
+    rgba(139, 98, 66, 0.4) 100%
+  );
   border: 2px solid rgba(212, 163, 115, 0.6);
   border-radius: 50%;
   box-shadow: 0 0 30px rgba(212, 163, 115, 0.3);

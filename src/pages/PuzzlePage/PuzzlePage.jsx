@@ -71,8 +71,51 @@ function PuzzlePage() {
   const [currentFrame, setCurrentFrame] = useState(0); // For pagination (0 = 1-20, 1 = 21-40, etc.)
   const ITEMS_PER_PAGE = 10;
 
-  // Chapter state
   const [activeChapterIndex, setActiveChapterIndex] = useState(0);
+
+  // Chapter scroll reference and minimal indicator state
+  const chapterScrollRef = useRef(null);
+  const [showScrollIndicator, setShowScrollIndicator] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  // Automatically scroll active chapter into view whenever activeChapterIndex changes
+  useEffect(() => {
+    if (chapterScrollRef.current) {
+      const activeTab = chapterScrollRef.current.querySelector(
+        `.${styles.chapterTabActive}`
+      );
+      if (activeTab) {
+        activeTab.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "center",
+        });
+      }
+    }
+  }, [activeChapterIndex]);
+
+  // Check if chapters overflow container to show/hide scroll indicator
+  const checkScrollOverflow = () => {
+    if (chapterScrollRef.current) {
+      const { scrollWidth, clientWidth } = chapterScrollRef.current;
+      setShowScrollIndicator(scrollWidth > clientWidth + 5); // 5px buffer
+    }
+  };
+
+  useEffect(() => {
+    checkScrollOverflow();
+    window.addEventListener("resize", checkScrollOverflow);
+    return () => window.removeEventListener("resize", checkScrollOverflow);
+  }, [competitionData?.chapters]);
+
+  // Handle native scroll to update the custom indicator thumb
+  const handleChapterScroll = (e) => {
+    const { scrollLeft, scrollWidth, clientWidth } = e.target;
+    const maxScroll = scrollWidth - clientWidth;
+    if (maxScroll > 0) {
+      setScrollProgress(scrollLeft / maxScroll);
+    }
+  };
 
   // If we have initial location state, we don't need to show the loading screen at all!
   const [loading, setLoading] = useState(!location.state?.competitionId);
@@ -1055,37 +1098,57 @@ function PuzzlePage() {
               {/* ---- Chapter Tabs --- */}
               {competitionData.chapters && competitionData.chapters.length > 0 && (
                 <>
-                  <div className={styles.chapterTabBar}>
-                    {competitionData.chapters.map((chapter, idx) => {
-                      const chPuzzleIds = (chapter.puzzleIds || []).map(id => id.toString());
-                      const chPuzzles = puzzles.filter(p => chPuzzleIds.includes((p._id || p.id).toString()));
-                      const solvedCount = chPuzzles.filter(p => puzzleStatuses[(p.id || p._id).toString()] === 'success').length;
-                      return (
-                        <button
-                          key={idx}
-                          type="button"
-                          className={`${styles.chapterTab} ${activeChapterIndex === idx ? styles.chapterTabActive : ''}`}
-                          onClick={() => {
-                            setActiveChapterIndex(idx);
-                            // ALWAYS reset frame to 0 when switching chapters
-                            setCurrentFrame(0);
-                            // Jump to first puzzle of this chapter if any
-                            if (chPuzzles.length > 0) {
-                              const firstPuzzleId = (chPuzzles[0]._id || chPuzzles[0].id).toString();
-                              const globalIdx = puzzles.findIndex(p => (p._id || p.id).toString() === firstPuzzleId);
-                              if (globalIdx !== -1) {
-                                setCurrentPuzzleIndex(globalIdx);
-                              }
-                            }
-                          }}
-                        >
-                          <span className={styles.chapterTabName}>{chapter.name}</span>
-                          <span className={styles.chapterTabBadge}>
-                            {solvedCount}/{chPuzzles.length}
-                          </span>
-                        </button>
-                      );
-                    })}
+                  <div className={styles.chapterNavContainer}>
+                    {/* Scrollable Wrapper without arrows */}
+                    <div
+                      className={styles.chapterScrollWrapper}
+                      ref={chapterScrollRef}
+                      onScroll={handleChapterScroll}
+                    >
+                      <div className={styles.chapterTabBar}>
+                        {competitionData.chapters.map((chapter, idx) => {
+                          const chPuzzleIds = (chapter.puzzleIds || []).map(id => id.toString());
+                          const chPuzzles = puzzles.filter(p => chPuzzleIds.includes((p._id || p.id).toString()));
+                          const solvedCount = chPuzzles.filter(p => puzzleStatuses[(p.id || p._id).toString()] === 'success').length;
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              className={`${styles.chapterTab} ${activeChapterIndex === idx ? styles.chapterTabActive : ''}`}
+                              onClick={() => {
+                                setActiveChapterIndex(idx);
+                                // ALWAYS reset frame to 0 when switching chapters
+                                setCurrentFrame(0);
+                                // Jump to first puzzle of this chapter if any
+                                if (chPuzzles.length > 0) {
+                                  const firstPuzzleId = (chPuzzles[0]._id || chPuzzles[0].id).toString();
+                                  const globalIdx = puzzles.findIndex(p => (p._id || p.id).toString() === firstPuzzleId);
+                                  if (globalIdx !== -1) {
+                                    setCurrentPuzzleIndex(globalIdx);
+                                  }
+                                }
+                              }}
+                            >
+                              <span className={styles.chapterTabName}>{chapter.name}</span>
+                              <span className={styles.chapterTabBadge}>
+                                {solvedCount}/{chPuzzles.length}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Minimalist Sub-indicator */}
+                    {showScrollIndicator && (
+                      <div className={styles.scrollIndicatorTrack} aria-hidden="true">
+                        {/* Thumb dynamic left offset mapping 0% to ~85% (leave 15% width for thumb) */}
+                        <div
+                          className={styles.scrollIndicatorThumb}
+                          style={{ transform: `translateX(${scrollProgress * 400}%)` }}
+                        />
+                      </div>
+                    )}
                   </div>
                   {/* Chapter Navigation Arrows */}
                   {competitionData.chapters.length > 1 && (
