@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   FaTrophy,
@@ -32,6 +32,7 @@ function Leaderboard() {
   const [isLive, setIsLive] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const hasAutoPaginatedRef = React.useRef(false);
 
   useEffect(() => {
     if (competitionId) {
@@ -91,6 +92,22 @@ function Leaderboard() {
       const response = await liveCompetitionAPI.getLeaderboard(competitionId);
       if (response.success && response.leaderboard) {
         setLeaderboard(response.leaderboard);
+
+        // Auto-paginate to the user's page on initial load
+        if (!hasAutoPaginatedRef.current) {
+          const currentId = getCurrentUser();
+          if (currentId) {
+            const userIndex = response.leaderboard.findIndex(u => {
+              const targetId = typeof u.userId === 'object' ? (u.userId?._id || u.userId?.id) : u.userId;
+              return String(targetId) === String(currentId);
+            });
+            if (userIndex !== -1) {
+              const expectedPage = Math.floor(userIndex / itemsPerPage) + 1;
+              setCurrentPage(expectedPage);
+              hasAutoPaginatedRef.current = true;
+            }
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to load leaderboard:', error);
@@ -124,11 +141,14 @@ function Leaderboard() {
 
   const getCurrentUser = () => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
-    return user.id;
+    return user.id || user._id;
   };
 
   const isCurrentUser = (userId) => {
-    return userId === getCurrentUser();
+    const currentId = getCurrentUser();
+    if (!currentId || !userId) return false;
+    const targetId = typeof userId === 'object' ? (userId._id || userId.id) : userId;
+    return String(targetId) === String(currentId);
   };
 
   const calculateAccuracy = (puzzlesSolved, totalPuzzles) => {

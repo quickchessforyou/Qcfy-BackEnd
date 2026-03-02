@@ -36,8 +36,8 @@ function PuzzleList() {
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      // Select all in current view
-      setSelectedPuzzles(paginatedPuzzles.map(p => p._id));
+      // Select all in filtered view (across all pages)
+      setSelectedPuzzles(filteredPuzzles.map(p => p._id));
     } else {
       setSelectedPuzzles([]);
     }
@@ -283,8 +283,9 @@ function PuzzleList() {
       label: (
         <input
           type="checkbox"
-          checked={paginatedPuzzles.length > 0 && selectedPuzzles.length === paginatedPuzzles.length}
+          checked={filteredPuzzles.length > 0 && selectedPuzzles.length === filteredPuzzles.length}
           onChange={handleSelectAll}
+          title="Select all filtered puzzles"
         />
       ),
       width: '40px',

@@ -476,9 +476,9 @@
   grid-template-columns: 48px 36px 1fr auto auto;
   align-items: center;
   gap: 0.65rem;
-  padding: 0.75rem 1.4rem;
-  border-radius: 10px;
-  margin: 0.5rem;
+  padding: 0.4rem 1.2rem;
+  border-radius: 8px;
+  margin: 0.25rem 0.6rem;
   background: var(--bg-white);
   border: 1px solid var(--border-color);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
@@ -553,8 +553,8 @@
 
 /* Small avatar in list */
 .rankAvatar {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--bg-secondary), #d4a37322);
   border: 2px solid var(--border-color);
@@ -562,7 +562,7 @@
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--text-primary);
   flex-shrink: 0;
 }

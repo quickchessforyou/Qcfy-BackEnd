@@ -4,7 +4,7 @@ import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../contexts/AuthContext';
 import { authAPI } from '../../services/api';
 import styles from './LoginModal.module.css';
-import { FaFacebookF } from 'react-icons/fa';
+import { FaFacebookF, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { FaInstagram } from 'react-icons/fa';
 
 function LoginModal({ isOpen, onClose, initialMode = 'login' }) {
@@ -15,6 +15,8 @@ function LoginModal({ isOpen, onClose, initialMode = 'login' }) {
   const [isSignupOTPMode, setIsSignupOTPMode] = useState(false); // New: for signup OTP
   const [isResetMode, setIsResetMode] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [tempToken, setTempToken] = useState(null);
   const [tempSignupData, setTempSignupData] = useState(null); // New: store signup data temporarily
   const [loading, setLoading] = useState(false);
@@ -435,7 +437,7 @@ function LoginModal({ isOpen, onClose, initialMode = 'login' }) {
                     className={styles.eyeIcon}
                     onClick={() => setShowNewPassword(!showNewPassword)}
                   >
-                    {showNewPassword ? '👁️' : '👁'}
+                    {showNewPassword ? <FaEyeSlash /> : <FaEye />}
                   </span>
                 </div>
                 <div className={styles.passwordContainer} style={{ marginTop: '16px' }}>
@@ -467,7 +469,7 @@ function LoginModal({ isOpen, onClose, initialMode = 'login' }) {
                 {!isSignUp && (
                   <div className={styles.passwordContainer}>
                     <input
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       name="password"
                       placeholder="Password"
                       className={styles.input}
@@ -475,6 +477,12 @@ function LoginModal({ isOpen, onClose, initialMode = 'login' }) {
                       onChange={handleInputChange}
                       required
                     />
+                    <span
+                      className={styles.eyeIcon}
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    </span>
                   </div>
                 )}
 
@@ -482,7 +490,7 @@ function LoginModal({ isOpen, onClose, initialMode = 'login' }) {
                   <>
                     <div className={styles.passwordContainer}>
                       <input
-                        type="password"
+                        type={showPassword ? "text" : "password"}
                         name="password"
                         placeholder="Password"
                         className={styles.input}
@@ -490,10 +498,16 @@ function LoginModal({ isOpen, onClose, initialMode = 'login' }) {
                         onChange={handleInputChange}
                         required
                       />
+                      <span
+                        className={styles.eyeIcon}
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      </span>
                     </div>
                     <div className={styles.passwordContainer}>
                       <input
-                        type="password"
+                        type={showConfirmPassword ? "text" : "password"}
                         name="confirmPassword"
                         placeholder="Confirm Password"
                         className={styles.input}
@@ -501,6 +515,12 @@ function LoginModal({ isOpen, onClose, initialMode = 'login' }) {
                         onChange={handleInputChange}
                         required
                       />
+                      <span
+                        className={styles.eyeIcon}
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      >
+                        {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                      </span>
                     </div>
                   </>
                 )}

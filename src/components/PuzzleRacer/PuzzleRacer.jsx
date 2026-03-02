@@ -205,7 +205,7 @@ const PuzzleRacer = () => {
                 <div className="planet-slot-label">
                   {racer ? (
                     <>
-                      <span className={`planet-slot-name ${isCurrent ? "name-you" : ""}`}>
+                      <span className={`planet-slot-name ${isCurrent ? "name-you" : ""}`} title={isCurrent ? "You" : racer.username}>
                         {isCurrent ? "⭐ You" : racer.username}
                       </span>
                       <span className={`planet-slot-score ${isCurrent ? "score-you" : ""}`}>
@@ -231,7 +231,7 @@ const PuzzleRacer = () => {
           <div className="sun-label">
             {sunRacer ? (
               <>
-                <span className="sun-player-name">
+                <span className="sun-player-name" title={isCurrentUser(sunRacer) ? "You" : sunRacer.username}>
                   {isCurrentUser(sunRacer) ? "⭐ You" : sunRacer.username}
                 </span>
                 <span className="sun-player-score">

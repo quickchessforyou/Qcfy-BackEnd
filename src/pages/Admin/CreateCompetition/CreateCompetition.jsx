@@ -61,12 +61,13 @@ function CreateCompetition() {
   // View State
   const [viewMode, setViewMode] = useState("library"); // 'library' or 'selected'
 
-  // Filters
   const [filters, setFilters] = useState({
     search: "",
     category: "all",
     difficulty: "all",
     type: "all",
+    level: "all",
+    rating: "all",
   });
 
   // Pagination
@@ -77,11 +78,12 @@ function CreateCompetition() {
     totalRecords: 0,
   });
 
-  // Filter Options
   const [filterOptions, setFilterOptions] = useState({
     categories: [],
     difficulties: [],
     types: [],
+    levels: [],
+    ratings: [],
   });
 
   useEffect(() => {
@@ -464,6 +466,22 @@ function CreateCompetition() {
                   <option value="all">Category: All</option>
                   {filterOptions.categories.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
+
+                <select
+                  value={filters.level}
+                  onChange={(e) => handleFilterChange("level", e.target.value)}
+                >
+                  <option value="all">Level: All</option>
+                  {filterOptions.levels?.map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
+
+                <select
+                  value={filters.rating}
+                  onChange={(e) => handleFilterChange("rating", e.target.value)}
+                >
+                  <option value="all">Rating: All</option>
+                  {filterOptions.ratings?.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
               </div>
             </div>
 
@@ -627,7 +645,33 @@ function CreateCompetition() {
                 >
                   <FaChevronLeft />
                 </button>
-                <span className={styles.pageNumber}>{pagination.current}</span>
+                {(() => {
+                  const totalPages = Math.max(1, Math.ceil(pagination.totalRecords / pagination.limit));
+                  const pages = [];
+                  if (totalPages <= 5) {
+                    for (let i = 1; i <= totalPages; i++) pages.push(i);
+                  } else {
+                    if (pagination.current <= 3) {
+                      pages.push(1, 2, 3, 4, '...', totalPages);
+                    } else if (pagination.current >= totalPages - 2) {
+                      pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+                    } else {
+                      pages.push(1, '...', pagination.current - 1, pagination.current, pagination.current + 1, '...', totalPages);
+                    }
+                  }
+
+                  return pages.map((page, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      className={`${styles.pageNumberBtn} ${page === pagination.current ? styles.activePage : ''} ${page === '...' ? styles.ellipsis : ''}`}
+                      disabled={page === '...'}
+                      onClick={() => page !== '...' && setPagination(p => ({ ...p, current: page }))}
+                    >
+                      {page}
+                    </button>
+                  ));
+                })()}
                 <button
                   type="button"
                   disabled={pagination.current >= Math.ceil(pagination.totalRecords / pagination.limit)}

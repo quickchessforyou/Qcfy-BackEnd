@@ -127,6 +127,9 @@ function PuzzlePage() {
   const [puzzleStatuses, setPuzzleStatuses] = useState({}); // { [puzzleId]: 'success' | 'failed' }
   const [puzzleBoardStates, setPuzzleBoardStates] = useState({}); // { [puzzleId]: { fen: string, moveHistory: string[] } }
 
+  // New state strictly for Review Mode to track practice attempts vs actual competition results
+  const [practiceStatuses, setPracticeStatuses] = useState({}); // { [puzzleId]: 'success' | 'failed' }
+
   // Timer & Score
   const [timeLeft, setTimeLeft] = useState(0); // in seconds
   const [score, setScore] = useState(0);
@@ -139,6 +142,14 @@ function PuzzlePage() {
 
   // Solution Modal State (for Review Mode)
   const [showSolutionModal, setShowSolutionModal] = useState(false);
+
+  // Inline Solution Toggle State (for Review Mode)
+  const [showInlineSolution, setShowInlineSolution] = useState(false);
+
+  // Reset inline solution when puzzle changes
+  useEffect(() => {
+    setShowInlineSolution(false);
+  }, [currentPuzzleIndex]);
 
   // Countdown state for 10-second buffer before start
   const [countdown, setCountdown] = useState(0);
@@ -286,52 +297,54 @@ function PuzzlePage() {
         const msUntilEnd = end - now;
         const secondsLeft = Math.floor(msUntilEnd / 1000);
         setTimeLeft(secondsLeft);
+        targetEndTimeRef.current = end.getTime();
 
-        // LIVE COMPETITION LOGIC
-        if (isLive && !reviewMode) {
+        // LIVE COMPETITION LOGIC OR REVIEW MODE
+        if (isLive || reviewMode) {
           try {
             const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-            // Check if we already have valid puzzle data to avoid duplicate participation calls
-            const stateKey = `puzzleState_${paramCompetitionId}`;
-            const savedState = localStorage.getItem(stateKey);
-            let hasValidState = false;
+            if (!reviewMode && isLive) {
+              // Check if we already have valid puzzle data to avoid duplicate participation calls
+              const stateKey = `puzzleState_${paramCompetitionId}`;
+              const savedState = localStorage.getItem(stateKey);
+              let hasValidState = false;
 
-            if (savedState) {
-              try {
-                const parsed = JSON.parse(savedState);
-                hasValidState =
-                  parsed.puzzleStatuses &&
-                  Object.keys(parsed.puzzleStatuses).length > 0;
-              } catch (e) {
-                console.error("Error parsing saved state:", e);
+              if (savedState) {
+                try {
+                  const parsed = JSON.parse(savedState);
+                  hasValidState =
+                    parsed.puzzleStatuses &&
+                    Object.keys(parsed.puzzleStatuses).length > 0;
+                } catch (e) {
+                  console.error("Error parsing saved state:", e);
+                }
               }
-            }
 
-            // Only participate if we don't have valid state already
-            let participationResponse = null;
-            if (!hasValidState) {
-              try {
-                participationResponse = await participateInCompetition(
-                  paramCompetitionId,
-                  user.username || user.name,
-                );
-              } catch (participationError) {
-                // Silent handling of participation errors during initialization
+              // Only participate if we don't have valid state already
+              if (!hasValidState) {
+                try {
+                  await participateInCompetition(
+                    paramCompetitionId,
+                    user.username || user.name,
+                  );
+                } catch (participationError) {
+                  // Silent handling of participation errors during initialization
+                  console.log(
+                    "Participation error (continuing with fallback):",
+                    participationError.message,
+                  );
+                }
+              } else {
                 console.log(
-                  "Participation error (continuing with fallback):",
-                  participationError.message,
+                  "Using existing valid state, skipping participation call",
                 );
               }
-            } else {
-              console.log(
-                "Using existing valid state, skipping participation call",
-              );
-            }
 
-            // Immediately explicitly fetch the leaderboard so rank is available
-            getLeaderboard(paramCompetitionId);
-            ensureSocketConnection(paramCompetitionId);
+              // Immediately explicitly fetch the leaderboard so rank is available
+              getLeaderboard(paramCompetitionId);
+              ensureSocketConnection(paramCompetitionId);
+            }
 
             // Parallel loading for performance
             const [puzzleRes] = await Promise.all([
@@ -378,28 +391,30 @@ function PuzzlePage() {
               setPuzzleStatuses(statuses);
 
               // Restore board states from localStorage and merge with server data
-              const stateKey = `puzzleState_${paramCompetitionId}`;
-              const savedState = localStorage.getItem(stateKey);
-              if (savedState) {
-                try {
-                  const parsed = JSON.parse(savedState);
-                  // Merge server statuses with localStorage statuses
-                  const mergedStatuses = {
-                    ...parsed.puzzleStatuses,
-                    ...statuses,
-                  };
-                  setPuzzleStatuses(mergedStatuses);
-                  setPuzzleBoardStates(parsed.puzzleBoardStates || {});
-                  console.log(
-                    "Merged puzzle statuses (server + localStorage):",
-                    mergedStatuses,
-                  );
-                  console.log(
-                    "Restored board states from localStorage:",
-                    parsed.puzzleBoardStates,
-                  );
-                } catch (e) {
-                  console.error("Error parsing saved state:", e);
+              if (!reviewMode) {
+                const stateKey = `puzzleState_${paramCompetitionId}`;
+                const savedState = localStorage.getItem(stateKey);
+                if (savedState) {
+                  try {
+                    const parsed = JSON.parse(savedState);
+                    // Merge server statuses with localStorage statuses
+                    const mergedStatuses = {
+                      ...parsed.puzzleStatuses,
+                      ...statuses,
+                    };
+                    setPuzzleStatuses(mergedStatuses);
+                    setPuzzleBoardStates(parsed.puzzleBoardStates || {});
+                    console.log(
+                      "Merged puzzle statuses (server + localStorage):",
+                      mergedStatuses,
+                    );
+                    console.log(
+                      "Restored board states from localStorage:",
+                      parsed.puzzleBoardStates,
+                    );
+                  } catch (e) {
+                    console.error("Error parsing saved state:", e);
+                  }
                 }
               }
 
@@ -408,10 +423,12 @@ function PuzzlePage() {
                 setScore(puzzleRes.participant.score);
                 setSolvedCount(puzzleRes.participant.puzzlesSolved);
                 // Immediately sync into context so PuzzleRacer shows correct score on first load (no refresh needed)
-                updateParticipant({
-                  score: puzzleRes.participant.score,
-                  puzzlesSolved: puzzleRes.participant.puzzlesSolved,
-                });
+                if (!reviewMode) {
+                  updateParticipant({
+                    score: puzzleRes.participant.score,
+                    puzzlesSolved: puzzleRes.participant.puzzlesSolved,
+                  });
+                }
               }
 
               // Find first unsolved puzzle
@@ -467,6 +484,15 @@ function PuzzlePage() {
                   if (parsed.currentPuzzleIndex !== undefined) {
                     setCurrentPuzzleIndex(parsed.currentPuzzleIndex);
                   }
+
+                  // Restore timeLeft accurately against real-time if we have a saved remaining time and a known completion time. 
+                  // If we don't, we just fall back to calculating from the end time.
+                  if (comp.endTime) {
+                    targetEndTimeRef.current = new Date(comp.endTime).getTime();
+                    const msUntilEnd = targetEndTimeRef.current - Date.now();
+                    setTimeLeft(Math.max(0, Math.floor(msUntilEnd / 1000)));
+                  }
+
                   console.log("Restored complete state from localStorage:", {
                     statuses: parsed.puzzleStatuses,
                     score: parsed.score,
@@ -481,10 +507,10 @@ function PuzzlePage() {
           }
         }
 
-        // If Puzzles not loaded yet (fallback or non-live or review mode)
+        // If Puzzles not loaded yet (fallback or non-live)
         if (
           puzzles.length === 0 &&
-          ((!isLive && !reviewMode) || puzzles.length === 0)
+          !isLive && !reviewMode
         ) {
           // Load Basic Puzzles
           if (comp.puzzles && comp.puzzles.length > 0) {
@@ -574,7 +600,9 @@ function PuzzlePage() {
           setPuzzleBoardStates(parsed.puzzleBoardStates || {});
           setCurrentPuzzleIndex(parsed.currentPuzzleIndex || 0);
         } else {
-          setTimeLeft(300); // Default 5 mins for casual
+          const defaultSeconds = 300; // Default 5 mins for casual
+          setTimeLeft(defaultSeconds);
+          targetEndTimeRef.current = Date.now() + (defaultSeconds * 1000);
         }
       }
     } catch (error) {
@@ -603,16 +631,25 @@ function PuzzlePage() {
     }
   };
 
+  const targetEndTimeRef = useRef(null);
+
   const startCountdownTimer = () => {
     if (timerRef.current) clearInterval(timerRef.current);
+
+    // Calculate the absolute target time for the countdown to end
+    const countdownEndTime = Date.now() + (countdown * 1000);
+
     timerRef.current = setInterval(() => {
+      const remainingMs = countdownEndTime - Date.now();
+      const remainingSec = Math.ceil(remainingMs / 1000);
+
       setCountdown((prev) => {
-        if (prev <= 1) {
+        if (remainingSec <= 0) {
           clearInterval(timerRef.current);
           startTimer(); // Start the actual game timer once countdown ends
           return 0;
         }
-        return prev - 1;
+        return remainingSec;
       });
     }, 1000);
   };
@@ -620,13 +657,18 @@ function PuzzlePage() {
   const startTimer = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
+      if (!targetEndTimeRef.current) return;
+
+      const remainingMs = targetEndTimeRef.current - Date.now();
+      const remainingSec = Math.max(0, Math.floor(remainingMs / 1000));
+
       setTimeLeft((prev) => {
-        if (prev <= 1) {
+        if (remainingSec <= 0) {
           clearInterval(timerRef.current);
           handleTimeout();
           return 0;
         }
-        return prev - 1;
+        return remainingSec;
       });
     }, 1000);
   };
@@ -668,20 +710,13 @@ function PuzzlePage() {
     // Calculate time taken for this puzzle (simple approximation)
     const timeTaken = Math.floor((Date.now() - startTime) / 1000);
 
-    // If Review Mode, don't submit to backend, just show correct locally
+    // If Review Mode, don't submit to backend, just show correct locally in practice statuses
     if (isReviewMode) {
-      setPuzzleStatuses((prev) => ({ ...prev, [currentPuzzle.id]: "success" }));
+      setPracticeStatuses((prev) => ({ ...prev, [currentPuzzle.id]: "success" }));
       toast.success("Correct! (Review Mode)");
 
-      // Move to next puzzle automatically
-      setTimeout(() => {
-        if (currentPuzzleIndex < puzzles.length - 1) {
-          setCurrentPuzzleIndex((prev) => prev + 1);
-          setShowSolution(false); // Reset solution view
-        } else {
-          toast.success("All puzzles completed in review!");
-        }
-      }, 100); // 100ms for instant feel
+      // Don't auto-forward them in Review Mode, let them study the board
+      setShowSolution(false); // Reset solution view
       return;
     }
 
@@ -780,10 +815,10 @@ function PuzzlePage() {
     // Calculate time taken for this puzzle
     const timeTaken = Math.floor((Date.now() - startTime) / 1000);
 
-    // If Review Mode, don't submit wrong move
+    // If Review Mode, don't submit wrong move or permanently block them. They can retry!
     if (isReviewMode) {
       toast.error("Incorrect move! Try again.");
-      return;
+      return; // Do nothing else, board will revert the move via resetToInitial
     }
 
     // --- OPTIMISTIC UPDATE ---
@@ -1039,6 +1074,56 @@ function PuzzlePage() {
               </div>
             </div>
           )}
+          {/* Review Mode: Competition Performance (Moved from Right Column) */}
+          {competitionData && isReviewMode && (
+            <div className={styles.controlCard} style={{ marginTop: '20px' }}>
+              {(() => {
+                const chapterData = competitionData?.chapters;
+                let navPuzzles = puzzles;
+                if (chapterData && chapterData.length > 0) {
+                  const chPuzzleIds = (chapterData[activeChapterIndex]?.puzzleIds || []).map(id => id.toString());
+                  navPuzzles = puzzles.filter(p => chPuzzleIds.includes((p._id || p.id).toString()));
+                }
+                const currentPuzzleId = (puzzles[currentPuzzleIndex]?._id || puzzles[currentPuzzleIndex]?.id)?.toString();
+                const chapterCurrentIndex = navPuzzles.findIndex(
+                  p => (p._id || p.id).toString() === currentPuzzleId
+                );
+
+                return (
+                  <>
+                    <div className={styles.reviewSectionTitle}>
+                      <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', color: 'var(--text-secondary, #a89f91)', textTransform: 'uppercase', letterSpacing: '1px' }}>Competition Performance</h4>
+                    </div>
+                    <div className={styles.navGrid}>
+                      {navPuzzles
+                        .slice(currentFrame * ITEMS_PER_PAGE, (currentFrame + 1) * ITEMS_PER_PAGE)
+                        .map((puzzle, localIndex) => {
+                          const globalIndex = puzzles.findIndex(p => (p._id || p.id) === (puzzle._id || puzzle.id));
+                          const chapterIndex = currentFrame * ITEMS_PER_PAGE + localIndex;
+                          const pid = puzzle.id || puzzle._id;
+                          const status = puzzleStatuses[pid];
+                          return (
+                            <div
+                              key={`perf-${pid}`}
+                              className={`
+                                ${styles.navItem}
+                              ${status === 'success' ? styles.success : ''}
+                              ${status === 'failed' ? styles.danger : ''}
+                              `}
+                              style={{ cursor: 'default', opacity: 0.9 }}
+                              title="Original Competition Result (View Only)"
+                            >
+                              {status === 'success' ? <FaCheckCircle /> : globalIndex + 1}
+                            </div>
+                          );
+                        })
+                      }
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          )}
         </div> {/* End of leftColumn */}
 
         {/* Board Area - Center */}
@@ -1052,10 +1137,10 @@ function PuzzlePage() {
             </div>
           )}
 
-          <div className={`${styles.boardWrapper} ${countdown > 0 ? styles.blurBoard : ''}`}>
+          <div className={`${styles.boardWrapper} ${countdown > 0 ? styles.blurBoard : ''} `}>
             {puzzles.length > 0 && currentPuzzle ? (
               <ChessBoard
-                key={`${currentPuzzle.id || currentPuzzle._id}-${currentPuzzleIndex}`}
+                key={`${currentPuzzle.id || currentPuzzle._id} -${currentPuzzleIndex} `}
                 fen={currentPuzzle.fen}
                 solution={currentPuzzle.solution}
                 alternativeSolutions={currentPuzzle.alternativeSolutions}
@@ -1072,7 +1157,7 @@ function PuzzlePage() {
                   }));
                 }}
                 savedBoardState={
-                  puzzleBoardStates[currentPuzzle.id || currentPuzzle._id]
+                  isReviewMode ? null : puzzleBoardStates[currentPuzzle.id || currentPuzzle._id]
                 }
                 interactive={
                   !solving &&
@@ -1114,7 +1199,7 @@ function PuzzlePage() {
                             <button
                               key={idx}
                               type="button"
-                              className={`${styles.chapterTab} ${activeChapterIndex === idx ? styles.chapterTabActive : ''}`}
+                              className={`${styles.chapterTab} ${activeChapterIndex === idx ? styles.chapterTabActive : ''} `}
                               onClick={() => {
                                 setActiveChapterIndex(idx);
                                 // ALWAYS reset frame to 0 when switching chapters
@@ -1145,7 +1230,7 @@ function PuzzlePage() {
                         {/* Thumb dynamic left offset mapping 0% to ~85% (leave 15% width for thumb) */}
                         <div
                           className={styles.scrollIndicatorThumb}
-                          style={{ transform: `translateX(${scrollProgress * 400}%)` }}
+                          style={{ transform: `translateX(${scrollProgress * 400} %)` }}
                         />
                       </div>
                     )}
@@ -1227,42 +1312,85 @@ function PuzzlePage() {
                         </div>
                       )}
 
-                      {/* Nav grid — chapter puzzles only */}
-                      <div className={styles.navGrid}>
-                        {navPuzzles
-                          .slice(currentFrame * ITEMS_PER_PAGE, (currentFrame + 1) * ITEMS_PER_PAGE)
-                          .map((puzzle, localIndex) => {
-                            const globalIndex = puzzles.findIndex(p => (p._id || p.id) === (puzzle._id || puzzle.id));
-                            const chapterIndex = currentFrame * ITEMS_PER_PAGE + localIndex; // position in chapter
-                            const pid = puzzle.id || puzzle._id;
-                            const status = puzzleStatuses[pid];
-                            return (
-                              <div
-                                key={pid}
-                                className={`
-                                ${styles.navItem}
-                                ${chapterCurrentIndex === chapterIndex ? styles.active : ''}
-                                ${status === 'success' ? styles.success : ''}
-                                ${status === 'failed' ? styles.danger : ''}
-                              `}
-                                onClick={() => {
-                                  if (!solving) {
-                                    setCurrentPuzzleIndex(globalIndex);
-                                    if (status === 'success') toast.info('Puzzle already solved!');
-                                    else if (status === 'failed') toast.info('Puzzle failed - you can view but not interact!');
-                                  }
-                                }}
-                                style={{ cursor: 'pointer' }}
-                              >
-                                {status === 'success' ? <FaCheckCircle /> : globalIndex + 1}
-                              </div>
-                            );
-                          })
-                        }
-                      </div>
+                      {/* Main Nav grid for LIVE / Regular competitions */}
+                      {!isReviewMode && (
+                        <div className={styles.navGrid}>
+                          {navPuzzles
+                            .slice(currentFrame * ITEMS_PER_PAGE, (currentFrame + 1) * ITEMS_PER_PAGE)
+                            .map((puzzle, localIndex) => {
+                              const globalIndex = puzzles.findIndex(p => (p._id || p.id) === (puzzle._id || puzzle.id));
+                              const chapterIndex = currentFrame * ITEMS_PER_PAGE + localIndex; // position in chapter
+                              const pid = puzzle.id || puzzle._id;
+                              const status = puzzleStatuses[pid];
+                              return (
+                                <div
+                                  key={`norm - ${pid} `}
+                                  className={`
+                                  ${styles.navItem}
+                                  ${chapterCurrentIndex === chapterIndex ? styles.active : ''}
+                                  ${status === 'success' ? styles.success : ''}
+                                  ${status === 'failed' ? styles.danger : ''}
+                          `}
+                                  onClick={() => {
+                                    if (!solving) {
+                                      setCurrentPuzzleIndex(globalIndex);
+                                      if (status === 'success') toast.info('Puzzle already solved!');
+                                      else if (status === 'failed') toast.info('Puzzle failed - you can view but not interact!');
+                                    }
+                                  }}
+                                  style={{ cursor: 'pointer' }}
+                                >
+                                  {status === 'success' ? <FaCheckCircle /> : globalIndex + 1}
+                                </div>
+                              );
+                            })
+                          }
+                        </div>
+                      )}
+
+                      {/* ----- Review Mode: Practice Grid ----- */}
+                      {isReviewMode && (
+                        <>
+                          <div className={styles.reviewSectionTitle}>
+                            <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', color: 'var(--text-secondary, #a89f91)', textTransform: 'uppercase', letterSpacing: '1px' }}>Practice Attempts</h4>
+                          </div>
+
+                          <div className={styles.navGrid}>
+                            {navPuzzles
+                              .slice(currentFrame * ITEMS_PER_PAGE, (currentFrame + 1) * ITEMS_PER_PAGE)
+                              .map((puzzle, localIndex) => {
+                                const globalIndex = puzzles.findIndex(p => (p._id || p.id) === (puzzle._id || puzzle.id));
+                                const chapterIndex = currentFrame * ITEMS_PER_PAGE + localIndex; // position in chapter
+                                const pid = puzzle.id || puzzle._id;
+                                const pStatus = practiceStatuses[pid];
+                                return (
+                                  <div
+                                    key={`prac - ${pid} `}
+                                    className={`
+                                    ${styles.navItem}
+                                    ${chapterCurrentIndex === chapterIndex ? styles.active : ''}
+                                    ${pStatus === 'success' ? styles.success : ''}
+                                    ${pStatus === 'failed' ? styles.danger : ''}
+                          `}
+                                    onClick={() => {
+                                      if (!solving) {
+                                        setCurrentPuzzleIndex(globalIndex);
+                                      }
+                                    }}
+                                    style={{ cursor: 'pointer' }}
+                                    title="Practice Mode - Unlimited Retries"
+                                  >
+                                    {pStatus === 'success' ? <FaCheckCircle /> : globalIndex + 1}
+                                  </div>
+                                );
+                              })
+                            }
+                          </div>
+                        </>
+                      )}
 
                       {/* Prev / Next within chapter */}
-                      <div className={styles.navControls} style={{ marginBottom: '10px' }}>
+                      <div className={styles.navControls} style={{ marginBottom: '10px', marginTop: '15px' }}>
                         <button
                           className={styles.navArrow}
                           onClick={() => {
@@ -1334,16 +1462,35 @@ function PuzzlePage() {
                         </div>
                       )}
 
-                      {/* Review Mode: Show Solution Button */}
+                      {/* Review Mode: Show Solution Inline */}
                       {isReviewMode && (
                         <div style={{ marginTop: '15px' }}>
-                          <button
-                            className={styles.actionBtn}
-                            style={{ width: '100%', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.3)' }}
-                            onClick={() => setShowSolutionModal(true)}
-                          >
-                            <FaCheckCircle style={{ marginRight: '8px' }} /> Show Solution
-                          </button>
+                          <div className={styles.reviewSectionTitle} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+
+                            <button
+                              onClick={() => setShowInlineSolution(!showInlineSolution)}
+                              type="button"
+                              style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10b981', cursor: 'pointer', fontSize: '0.95rem', fontWeight: 'bold', padding: '10px 10px', borderRadius: '4px', width: '100%' }}
+                            >
+                              {showInlineSolution ? "Hide Solution" : "View Solution"}
+                            </button>
+                          </div>
+                          {showInlineSolution && (
+                            <div className={styles.solutionMoves} style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                              {currentPuzzle?.solution && currentPuzzle.solution.length > 0 ? (
+                                currentPuzzle.solution.map((move, i) => {
+                                  if (i % 2 == 0) return null;
+                                  return (
+                                    <span key={i} className={styles.moveTag} style={{ display: 'inline-block', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', padding: '6px 12px', borderRadius: '6px', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '1rem' }}>
+                                      {Math.floor(i / 2) + 1}. {move}
+                                    </span>
+                                  );
+                                })
+                              ) : (
+                                <p style={{ color: 'var(--text-secondary, #a89f91)' }}>No explicit solution text available.</p>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
                     </>
@@ -1356,7 +1503,7 @@ function PuzzlePage() {
             {isLiveCompetition && !isReviewMode && (
               <div className={styles.submitCardBottom}>
                 <button
-                  className={`${styles.actionBtn} ${styles.btnSubmit}`}
+                  className={`${styles.actionBtn} ${styles.btnSubmit} `}
                   onClick={() => setShowSubmitModal(true)}
                   disabled={submitting || getUnattemptedCount() > 0 || countdown > 0}
                   style={{ width: "100%", fontSize: "1rem", padding: "12px", opacity: (submitting || getUnattemptedCount() > 0 || countdown > 0) ? 0.5 : 1, cursor: (submitting || getUnattemptedCount() > 0 || countdown > 0) ? 'not-allowed' : 'pointer' }}
@@ -1377,39 +1524,7 @@ function PuzzlePage() {
         )}
       </div>
 
-      {/* Solution Viewing Modal (Review Mode) */}
-      {showSolutionModal && currentPuzzle && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
-            <h3>Puzzle Solution</h3>
-            <p style={{ marginBottom: '15px', color: 'var(--text-secondary, #a89f91)' }}>
-              Here are the correct moves to solve this puzzle:
-            </p>
 
-            <div className={styles.solutionMoves} style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '20px' }}>
-              {currentPuzzle.solution && currentPuzzle.solution.length > 0 ? (
-                currentPuzzle.solution.map((move, i) => (
-                  <span key={i} className={styles.moveTag} style={{ display: 'inline-block', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', padding: '8px 16px', borderRadius: '8px', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '1.1rem' }}>
-                    {i % 2 === 0 ? `${Math.floor(i / 2) + 1}. ` : ''}{move}
-                  </span>
-                ))
-              ) : (
-                <p>No explicit solution text available.</p>
-              )}
-            </div>
-
-            <div className={styles.modalActions}>
-              <button
-                className={`${styles.modalBtn} ${styles.cancelBtn}`}
-                onClick={() => setShowSolutionModal(false)}
-                style={{ width: '100%' }}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Submission Confirmation Modal */}
       {showSubmitModal && (

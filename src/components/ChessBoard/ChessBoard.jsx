@@ -434,6 +434,7 @@ function ChessBoard({ fen, solution = [], alternativeSolutions = [], onPuzzleSol
       setPossibleMoves([]);
       setFeedback(null);
       setCapturedTargets([]); // Reset targets
+      setComputerFirstMovePlayed(false); // Retrigger the computer's first move!
     }, delay);
   };
 

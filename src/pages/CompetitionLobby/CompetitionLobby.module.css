@@ -72,7 +72,6 @@
     overflow: hidden;
 }
 
-/* ========== HEADER CARD (LIVE/UPCOMING) ========== */
 .headerCard {
     display: flex;
     justify-content: space-between;
@@ -80,6 +79,8 @@
     flex-wrap: wrap;
     gap: 20px;
     background: var(--bg-card);
+    padding: 1.5rem 2rem; /* Reduced from default 2rem */
+    min-height: 100px;
 }
 
 .headerCard::before {
@@ -87,9 +88,10 @@
     position: absolute;
     top: 0;
     left: 0;
-    width: 4px;
+    width: 6px;
     height: 100%;
     background: var(--accent-gold-gradient);
+    border-radius: 16px 0 0 16px;
 }
 
 .headerLeft {
@@ -98,33 +100,37 @@
 }
 
 .compTitle {
-    font-size: 1.8rem;
+    font-size: 1.6rem; /* Slightly smaller for compactness */
     font-weight: 800;
     color: var(--text-primary);
     margin: 0 0 0.25rem 0;
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    align-items: center; /* Side-by-side title and date */
+    flex-wrap: wrap;
+    gap: 12px;
 }
 
 .compDate {
     font-weight: 500;
-    font-size: 1rem;
+    font-size: 0.95rem;
     color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .statusBadgeContainer {
-    margin-top: 12px;
+    margin-top: 8px; /* Tighter margin */
 }
 
 .statusPill {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 16px;
+    padding: 6px 14px;
     border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 700;
+    font-size: 0.75rem;
+    font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     border: 1px solid transparent;
@@ -152,27 +158,25 @@
 /* ========== HEADER RIGHT (TIMER & ACTIONS) ========== */
 .headerRight {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 1.5rem;
+    justify-content: flex-end;
 }
 
 .timerSection {
-    text-align: right;
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
+    flex-direction: row; /* Make timer and action horizontal! */
+    align-items: center;
+    gap: 1.5rem;
     background: var(--bg-primary);
-    padding: 0.75rem 1.25rem;
+    padding: 0.75rem 1.5rem;
     border-radius: 12px;
     border: 1px solid var(--border-color);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); /* Soft inner shadow for depth */
 }
 
 .countdownDisplay {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    margin-bottom: 12px;
 }
 
 .timerLabel {
@@ -181,30 +185,32 @@
     text-transform: uppercase;
     font-weight: 700;
     letter-spacing: 0.05em;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
 }
 
 .timerValue {
-    font-size: 1.6rem;
+    font-size: 1.4rem; /* Scaled down slightly */
     font-weight: 800;
     color: var(--text-accent);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     font-family: 'Roboto Mono', monospace;
     line-height: 1;
 }
 
 .timerValue .timerIcon {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     color: var(--accent-gold);
 }
 
 /* Action Buttons */
 .actionButtons {
     display: flex;
+    align-items: center;
     gap: 12px;
-    width: 100%;
+    border-left: 2px solid var(--border-color); /* Partition line between timer and button */
+    padding-left: 1.5rem;
 }
 
 .actionBtn {
@@ -263,11 +269,36 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 1.1rem;
+    font-size: 1rem;
     background: rgba(16, 185, 129, 0.1);
-    padding: 8px 16px;
+    padding: 10px 16px;
     border-radius: 8px;
     border: 1px solid rgba(16, 185, 129, 0.2);
+    white-space: nowrap; /* Prevent wrapping in row flow */
+}
+
+/* Mobile responsiveness: stack them gracefully via flex-wrap and overrides */
+@media (max-width: 768px) {
+    .timerSection {
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        width: 100%;
+    }
+    
+    .countdownDisplay {
+        align-items: center;
+    }
+    
+    .actionButtons {
+        border-left: none;
+        padding-left: 0;
+        width: 100%;
+        justify-content: center;
+        border-top: 1px solid var(--border-color);
+        padding-top: 1rem;
+    }
 }
 
 /* ========== PARTICIPANTS CARD ========== */
@@ -368,8 +399,8 @@
 }
 
 .playerAvatar {
-    width: 36px;
-    height: 36px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     background: var(--bg-primary);
     display: flex;
@@ -377,7 +408,7 @@
     justify-content: center;
     color: var(--text-secondary);
     border: 2px solid var(--border-color);
-    font-size: 1.2rem;
+    font-size: 1rem;
 }
 
 .playerAvatar.self {
@@ -782,7 +813,7 @@
 .tableHeader {
     display: grid;
     grid-template-columns: 80px 2fr 1fr 1fr 1fr 1fr;
-    padding: 1rem 2rem;
+    padding: 0.6rem 1.5rem;
     background: var(--bg-primary);
     border-bottom: 2px solid var(--border-color);
     font-weight: 700;
@@ -798,7 +829,7 @@
 .tableRow {
     display: grid;
     grid-template-columns: 80px 2fr 1fr 1fr 1fr 1fr;
-    padding: 1.25rem 2rem;
+    padding: 0.6rem 1.5rem;
     align-items: center;
     border-bottom: 1px solid var(--border-color);
     color: var(--text-primary);

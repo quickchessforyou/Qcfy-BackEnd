@@ -300,6 +300,15 @@ const CompetitionLobby = () => {
             setParticipantState(res.participantState);
             setCompetitionState(res.competitionState);
             setParticipants(res.leaderboard);
+
+            // Auto-redirect if the competition is already live or user is already playing
+            if (!hasAutoRedirectedRef.current && (res.competitionState === "LIVE" || res.competitionState === "PLAYING" || res.participantState === "PLAYING")) {
+              hasAutoRedirectedRef.current = true;
+              toast.success("Competition Active! Redirecting...");
+              setTimeout(() => {
+                navigate(`/competition/${id}/puzzle`);
+              }, 100);
+            }
           }
         }).catch(err => console.error("Background lobby refresh failed:", err));
 
@@ -522,7 +531,7 @@ const CompetitionLobby = () => {
                       className={`${styles.actionBtn} ${styles.enterBtn}`}
                       onClick={handleEnterCompetition}
                     >
-                      Enter Competition
+                      {participantState === "PLAYING" ? "Resume Competition" : "Enter Competition"}
                     </button>
                   ) : (
                     <span className={styles.joinedText}>
