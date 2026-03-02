@@ -119,6 +119,8 @@ export const getPuzzlesForCompetition = async (req, res) => {
       category,
       difficulty,
       type,
+      level,
+      rating,
       search,
       page = 1,
       limit = 20,
@@ -132,6 +134,8 @@ export const getPuzzlesForCompetition = async (req, res) => {
     if (category && category !== 'all') query.category = category;
     if (difficulty && difficulty !== 'all') query.difficulty = difficulty;
     if (type && type !== 'all') query.type = type;
+    if (level && level !== 'all') query.level = parseInt(level);
+    if (rating && rating !== 'all') query.rating = parseInt(rating);
 
     // Search functionality
     if (search) {
@@ -158,6 +162,8 @@ export const getPuzzlesForCompetition = async (req, res) => {
     const categories = await PuzzleModel.distinct('category');
     const difficulties = await PuzzleModel.distinct('difficulty');
     const types = await PuzzleModel.distinct('type');
+    const levels = await PuzzleModel.distinct('level');
+    const ratings = await PuzzleModel.distinct('rating');
 
     res.status(200).json({
       success: true,
@@ -171,7 +177,9 @@ export const getPuzzlesForCompetition = async (req, res) => {
       filters: {
         categories: categories.filter(Boolean),
         difficulties: difficulties.filter(Boolean),
-        types: types.filter(Boolean)
+        types: types.filter(Boolean),
+        levels: levels.filter(val => val !== null && val !== undefined).sort((a, b) => a - b),
+        ratings: ratings.filter(val => val !== null && val !== undefined).sort((a, b) => a - b)
       }
     });
   } catch (error) {
