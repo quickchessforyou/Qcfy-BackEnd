@@ -53,11 +53,22 @@ const ParticipantSchema = new mongoose.Schema({
   }
 });
 
-// Compound index for unique participation per competition
-ParticipantSchema.index({ competitionId: 1, userId: 1 }, { unique: true });
+// Unique participation
+ParticipantSchema.index(
+  { competitionId: 1, userId: 1 },
+  { unique: true }
+);
 
-// Index for leaderboard queries
-ParticipantSchema.index({ competitionId: 1, score: -1, timeSpent: 1 });
+// Leaderboard sorting
+ParticipantSchema.index({
+  competitionId: 1,
+  puzzlesSolved: -1,
+  timeSpent: 1,
+  score: -1
+});
+
+// Fast participant count
+ParticipantSchema.index({ competitionId: 1 });
 
 const ParticipantModel = mongoose.model("Participant", ParticipantSchema);
 

@@ -16,200 +16,139 @@ export const participateInCompetition = async (req, res) => {
     const { username, accessCode } = req.body;
     const userId = req.user._id;
 
-    console.log('Participation request:', { competitionId, userId, username });
+    // Fetch competition with minimal fields
+    const competition = await CompetitionModel.findById(competitionId)
+      .select(
+        "name description startTime endTime duration status accessCode maxParticipants puzzles chapters"
+      )
+      .lean();
 
-    // Validate competition exists and is active
-    const competition = await CompetitionModel.findById(competitionId);
     if (!competition) {
       return res.status(404).json({
         success: false,
-        error: 'Competition not found'
+        error: "Competition not found",
       });
     }
 
-    console.log('Competition found:', competition.name, 'Status:', competition.status);
-
-    // Check if competition is still open for participation (allow joining until competition ends)
     const now = new Date();
-    if (now > competition.endTime) {
+
+    if (competition.status === "ENDED" || now > competition.endTime) {
       return res.status(400).json({
         success: false,
-        error: 'Competition has ended'
+        error: "Competition has ended",
       });
     }
 
-    if (competition.status === 'ENDED') {
-      return res.status(400).json({
-        success: false,
-        error: 'Competition has ended'
-      });
-    }
-
-    // Check Access Code if required
-    if (competition.accessCode && competition.accessCode.trim() !== '') {
-      console.log('Access code required. Competition code:', competition.accessCode, 'Provided code:', accessCode);
+    // Access code validation
+    if (competition.accessCode && competition.accessCode.trim() !== "") {
       if (!accessCode || accessCode.trim() !== competition.accessCode.trim()) {
-        console.log('Access code validation failed');
         return res.status(403).json({
           success: false,
-          error: 'Invalid access code',
-          requireCode: true
-        });
-      }
-      console.log('Access code validation passed');
-    }
-
-    // Check max participants
-    const participantCount = await ParticipantModel.countDocuments({ competitionId });
-    if (competition.maxParticipants) {
-      if (participantCount >= competition.maxParticipants) {
-        return res.status(400).json({
-          success: false,
-          error: 'Competition is full'
+          error: "Invalid access code",
+          requireCode: true,
         });
       }
     }
 
-    // Check if user already participated
-    const existingParticipant = await ParticipantModel.findOne({
-      competitionId,
-      userId
-    });
+    // Run queries in parallel
+    const [participantCount, existingParticipant] = await Promise.all([
+      ParticipantModel.countDocuments({ competitionId }),
+      ParticipantModel.findOne({ competitionId, userId }).lean(),
+    ]);
 
+    // Max participant validation
+    if (
+      competition.maxParticipants &&
+      participantCount >= competition.maxParticipants
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: "Competition is full",
+      });
+    }
+
+    // If already participating
     if (existingParticipant) {
-      // Check if participant has already submitted
       if (existingParticipant.submittedAt) {
         return res.status(400).json({
           success: false,
-          message: 'You have already submitted this competition'
+          message: "You have already submitted this competition",
         });
-      }
-    }
-
-    console.log('Existing participant check:', existingParticipant ? 'Found' : 'Not found');
-
-    if (existingParticipant) {
-      console.log('User already participated, returning existing data');
-
-      // Ensure they are in Redis (recover from potential sync issues)
-      if (competition.status === 'LIVE' || competition.status === 'live') {
-        try {
-          await addParticipantToLeaderboard(competition._id, existingParticipant);
-        } catch (redisErr) {
-          console.error('Redis recovery error:', redisErr);
-        }
-      }
-
-      // Emit participantJoined event so other players see them immediately
-      try {
-        const roomName = `competition_${competitionId}`;
-        io.to(roomName).emit('participantJoined', {
-          username: existingParticipant.username,
-          userId: existingParticipant.userId.toString(),
-        });
-        // Also send fresh leaderboard to all
-        getCurrentLeaderboard(competitionId).then(leaderboard => {
-          io.to(roomName).emit('leaderboardUpdate', leaderboard);
-        }).catch(err => console.error('Join leaderboard error:', err));
-      } catch (emitErr) {
-        console.error('Socket emit on re-join error:', emitErr);
       }
 
       return res.json({
         success: true,
-        message: 'Already participating',
+        message: "Already participating",
         competition: {
           id: competition._id,
           name: competition.name,
-          title: competition.name,
           description: competition.description,
           startTime: competition.startTime,
           endTime: competition.endTime,
           duration: competition.duration,
           status: competition.status,
-          participantCount
-        }
+          participantCount,
+        },
       });
     }
 
-    // Get user details
-    const user = await UserModel.findById(userId);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: 'User not found'
-      });
-    }
-
-    console.log('Creating new participant for user:', user.name || user.username);
-
-    // Create participant record
-    const participant = new ParticipantModel({
+    // Create participant
+    const participant = await ParticipantModel.create({
       competitionId,
       userId,
-      username: username || user.username || user.name,
+      username: username || req.user.username || req.user.name,
       status: "JOINED",
       joinedAt: new Date(),
       score: 0,
       puzzlesSolved: 0,
-      timeSpent: 0
+      timeSpent: 0,
     });
 
-    await participant.save();
-    console.log('Participant created successfully:', participant._id);
-
-    // Sync with Redis if competition is live
-    if (competition.status === 'LIVE' || competition.status === 'live') {
-      try {
-        await addParticipantToLeaderboard(competition._id, participant);
-        console.log('Participant added to Redis leaderboard');
-      } catch (redisErr) {
-        console.error('Redis sync error:', redisErr);
-      }
-    }
-
-    // Populate puzzles for response
-    await competition.populate('puzzles');
-
-    // Emit participantJoined + leaderboardUpdate for all connected clients
-    try {
-      const roomName = `competition_${competitionId}`;
-      io.to(roomName).emit('participantJoined', {
-        username: participant.username,
-        userId: participant.userId.toString(),
-      });
-      getCurrentLeaderboard(competitionId).then(leaderboard => {
-        io.to(roomName).emit('leaderboardUpdate', leaderboard);
-        console.log('Emitted participantJoined + leaderboardUpdate to room:', roomName);
-      }).catch(err => console.error('Join leaderboard error:', err));
-    } catch (emitErr) {
-      console.error('Socket emit on join error:', emitErr);
-    }
-
-    // Return competition details
+    // Send response immediately
     res.json({
       success: true,
       competition: {
         id: competition._id,
         name: competition.name,
-        title: competition.name,
         description: competition.description,
         startTime: competition.startTime,
         endTime: competition.endTime,
         duration: competition.duration,
         puzzles: competition.puzzles,
         chapters: competition.chapters || [],
-        maxScore: competition.puzzles.length * 10,
+        maxScore: (competition.puzzles?.length || 0) * 10,
         status: competition.status,
-        participantCount: participantCount + 1
-      }
+        participantCount: participantCount + 1,
+      },
     });
 
+    // Run Redis + Socket operations in background
+    setImmediate(async () => {
+      try {
+        if (competition.status === "LIVE") {
+          await addParticipantToLeaderboard(competition._id, participant);
+        }
+
+        const roomName = `competition_${competitionId}`;
+
+        io.to(roomName).emit("participantJoined", {
+          username: participant.username,
+          userId: participant.userId.toString(),
+        });
+
+        const leaderboard = await getCurrentLeaderboard(competitionId);
+
+        io.to(roomName).emit("leaderboardUpdate", leaderboard);
+      } catch (err) {
+        console.error("Background event error:", err);
+      }
+    });
   } catch (error) {
-    console.error('Participation error:', error);
+    console.error("Participation error:", error);
+
     res.status(500).json({
       success: false,
-      error: 'Server error during participation'
+      error: "Server error during participation",
     });
   }
 };
@@ -220,7 +159,7 @@ export const submitCompetition = async (req, res) => {
     const { competitionId } = req.params;
     const userId = req.user._id;
 
-    console.log('Competition submission request:', { competitionId, userId });
+   // console.log('Competition submission request:', { competitionId, userId });
 
     // Validate competition exists and is active
     const competition = await CompetitionModel.findById(competitionId);
@@ -550,27 +489,31 @@ export const submitPuzzleSolution = async (req, res) => {
 export const getLiveLeaderboard = async (req, res) => {
   try {
     const { competitionId } = req.params;
+    const userId = req.user?._id;
 
-    // Validate competition exists
-    const competition = await CompetitionModel.findById(competitionId);
+    // Fetch competition with minimal fields
+    const competition = await CompetitionModel.findById(competitionId)
+      .select("name status startTime endTime")
+      .lean();
+
     if (!competition) {
       return res.status(404).json({
         success: false,
-        message: 'Competition not found'
+        message: "Competition not found",
       });
     }
 
-    // Get current leaderboard
-    const leaderboard = await getCurrentLeaderboard(competitionId);
-    const participant = await ParticipantModel.findOne({
-      competitionId,
-      userId: req.user?._id
-    });
+    // Run leaderboard + participant queries in parallel
+    const [leaderboard, participant] = await Promise.all([
+      getCurrentLeaderboard(competitionId),
+      userId
+        ? ParticipantModel.findOne({ competitionId, userId })
+            .select("status")
+            .lean()
+        : null,
+    ]);
 
-    let participantState = "NOT_JOINED";
-    if (participant) {
-      participantState = participant.status;
-    }
+    const participantState = participant ? participant.status : "NOT_JOINED";
 
     res.json({
       success: true,
@@ -579,19 +522,19 @@ export const getLiveLeaderboard = async (req, res) => {
         name: competition.name,
         status: competition.status,
         startTime: competition.startTime,
-        endTime: competition.endTime
+        endTime: competition.endTime,
       },
-      competitionState: competition.status, // UPCOMING | LIVE | ENDED
-      participantState,                     // NOT_JOINED | JOINED | PLAYING | SUBMITTED
+      competitionState: competition.status,
+      participantState,
       leaderboard,
-      serverTime: Date.now()
+      serverTime: Date.now(),
     });
-
   } catch (error) {
-    console.error('Error fetching live leaderboard:', error);
+    console.error("Error fetching live leaderboard:", error);
+
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch leaderboard'
+      message: "Failed to fetch leaderboard",
     });
   }
 };

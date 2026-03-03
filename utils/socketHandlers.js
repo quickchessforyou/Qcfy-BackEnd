@@ -358,6 +358,7 @@ const buildRedisLeaderboard = async (competitionId) => {
 ========================================================= */
 const getCurrentLeaderboard = async (competitionId, limit = 100) => {
   let userIds = [];
+
   try {
     userIds = await redis.zrevrange(
       leaderboardKey(competitionId),
@@ -365,16 +366,13 @@ const getCurrentLeaderboard = async (competitionId, limit = 100) => {
       limit - 1
     );
   } catch (error) {
-    console.error(`[Leaderboard] Redis zrevrange error for ${competitionId}:`, error);
+    console.error(`[Leaderboard] Redis error for ${competitionId}:`, error);
   }
 
-  // ---- DB FALLBACK if Redis is empty or threw an error ----
-  // This can happen if the backend was restarted and buildRedisLeaderboard
-  // wasn't called, or if participants joined before the competition was "LIVE".
-  if (!userIds || !userIds.length) {
-    console.log(`[Leaderboard] Redis empty/failed for ${competitionId}, falling back to DB`);
-
+  // DB fallback
+  if (!userIds?.length) {
     const participants = await ParticipantModel.find({ competitionId })
+      .select("userId username score puzzlesSolved timeSpent status submittedAt")
       .sort({ puzzlesSolved: -1, timeSpent: 1, score: -1 })
       .limit(limit)
       .populate("userId", "name avatar")
@@ -382,27 +380,30 @@ const getCurrentLeaderboard = async (competitionId, limit = 100) => {
 
     if (!participants.length) return [];
 
-    // Rebuild Redis for future calls
-    try {
-      const pipeline = redis.pipeline();
-      for (const p of participants) {
-        if (p.userId && p.userId._id) {
-          pipeline.zadd(
-            leaderboardKey(competitionId),
-            redisScore(p),
-            p.userId._id.toString()
-          );
-        }
+    // rebuild redis asynchronously
+    setImmediate(async () => {
+      try {
+        const pipeline = redis.pipeline();
+
+        participants.forEach((p) => {
+          if (p.userId?._id) {
+            pipeline.zadd(
+              leaderboardKey(competitionId),
+              redisScore(p),
+              p.userId._id.toString()
+            );
+          }
+        });
+
+        await pipeline.exec();
+      } catch (err) {
+        console.error("Redis rebuild error:", err);
       }
-      await pipeline.exec();
-      console.log(`[Leaderboard] Rebuilt Redis for ${competitionId} with ${participants.length} participants`);
-    } catch (error) {
-      console.error(`[Leaderboard] Redis rebuild error for ${competitionId}:`, error);
-    }
+    });
 
     return participants.map((p, index) => ({
       rank: index + 1,
-      userId: p.userId?._id?.toString() || (p.userId ? p.userId.toString() : null),
+      userId: p.userId?._id?.toString(),
       username: p.username,
       name: p.userId?.name,
       avatar: p.userId?.avatar,
@@ -414,18 +415,19 @@ const getCurrentLeaderboard = async (competitionId, limit = 100) => {
     }));
   }
 
-  // ---- Normal Redis path ----
   const participants = await ParticipantModel.find({
     competitionId,
     userId: { $in: userIds },
   })
+    .select("userId username score puzzlesSolved timeSpent status submittedAt")
     .populate("userId", "name avatar")
     .lean();
 
   const map = new Map();
+
   participants.forEach((p) => {
     if (p.userId) {
-      const uid = p.userId._id ? p.userId._id.toString() : p.userId.toString();
+      const uid = p.userId._id.toString();
       map.set(uid, p);
     }
   });

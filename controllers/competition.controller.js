@@ -77,34 +77,44 @@ export const getCompetitions = async (req, res) => {
   try {
     const { status, isActive, page = 1, limit = 10 } = req.query;
 
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+
     const query = {};
-    // Handle case-insensitive status (convert to uppercase to match schema)
+
     if (status) query.status = status.toUpperCase();
     if (isActive !== undefined) query.isActive = isActive === "true";
 
-    const skip = (page - 1) * limit;
+    const skip = (pageNum - 1) * limitNum;
 
-    const competitions = await CompetitionModel.find(query)
-      .populate("puzzles", "title difficulty category type")
-      .populate("participants.user", "name email")
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit));
+    const [competitions, total] = await Promise.all([
+      CompetitionModel.find(query)
+        .select(
+          "name description status startTime endTime duration puzzles participants createdAt"
+        )
+        .populate("puzzles", "title difficulty category type")
+        .populate("participants.user", "name email")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
 
-    const total = await CompetitionModel.countDocuments(query);
+      CompetitionModel.countDocuments(query),
+    ]);
 
     res.status(200).json({
       success: true,
       data: competitions,
       pagination: {
-        current: parseInt(page),
-        total: Math.ceil(total / limit),
+        current: pageNum,
+        total: Math.ceil(total / limitNum),
         count: competitions.length,
-        totalRecords: total
-      }
+        totalRecords: total,
+      },
     });
   } catch (error) {
     console.error("Error fetching competitions:", error);
+
     res.status(500).json({
       success: false,
       message: "Failed to fetch competitions",
