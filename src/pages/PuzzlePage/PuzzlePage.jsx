@@ -47,7 +47,9 @@ function PuzzlePage() {
   });
 
   const [puzzles, setPuzzles] = useState(() => {
-    if (location.state?.puzzles && Array.isArray(location.state.puzzles)) {
+    // If we're in Review mode, do NOT hydrate from location.state.puzzles because we need
+    // the backend to give us the fresh moveHistory data for each attempt!
+    if (location.state?.puzzles && Array.isArray(location.state.puzzles) && !location.state?.reviewMode) {
       return location.state.puzzles.map((p, index) => ({
         id: p._id,
         _id: p._id,
@@ -229,9 +231,9 @@ function PuzzlePage() {
     }
   }, [currentPuzzleIndex, competitionData?.chapters, puzzles]);
 
-  // Persist State
+  // Persist State (Only for active competitions, NEVER for Review Mode where we should always rely on fresh backend data)
   useEffect(() => {
-    if (!loading && puzzles.length > 0 && isLoadedRef.current) {
+    if (!loading && puzzles.length > 0 && isLoadedRef.current && !isReviewMode) {
       const stateKey = `puzzleState_${paramCompetitionId || "casual"}`;
       const stateToSave = {
         currentPuzzleIndex,
@@ -253,6 +255,7 @@ function PuzzlePage() {
     loading,
     paramCompetitionId,
     puzzles,
+    isReviewMode
   ]);
 
   const loadPuzzleContext = async () => {
@@ -374,6 +377,7 @@ function PuzzlePage() {
                 isSolved: p.isSolved,
                 isFailed: p.isFailed,
                 status: p.status,
+                moveHistory: p.moveHistory || [],
               }));
               setPuzzles(normalized);
 
@@ -391,6 +395,7 @@ function PuzzlePage() {
               setPuzzleStatuses(statuses);
 
               // Restore board states from localStorage and merge with server data
+              // In Review Mode, we don't want to restore old states since they might be missing our new moveHistory arrays!
               if (!reviewMode) {
                 const stateKey = `puzzleState_${paramCompetitionId}`;
                 const savedState = localStorage.getItem(stateKey);
@@ -1476,19 +1481,40 @@ function PuzzlePage() {
                             </button>
                           </div>
                           {showInlineSolution && (
-                            <div className={styles.solutionMoves} style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                              {currentPuzzle?.solution && currentPuzzle.solution.length > 0 ? (
-                                currentPuzzle.solution.map((move, i) => {
-                                  if (i % 2 == 0) return null;
-                                  return (
-                                    <span key={i} className={styles.moveTag} style={{ display: 'inline-block', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', padding: '6px 12px', borderRadius: '6px', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '1rem' }}>
-                                      {Math.floor(i / 2) + 1}. {move}
-                                    </span>
-                                  );
-                                })
-                              ) : (
-                                <p style={{ color: 'var(--text-secondary, #a89f91)' }}>No explicit solution text available.</p>
+                            <div className={styles.solutionSectionBox} style={{ display: 'flex', flexDirection: 'column', gap: '15px', background: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                              {currentPuzzle?.moveHistory && currentPuzzle.moveHistory.length > 0 && (
+                                <div className={styles.userAttemptSection}>
+                                  <h4 style={{ color: '#ef4444', marginBottom: '8px', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Your Attempt:</h4>
+                                  <div className={styles.solutionMoves} style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                    {currentPuzzle.moveHistory.map((move, i) => {
+                                      if (i % 2 == 0) return null;
+                                      return (
+                                        <span key={`atm-${i}`} className={styles.moveTag} style={{ display: 'inline-block', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', padding: '6px 12px', borderRadius: '6px', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '1rem', textDecoration: 'line-through' }}>
+                                          {Math.floor(i / 2) + 1}. {move}
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
                               )}
+
+                              <div className={styles.correctSolutionSection}>
+                                <h4 style={{ color: '#10b981', marginBottom: '8px', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Correct Solution:</h4>
+                                <div className={styles.solutionMoves} style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                  {currentPuzzle?.solution && currentPuzzle.solution.length > 0 ? (
+                                    currentPuzzle.solution.map((move, i) => {
+                                      if (i % 2 == 0) return null;
+                                      return (
+                                        <span key={`sol-${i}`} className={styles.moveTag} style={{ display: 'inline-block', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', padding: '6px 12px', borderRadius: '6px', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '1rem' }}>
+                                          {Math.floor(i / 2) + 1}. {move}
+                                        </span>
+                                      );
+                                    })
+                                  ) : (
+                                    <p style={{ color: 'var(--text-secondary, #a89f91)' }}>No explicit solution text available.</p>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           )}
                         </div>

@@ -13,10 +13,11 @@ import {
   FaLock,
   FaBookOpen,
   FaTrash,
-  FaSearch
+  FaSearch,
+  FaSave
 } from "react-icons/fa";
 import toast, { Toaster } from "react-hot-toast";
-import styles from "./CreateCompetition.module.css";
+import styles from "./EditCompetition.module.css";
 import ChessBoard from "../../../components/ChessBoard/ChessBoard";
 import { competitionAPI } from "../../../services/api";
 
@@ -45,6 +46,8 @@ function EditCompetition() {
     maxParticipants: "",
     description: "",
   });
+
+  const [loadingData, setLoadingData] = useState(true);
 
   // Puzzle State
   const [puzzles, setPuzzles] = useState([]);

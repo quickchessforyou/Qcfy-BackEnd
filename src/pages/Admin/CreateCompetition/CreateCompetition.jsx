@@ -475,13 +475,13 @@ function CreateCompetition() {
                   {filterOptions.levels?.map(l => <option key={l} value={l}>{l}</option>)}
                 </select>
 
-                <select
+                {/* <select
                   value={filters.rating}
                   onChange={(e) => handleFilterChange("rating", e.target.value)}
                 >
                   <option value="all">Rating: All</option>
                   {filterOptions.ratings?.map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
+                </select> */}
               </div>
             </div>
 

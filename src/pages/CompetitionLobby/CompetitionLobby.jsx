@@ -526,7 +526,11 @@ const CompetitionLobby = () => {
                   {/* If joined, we show 'Joined' status OR 'Enter' if it's Live/Playing */}
                   {/* Logic: If competition is live, show Enter. If upcoming, show Joined. */}
 
-                  {(competitionState === "LIVE" || competitionState === "PLAYING") ? (
+                  {participantState === "SUBMITTED" ? (
+                    <span className={styles.joinedText} style={{ color: '#d97706', backgroundColor: 'rgba(217, 119, 6, 0.1)', borderColor: 'rgba(217, 119, 6, 0.2)' }}>
+                      <FaCheckCircle /> Submitted
+                    </span>
+                  ) : (competitionState === "LIVE" || competitionState === "PLAYING") ? (
                     <button
                       className={`${styles.actionBtn} ${styles.enterBtn}`}
                       onClick={handleEnterCompetition}

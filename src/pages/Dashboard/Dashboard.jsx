@@ -70,6 +70,12 @@ function Dashboard() {
           if (statusOrder[a.status] !== statusOrder[b.status]) {
             return statusOrder[a.status] - statusOrder[b.status];
           }
+
+          if (a.status === 'Ended') {
+            // Latest ended competitions first (descending)
+            return new Date(b.endDate || b.startDate) - new Date(a.endDate || a.startDate);
+          }
+          // Upcoming and Live: soonest first (ascending)
           return new Date(a.startDate) - new Date(b.startDate);
         });
 
