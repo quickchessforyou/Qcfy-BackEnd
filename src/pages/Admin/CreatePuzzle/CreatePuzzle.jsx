@@ -38,7 +38,7 @@ function CreatePuzzle() {
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
 
-  // 'normal' or 'kids'
+  // 'normal', 'kids', or 'illegal'
   const [puzzleType, setPuzzleType] = useState('normal');
 
   const [formData, setFormData] = useState({
@@ -245,7 +245,7 @@ function CreatePuzzle() {
     }
 
     // Specific Validation
-    if (puzzleType === 'normal') {
+    if (puzzleType === 'normal' || puzzleType === 'illegal') {
       if (!validateFEN(formData.fen)) {
         setApiError("Please enter a valid FEN notation.");
         return;
@@ -269,7 +269,7 @@ function CreatePuzzle() {
         solutionMoves,
         alternativeSolutions,
         description: [formData.description.trim(), formData.hints.trim()].filter(Boolean).join("\n\n"),
-        type: 'normal',
+        type: puzzleType,
         level: Number(formData.level),
         initialMove: undefined,
         firstMoveBy
@@ -465,14 +465,14 @@ function CreatePuzzle() {
   // Render board preview
   const renderChessBoard = () => {
     let board = [];
-    if (setupMode === 'manual' && puzzleType === 'normal') {
+    if (setupMode === 'manual' && (puzzleType === 'normal' || puzzleType === 'illegal')) {
       board = Array(8).fill(null).map(() => Array(8).fill(null));
     } else {
       try {
         const chess = new Chess(formData.fen);
         board = chess.board();
       } catch (e) {
-        if (puzzleType === 'kids' || (puzzleType === 'normal' && setupMode === 'manual')) {
+        if (puzzleType === 'kids' || ((puzzleType === 'normal' || puzzleType === 'illegal') && setupMode === 'manual')) {
           board = Array(8).fill(null).map(() => Array(8).fill(null));
         } else {
           return (
@@ -498,7 +498,7 @@ function CreatePuzzle() {
     const files = previewUserColor === 'w' ? ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] : ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a'];
 
     return (
-      <div className={`${styles.chessboard} ${puzzleType === 'kids' || setupMode === 'manual' ? styles.interactiveBoard : ''}`}>
+      <div className={`${styles.chessboard} ${puzzleType === 'kids' || (setupMode === 'manual' && (puzzleType === 'normal' || puzzleType === 'illegal')) ? styles.interactiveBoard : ''}`}>
         {ranks.map((rank, rankIndex) => (
           <div key={rank} className={styles.row}>
             {files.map((file, fileIndex) => {
@@ -601,6 +601,13 @@ function CreatePuzzle() {
             >
               Kids Puzzle 🍕
             </button>
+            <button
+              type="button"
+              className={`${styles.modeBtn} ${puzzleType === 'illegal' ? styles.active : ''}`}
+              onClick={() => setPuzzleType('illegal')}
+            >
+              Illegal Move
+            </button>
           </div>
 
           <form onSubmit={handleSubmit}>
@@ -671,7 +678,7 @@ function CreatePuzzle() {
                 </div>
               </div>
             ) : (
-              // NORMAL MODE CONTROLS (FEN or Manual)
+              // NORMAL / ILLEGAL MODE CONTROLS (FEN or Manual)
               <>
                 <div className={styles.setupToggle}>
                   <label>Setup Method:</label>
@@ -787,70 +794,72 @@ function CreatePuzzle() {
 
 
 
-            {/* Reordered: Rating -> Level -> Difficulty */}
-            <div className={styles.formGroup} style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '20px' }}>
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ color: '#2d3748', fontWeight: '600' }}>Rating (300 - 3500) *</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                  <input
-                    type="number"
-                    min="300"
-                    max="3500"
-                    required
-                    value={formData.rating}
-                    onChange={(e) => handleRatingChange(e.target.value)}
-                    style={{ border: '2px solid #4a5568', fontSize: '1.1em' }}
-                  />
-                  <small style={{ color: '#4a5568' }}>
-                    Entering rating automatically selects the appropriate Level and Difficulty.
-                  </small>
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                <div className={styles.formGroup} style={{ marginBottom: 0 }}>
-                  <label style={{ fontSize: '0.9em' }}>Level (Auto)</label>
-                  <select
-                    required
-                    value={formData.level}
-                    disabled // Auto-selected
-                    style={{ background: '#edf2f7', cursor: 'not-allowed' }}
-                  >
-                    {[
-                      { value: 1, label: "Level 1 (Beginner)" },
-                      { value: 2, label: "Level 2 (Beginner +)" },
-                      { value: 3, label: "Level 3 (Intermediate)" },
-                      { value: 4, label: "Level 4 (Advanced)" },
-                      { value: 5, label: "Level 5 (Expert)" },
-                      { value: 6, label: "Level 6 (Master)" },
-                      { value: 7, label: "Level 7 (Elite)" }
-                    ].map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
+            {/* Reordered: Rating -> Level -> Difficulty (hidden for Illegal Move) */}
+            {puzzleType !== 'illegal' && (
+              <div className={styles.formGroup} style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '20px' }}>
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ color: '#2d3748', fontWeight: '600' }}>Rating (300 - 3500) *</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <input
+                      type="number"
+                      min="300"
+                      max="3500"
+                      required
+                      value={formData.rating}
+                      onChange={(e) => handleRatingChange(e.target.value)}
+                      style={{ border: '2px solid #4a5568', fontSize: '1.1em' }}
+                    />
+                    <small style={{ color: '#4a5568' }}>
+                      Entering rating automatically selects the appropriate Level and Difficulty.
+                    </small>
+                  </div>
                 </div>
 
-                <div className={styles.formGroup} style={{ marginBottom: 0 }}>
-                  <label style={{ fontSize: '0.9em' }}>Difficulty (Auto)</label>
-                  <select
-                    required
-                    value={formData.difficulty}
-                    disabled // Auto-selected
-                    style={{ background: '#edf2f7', cursor: 'not-allowed' }}
-                  >
-                    <option value="easy">Easy</option>
-                    <option value="medium">Medium</option>
-                    <option value="hard">Hard</option>
-                  </select>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                  <div className={styles.formGroup} style={{ marginBottom: 0 }}>
+                    <label style={{ fontSize: '0.9em' }}>Level (Auto)</label>
+                    <select
+                      required
+                      value={formData.level}
+                      disabled // Auto-selected
+                      style={{ background: '#edf2f7', cursor: 'not-allowed' }}
+                    >
+                      {[
+                        { value: 1, label: "Level 1 (Beginner)" },
+                        { value: 2, label: "Level 2 (Beginner +)" },
+                        { value: 3, label: "Level 3 (Intermediate)" },
+                        { value: 4, label: "Level 4 (Advanced)" },
+                        { value: 5, label: "Level 5 (Expert)" },
+                        { value: 6, label: "Level 6 (Master)" },
+                        { value: 7, label: "Level 7 (Elite)" }
+                      ].map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className={styles.formGroup} style={{ marginBottom: 0 }}>
+                    <label style={{ fontSize: '0.9em' }}>Difficulty (Auto)</label>
+                    <select
+                      required
+                      value={formData.difficulty}
+                      disabled // Auto-selected
+                      style={{ background: '#edf2f7', cursor: 'not-allowed' }}
+                    >
+                      <option value="easy">Easy</option>
+                      <option value="medium">Medium</option>
+                      <option value="hard">Hard</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '10px', fontSize: '0.85em', color: '#718096', fontStyle: 'italic' }}>
+                  Current Range: {LEVEL_RANGES[formData.level]?.[formData.difficulty]
+                    ? `${LEVEL_RANGES[formData.level][formData.difficulty][0]} - ${LEVEL_RANGES[formData.level][formData.difficulty][1]}`
+                    : 'N/A'}
                 </div>
               </div>
-
-              <div style={{ marginTop: '10px', fontSize: '0.85em', color: '#718096', fontStyle: 'italic' }}>
-                Current Range: {LEVEL_RANGES[formData.level]?.[formData.difficulty]
-                  ? `${LEVEL_RANGES[formData.level][formData.difficulty][0]} - ${LEVEL_RANGES[formData.level][formData.difficulty][1]}`
-                  : 'N/A'}
-              </div>
-            </div>
+            )}
 
             <div className={styles.formGroup}>
               <label>Description</label>
@@ -893,8 +902,8 @@ function CreatePuzzle() {
 
           <div className={styles.previewInfo}>
             <div><strong>Title:</strong> {formData.title || "Untitled"}</div>
-            <div><strong>Type:</strong> {puzzleType === 'kids' ? 'Kids' : 'Normal'}</div>
-            {puzzleType === 'normal' && formData.correctMove && (
+            <div><strong>Type:</strong> {puzzleType === 'kids' ? 'Kids' : puzzleType === 'illegal' ? 'Illegal Move' : 'Normal'}</div>
+            {(puzzleType === 'normal' || puzzleType === 'illegal') && formData.correctMove && (
               <div><strong>Solution:</strong> {formData.correctMove}</div>
             )}
             {puzzleType === 'kids' && (
