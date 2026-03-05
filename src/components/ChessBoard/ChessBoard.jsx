@@ -497,7 +497,7 @@ function ChessBoard({ fen, solution = [], alternativeSolutions = [], onPuzzleSol
       setTimeout(() => {
         setFeedback('solved');
         playSound('solved');
-        if (onPuzzleSolved) onPuzzleSolved();
+        if (onPuzzleSolved) onPuzzleSolved(undefined, newHistory);
       }, 300);
     }
 
@@ -582,10 +582,11 @@ function ChessBoard({ fen, solution = [], alternativeSolutions = [], onPuzzleSol
       const isCheckmate = game.isCheckmate();
 
       if (winningPathIndex !== undefined || isCheckmate) {
+        const finalHistory = newHistory;
         setTimeout(() => {
           setFeedback('solved');
           playSound('solved');
-          if (onPuzzleSolved) onPuzzleSolved();
+          if (onPuzzleSolved) onPuzzleSolved(undefined, finalHistory);
         }, 300);
       } else {
         // Opponent Response
@@ -608,10 +609,11 @@ function ChessBoard({ fen, solution = [], alternativeSolutions = [], onPuzzleSol
 
               // Check if end of puzzle after opponent move
               if ((nextIndex + 1) >= responsePath.length || game.isCheckmate()) {
+                const solvedHistory = [...newHistory, blackResult.san];
                 setTimeout(() => {
                   setFeedback('solved');
                   playSound('solved');
-                  if (onPuzzleSolved) onPuzzleSolved();
+                  if (onPuzzleSolved) onPuzzleSolved(undefined, solvedHistory);
                 }, 300);
               } else {
                 setFeedback(null);
@@ -625,7 +627,7 @@ function ChessBoard({ fen, solution = [], alternativeSolutions = [], onPuzzleSol
       }
       setGame(new Chess(game.fen()));
     } else {
-      if (onWrongMove) onWrongMove();
+      if (onWrongMove) onWrongMove(newHistory);
       resetToInitial();
     }
 

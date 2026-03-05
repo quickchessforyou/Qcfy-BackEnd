@@ -153,8 +153,7 @@ function PuzzlePage() {
     setShowInlineSolution(false);
   }, [currentPuzzleIndex]);
 
-  // Countdown state for 10-second buffer before start
-  const [countdown, setCountdown] = useState(0);
+
 
   // Refs for tracking without re-renders
   const timerRef = useRef(null);
@@ -541,36 +540,8 @@ function PuzzlePage() {
         }
 
         if (!reviewMode) {
-          // If we haven't answered anything and the game is just starting, apply 10s buffer
-          const stateKey = `puzzleState_${paramCompetitionId}`;
-          const savedState = localStorage.getItem(stateKey);
-          let hasStarted = false;
-
-          if (savedState) {
-            try {
-              const parsed = JSON.parse(savedState);
-              hasStarted = parsed.score > 0 || parsed.solvedCount > 0 || (parsed.puzzleStatuses && Object.keys(parsed.puzzleStatuses).length > 0) || parsed.currentPuzzleIndex > 0;
-            } catch (e) {
-              console.error(e);
-            }
-          }
-
-          if (isLive && !hasStarted) {
-            // Check if competition started very recently (e.g. less than 10 seconds ago)
-            const timeSinceStartMs = now.getTime() - start.getTime();
-            const timeSinceStartSec = Math.floor(timeSinceStartMs / 1000);
-
-            // Allow up to 10 seconds of buffer. If they joined 3 seconds late, they get 7 seconds buffer.
-            if (timeSinceStartSec < 10 && timeSinceStartSec >= 0) {
-              setCountdown(10 - timeSinceStartSec);
-              startCountdownTimer();
-            } else {
-              // They joined late (e.g. 15s after start), no buffer needed
-              startTimer();
-            }
-          } else {
-            startTimer();
-          }
+          // Start the game timer immediately (no countdown buffer)
+          startTimer();
         }
       } else {
         // Casual Mode (Dashboard link)
@@ -638,26 +609,7 @@ function PuzzlePage() {
 
   const targetEndTimeRef = useRef(null);
 
-  const startCountdownTimer = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
 
-    // Calculate the absolute target time for the countdown to end
-    const countdownEndTime = Date.now() + (countdown * 1000);
-
-    timerRef.current = setInterval(() => {
-      const remainingMs = countdownEndTime - Date.now();
-      const remainingSec = Math.ceil(remainingMs / 1000);
-
-      setCountdown((prev) => {
-        if (remainingSec <= 0) {
-          clearInterval(timerRef.current);
-          startTimer(); // Start the actual game timer once countdown ends
-          return 0;
-        }
-        return remainingSec;
-      });
-    }, 1000);
-  };
 
   const startTimer = () => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -698,7 +650,7 @@ function PuzzlePage() {
       .padStart(2, "0")}`;
   };
 
-  const handlePuzzleSolved = async (winningMoves) => {
+  const handlePuzzleSolved = async (winningMoves, boardMoveHistory) => {
     const currentPuzzle = puzzles[currentPuzzleIndex];
     if (!currentPuzzle) return;
 
@@ -764,11 +716,14 @@ function PuzzlePage() {
       (async () => {
         try {
           if (isLiveCompetition) {
+            const movesPlayed = boardMoveHistory || puzzleBoardStates[currentPuzzle.id]?.moveHistory || [];
             const res = await liveCompetitionAPI.submitSolution(
               competitionData._id,
               currentPuzzle.id,
               solutionToSend,
               timeTaken,
+              null,
+              movesPlayed,
             );
 
             if (res && res.success && res.scoreEarned) {
@@ -808,7 +763,7 @@ function PuzzlePage() {
     }
   };
 
-  const handleWrongMove = async () => {
+  const handleWrongMove = async (boardMoveHistory) => {
     const currentPuzzle = puzzles[currentPuzzleIndex];
     if (!currentPuzzle) return;
 
@@ -863,11 +818,14 @@ function PuzzlePage() {
       (async () => {
         try {
           // Submit wrong solution to backend to mark as failed
+          const movesPlayed = boardMoveHistory || puzzleBoardStates[puzzleId]?.moveHistory || [];
           await liveCompetitionAPI.submitSolution(
             competitionData._id,
             currentPuzzle.id,
             ["wrong", "move"], // Send wrong moves
             timeTaken,
+            null,
+            movesPlayed,
           );
         } catch (error) {
           console.error("Failed to submit wrong move in background:", error);
@@ -1133,16 +1091,7 @@ function PuzzlePage() {
 
         {/* Board Area - Center */}
         <div className={styles.boardArea}>
-          {countdown > 0 && (
-            <div className={styles.countdownOverlay}>
-              <div className={styles.countdownCircle}>
-                <span className={styles.countdownNumber}>{countdown}</span>
-                <span className={styles.countdownText}>Get Ready!</span>
-              </div>
-            </div>
-          )}
-
-          <div className={`${styles.boardWrapper} ${countdown > 0 ? styles.blurBoard : ''} `}>
+          <div className={styles.boardWrapper}>
             {puzzles.length > 0 && currentPuzzle ? (
               <ChessBoard
                 key={`${currentPuzzle.id || currentPuzzle._id} -${currentPuzzleIndex} `}
@@ -1482,21 +1431,37 @@ function PuzzlePage() {
                           </div>
                           {showInlineSolution && (
                             <div className={styles.solutionSectionBox} style={{ display: 'flex', flexDirection: 'column', gap: '15px', background: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                              {currentPuzzle?.moveHistory && currentPuzzle.moveHistory.length > 0 && (
-                                <div className={styles.userAttemptSection}>
-                                  <h4 style={{ color: '#ef4444', marginBottom: '8px', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Your Attempt:</h4>
-                                  <div className={styles.solutionMoves} style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                    {currentPuzzle.moveHistory.map((move, i) => {
-                                      if (i % 2 == 0) return null;
-                                      return (
-                                        <span key={`atm-${i}`} className={styles.moveTag} style={{ display: 'inline-block', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', padding: '6px 12px', borderRadius: '6px', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '1rem', textDecoration: 'line-through' }}>
-                                          {Math.floor(i / 2) + 1}. {move}
-                                        </span>
-                                      );
-                                    })}
+                              {currentPuzzle?.moveHistory && currentPuzzle.moveHistory.length > 0 && (() => {
+                                const pid = currentPuzzle.id || currentPuzzle._id;
+                                const wasSolved = puzzleStatuses[pid] === 'success';
+                                const accentColor = wasSolved ? '#10b981' : '#ef4444';
+                                const accentBg = wasSolved ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+                                return (
+                                  <div className={styles.userAttemptSection}>
+                                    <h4 style={{ color: accentColor, marginBottom: '8px', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Your Moves:</h4>
+                                    <div className={styles.solutionMoves} style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                                      {currentPuzzle.moveHistory.map((move, i) => {
+                                        const isUserMove = i % 2 !== 0;
+                                        const moveNumber = Math.floor(i / 2) + 1;
+                                        if (!isUserMove) {
+                                          // Computer move — show as muted label
+                                          return (
+                                            <span key={`atm-${i}`} style={{ display: 'inline-block', color: 'rgba(255,255,255,0.4)', padding: '4px 6px', fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                                              {moveNumber}. {move}
+                                            </span>
+                                          );
+                                        }
+                                        // User move — highlighted
+                                        return (
+                                          <span key={`atm-${i}`} style={{ display: 'inline-block', background: accentBg, color: accentColor, padding: '5px 10px', borderRadius: '6px', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '0.95rem', textDecoration: wasSolved ? 'none' : 'line-through' }}>
+                                            {move}
+                                          </span>
+                                        );
+                                      })}
+                                    </div>
                                   </div>
-                                </div>
-                              )}
+                                );
+                              })()}
 
                               <div className={styles.correctSolutionSection}>
                                 <h4 style={{ color: '#10b981', marginBottom: '8px', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Correct Solution:</h4>
@@ -1531,8 +1496,8 @@ function PuzzlePage() {
                 <button
                   className={`${styles.actionBtn} ${styles.btnSubmit} `}
                   onClick={() => setShowSubmitModal(true)}
-                  disabled={submitting || getUnattemptedCount() > 0 || countdown > 0}
-                  style={{ width: "100%", fontSize: "1rem", padding: "12px", opacity: (submitting || getUnattemptedCount() > 0 || countdown > 0) ? 0.5 : 1, cursor: (submitting || getUnattemptedCount() > 0 || countdown > 0) ? 'not-allowed' : 'pointer' }}
+                  disabled={submitting || getUnattemptedCount() > 0}
+                  style={{ width: "100%", fontSize: "1rem", padding: "12px", opacity: (submitting || getUnattemptedCount() > 0) ? 0.5 : 1, cursor: (submitting || getUnattemptedCount() > 0) ? 'not-allowed' : 'pointer' }}
                   title={getUnattemptedCount() > 0 ? `Please attempt ${getUnattemptedCount()} remaining puzzle(s)` : ''}
                 >
                   Submit Competition
