@@ -75,10 +75,8 @@ function PuzzlePage() {
 
   const [activeChapterIndex, setActiveChapterIndex] = useState(0);
 
-  // Chapter scroll reference and minimal indicator state
+  // Chapter scroll reference
   const chapterScrollRef = useRef(null);
-  const [showScrollIndicator, setShowScrollIndicator] = useState(false);
-  const [scrollProgress, setScrollProgress] = useState(0);
 
   // Automatically scroll active chapter into view whenever activeChapterIndex changes
   useEffect(() => {
@@ -95,29 +93,6 @@ function PuzzlePage() {
       }
     }
   }, [activeChapterIndex]);
-
-  // Check if chapters overflow container to show/hide scroll indicator
-  const checkScrollOverflow = () => {
-    if (chapterScrollRef.current) {
-      const { scrollWidth, clientWidth } = chapterScrollRef.current;
-      setShowScrollIndicator(scrollWidth > clientWidth + 5); // 5px buffer
-    }
-  };
-
-  useEffect(() => {
-    checkScrollOverflow();
-    window.addEventListener("resize", checkScrollOverflow);
-    return () => window.removeEventListener("resize", checkScrollOverflow);
-  }, [competitionData?.chapters]);
-
-  // Handle native scroll to update the custom indicator thumb
-  const handleChapterScroll = (e) => {
-    const { scrollLeft, scrollWidth, clientWidth } = e.target;
-    const maxScroll = scrollWidth - clientWidth;
-    if (maxScroll > 0) {
-      setScrollProgress(scrollLeft / maxScroll);
-    }
-  };
 
   // If we have initial location state, we don't need to show the loading screen at all!
   const [loading, setLoading] = useState(!location.state?.competitionId);
@@ -927,6 +902,96 @@ function PuzzlePage() {
         }
       />
 
+      {/* Chapter Tabs Container (Full Width, Below PageHeader) */}
+      {competitionData && competitionData.chapters && competitionData.chapters.length > 0 && (
+        <div className={styles.fullWidthChapterContainer}>
+          <div className={styles.chapterNavContainer}>
+            {/* Left Scroll Arrow (Prev Chapter) */}
+            <button
+              className={`${styles.navArrow} ${styles.chapterNavArrow} ${styles.navArrowLeft}`}
+              onClick={() => {
+                const newIdx = Math.max(0, activeChapterIndex - 1);
+                setActiveChapterIndex(newIdx);
+                setCurrentFrame(0);
+                const chPuzzleIds = (competitionData.chapters[newIdx].puzzleIds || []).map(id => id.toString());
+                const chPuzzles = puzzles.filter(p => chPuzzleIds.includes((p._id || p.id).toString()));
+                if (chPuzzles.length > 0) {
+                  const firstPuzzleId = (chPuzzles[0]._id || chPuzzles[0].id).toString();
+                  const globalIdx = puzzles.findIndex(p => (p._id || p.id).toString() === firstPuzzleId);
+                  if (globalIdx !== -1) {
+                    setCurrentPuzzleIndex(globalIdx);
+                  }
+                }
+              }}
+              disabled={activeChapterIndex <= 0}
+              title="Previous Chapter"
+            >
+              ← Prev Chapter
+            </button>
+
+            {/* Scrollable Wrapper */}
+            <div
+              className={styles.chapterScrollWrapper}
+              ref={chapterScrollRef}
+            >
+              <div className={styles.chapterTabBar}>
+                {competitionData.chapters.map((chapter, idx) => {
+                  const chPuzzleIds = (chapter.puzzleIds || []).map(id => id.toString());
+                  const chPuzzles = puzzles.filter(p => chPuzzleIds.includes((p._id || p.id).toString()));
+                  const solvedCount = chPuzzles.filter(p => puzzleStatuses[(p.id || p._id).toString()] === 'success').length;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      className={`${styles.chapterTab} ${activeChapterIndex === idx ? styles.chapterTabActive : ''}`}
+                      onClick={() => {
+                        setActiveChapterIndex(idx);
+                        setCurrentFrame(0);
+                        if (chPuzzles.length > 0) {
+                          const firstPuzzleId = (chPuzzles[0]._id || chPuzzles[0].id).toString();
+                          const globalIdx = puzzles.findIndex(p => (p._id || p.id).toString() === firstPuzzleId);
+                          if (globalIdx !== -1) {
+                            setCurrentPuzzleIndex(globalIdx);
+                          }
+                        }
+                      }}
+                    >
+                      <span className={styles.chapterTabName}>{chapter.name}</span>
+                      <span className={styles.chapterTabBadge}>
+                        {solvedCount}/{chPuzzles.length}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Right Scroll Arrow (Next Chapter) */}
+            <button
+              className={`${styles.navArrow} ${styles.chapterNavArrow} ${styles.navArrowRight}`}
+              onClick={() => {
+                const newIdx = Math.min(competitionData.chapters.length - 1, activeChapterIndex + 1);
+                setActiveChapterIndex(newIdx);
+                setCurrentFrame(0);
+                const chPuzzleIds = (competitionData.chapters[newIdx].puzzleIds || []).map(id => id.toString());
+                const chPuzzles = puzzles.filter(p => chPuzzleIds.includes((p._id || p.id).toString()));
+                if (chPuzzles.length > 0) {
+                  const firstPuzzleId = (chPuzzles[0]._id || chPuzzles[0].id).toString();
+                  const globalIdx = puzzles.findIndex(p => (p._id || p.id).toString() === firstPuzzleId);
+                  if (globalIdx !== -1) {
+                    setCurrentPuzzleIndex(globalIdx);
+                  }
+                }
+              }}
+              disabled={activeChapterIndex >= competitionData.chapters.length - 1}
+              title="Next Chapter"
+            >
+              Next Chapter →
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Content - New Grid Layout: Timer/Submit Left, Board Center, Info/Nav Right, Race Bottom */}
       <div className={styles.mainContent}>
         {/* Left Column: Timer, White to Play, Rank */}
@@ -1505,25 +1570,29 @@ function PuzzlePage() {
               </div>
             )}
           </div>
-        )}
+        )
+        }
 
         {/* Race Container - Full Width Bottom */}
-        {isLiveCompetition && !isReviewMode && (
-          <div className={styles.raceContainer}>
-            <PuzzleRacer />
-          </div>
-        )}
-      </div>
+        {
+          isLiveCompetition && !isReviewMode && (
+            <div className={styles.raceContainer}>
+              <PuzzleRacer />
+            </div>
+          )
+        }
+      </div >
 
 
 
       {/* Submission Confirmation Modal */}
-      {showSubmitModal && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
-            <h3>Submit Competition?</h3>
+      {
+        showSubmitModal && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.modalContent}>
+              <h3>Submit Competition?</h3>
 
-            {/* <div className={styles.modalStats}>
+              {/* <div className={styles.modalStats}>
               <div className={styles.modalStat}>
                 <span className={styles.modalStatLabel}>Puzzles Solved:</span>
                 <span className={styles.modalStatValue}>{solvedCount} / {puzzles.length}</span>
@@ -1538,40 +1607,41 @@ function PuzzlePage() {
               </div>
             </div> */}
 
-            {getUnattemptedCount() > 0 && (
-              <div className={styles.modalWarning}>
-                ⚠️ You still have {getUnattemptedCount()} unattempted puzzle
-                {getUnattemptedCount() > 1 ? "s" : ""}. Please attempt all puzzles before submitting.
+              {getUnattemptedCount() > 0 && (
+                <div className={styles.modalWarning}>
+                  ⚠️ You still have {getUnattemptedCount()} unattempted puzzle
+                  {getUnattemptedCount() > 1 ? "s" : ""}. Please attempt all puzzles before submitting.
+                </div>
+              )}
+
+              <p className={styles.modalText}>
+                Once you submit, you cannot make any more changes to your answers.
+                Your final score will be calculated and you'll be taken to the
+                leaderboard.
+              </p>
+
+              <div className={styles.modalActions}>
+                <button
+                  className={styles.modalCancel}
+                  onClick={() => setShowSubmitModal(false)}
+                  disabled={submitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  className={styles.modalSubmit}
+                  onClick={handleSubmitCompetition}
+                  disabled={submitting || getUnattemptedCount() > 0}
+                  style={{ opacity: (submitting || getUnattemptedCount() > 0) ? 0.5 : 1, cursor: (submitting || getUnattemptedCount() > 0) ? 'not-allowed' : 'pointer' }}
+                >
+                  {submitting ? "Submitting..." : "Submit Competition"}
+                </button>
               </div>
-            )}
-
-            <p className={styles.modalText}>
-              Once you submit, you cannot make any more changes to your answers.
-              Your final score will be calculated and you'll be taken to the
-              leaderboard.
-            </p>
-
-            <div className={styles.modalActions}>
-              <button
-                className={styles.modalCancel}
-                onClick={() => setShowSubmitModal(false)}
-                disabled={submitting}
-              >
-                Cancel
-              </button>
-              <button
-                className={styles.modalSubmit}
-                onClick={handleSubmitCompetition}
-                disabled={submitting || getUnattemptedCount() > 0}
-                style={{ opacity: (submitting || getUnattemptedCount() > 0) ? 0.5 : 1, cursor: (submitting || getUnattemptedCount() > 0) ? 'not-allowed' : 'pointer' }}
-              >
-                {submitting ? "Submitting..." : "Submit Competition"}
-              </button>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 }
 

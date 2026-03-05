@@ -82,12 +82,12 @@
 /* --- MAIN LAYOUT --- */
 .mainContent {
   display: grid;
-  grid-template-columns: 280px minmax(auto, 70vh) 280px;
-  gap: 24px;
+  grid-template-columns: minmax(250px, 1fr) auto minmax(250px, 1fr);
+  gap: 20px;
   max-width: 1800px;
   width: 100%;
   margin: 0 auto;
-  padding: 1rem 2rem;
+  padding: 1rem 0rem;
   align-items: start;
   min-height: 100vh;
 }
@@ -118,6 +118,7 @@
   flex-direction: column;
   align-items: center;
   width: 100%;
+  /* max-width: fit-content; */
 }
 
 .puzzleInfoPanel {
@@ -681,7 +682,7 @@
 .navGrid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 0.15rem; /* Reduced gap between number buttons */
+  gap: 0.5rem; /* Expanded gap to stretch over the new width */
   max-height: 200px;
   overflow-y: auto;
   padding-right: 5px;
@@ -717,10 +718,10 @@
   justify-content: center;
   cursor: pointer;
   font-weight: 600;
-  font-size: 0.75rem; /* Slightly smaller text */
+  font-size: 0.85rem; /* Slightly larger text to balance width */
   transition: all 0.2s;
   border: 1px solid transparent;
-  padding: 4px; /* Decreased internal padding */
+  padding: 8px; /* Increased internal padding for wider stance */
 }
 
 [data-theme="light"] .navItem {
@@ -1087,9 +1088,9 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 0.15rem; /* Reduced gap */
-  margin-top: 0.25rem; /* Reduced margin */
-  padding-top: 0.25rem; /* Reduced padding */
+  gap: 0.5rem; /* Expanded gap */
+  margin-top: 0.5rem; /* Expanded margin */
+  padding-top: 0.5rem; /* Expanded padding */
   border-top: 1px solid transparent;
   flex-wrap: wrap;
 }
@@ -1103,9 +1104,9 @@
 }
 
 .pageBtn {
-  min-width: 22px; /* Reduced width */
-  height: 22px; /* Reduced height */
-  border-radius: 4px;
+  min-width: 30px;
+  height: 30px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1114,7 +1115,7 @@
   cursor: pointer;
   font-family: inherit;
   font-weight: 600;
-  font-size: 0.7rem; /* Reduced font size */
+  font-size: 1rem;
   transition: all 0.2s;
   color: inherit;
 }
@@ -1598,14 +1599,25 @@
    CHAPTER TABS (PuzzlePage student view)
    ============================================ */
 
-/* Tab bar container wrapped around tabs and minimal scroll indicator */
-.chapterNavContainer {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
+/* Full Width Wrapper for Chapters */
+.fullWidthChapterContainer {
+  max-width: 1800px;
   width: 100%;
-  margin-bottom: 14px;
+  margin: 1rem auto 0;
+  padding: 0; /* match mainContent padding */
+}
+
+/* Tab bar container wrapped around tabs and arrows */
+.chapterNavContainer {
+  display: grid;
+  border: 1px solid #cb9c7577;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgb(29, 29, 29);
+  grid-template-columns: minmax(130px, 1fr) auto minmax(130px, 1fr);
+  align-items: center;
+  gap: 16px; /* give some room between the arrows and the scroll region */
+  width: 100%;
 }
 
 /* Scrollable area hiding the scrollbar */
@@ -1616,6 +1628,8 @@
   -ms-overflow-style: none; /* IE and Edge */
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .chapterScrollWrapper::-webkit-scrollbar {
@@ -1624,37 +1638,66 @@
 
 /* Tab bar now stays in a single line */
 .chapterTabBar {
-  display: flex;
+  display: inline-flex;
   flex-wrap: nowrap;
   gap: 8px;
-  width: max-content;
 }
 
-/* Minimalist Scroll Indicator */
-.scrollIndicatorTrack {
-  width: 100%;
-  height: 2px;
-  border-radius: 2px;
-  background: rgba(0, 0, 0, 0.08); /* fallback for light mode */
-  position: relative;
-  margin-top: -2px; /* Pull it slightly closer to the tabs */
-  overflow: hidden;
+/* Scroll Arrows for Chapter Navigation */
+.chapterScrollArrow {
+  background: transparent;
+  border: 2px solid transparent;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  font-size: 1rem;
+  flex-shrink: 0;
+  padding: 0;
 }
 
-[data-theme="dark"] .scrollIndicatorTrack {
-  background: rgba(255, 255, 255, 0.08);
+/* Specific Navigation Arrows tailored explicitly for the Chapter Header Top Level */
+.chapterNavArrow {
+  width: auto;
+  padding: 8px 16px;
+  white-space: nowrap;
+  gap: 6px;
 }
 
-.scrollIndicatorThumb {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 15%; /* Thumb size relative to the track */
-  border-radius: 2px;
-  background: linear-gradient(90deg, #d4a373, #b58863);
-  transition: transform 0.15s ease-out;
-  will-change: transform;
+.navArrowLeft {
+  justify-self: start;
+}
+
+.navArrowRight {
+  justify-self: end;
+}
+
+[data-theme="light"] .chapterScrollArrow {
+  border-color: #e5d5c5;
+  color: #8b6242;
+}
+
+[data-theme="light"] .chapterScrollArrow:hover {
+  background: linear-gradient(135deg, #d4a373 0%, #b58863 100%);
+  color: #ffffff;
+  border-color: #b58863;
+  transform: translateY(-2px);
+}
+
+[data-theme="dark"] .chapterScrollArrow {
+  border-color: #3a3028;
+  color: #d4a373;
+}
+
+[data-theme="dark"] .chapterScrollArrow:hover {
+  background: linear-gradient(135deg, #b58863 0%, #8b6242 100%);
+  color: #ffffff;
+  border-color: #b58863;
+  transform: translateY(-2px);
 }
 
 /* Individual tab pill */
@@ -1700,17 +1743,17 @@
   background: #3a3028;
   border-color: #b58863;
   color: #f5f0eb;
-  transform: translateY(-1px);
+  /* transform: translateY(-1px); */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 /* Active tab — gold gradient */
 .chapterTabActive {
-  background: linear-gradient(135deg, #d4a373 0%, #b58863 100%) !important;
+  background: linear-gradient(135deg, #f1a210 0%, #0baa75 100%) !important;
   color: #ffffff !important;
-  border-color: #b58863 !important;
-  box-shadow: 0 4px 14px rgba(181, 136, 99, 0.45) !important;
-  transform: translateY(-1px);
+  border-color: #ff9c3f !important;
+  box-shadow: 0 4px 14px rgba(125, 60, 152, 0.5) !important;
+  /* transform: translateY(-1px); */
 }
 
 /* Tab name text */
@@ -1739,7 +1782,7 @@
 
 .chapterTabActive .chapterTabBadge {
   background: rgba(255, 255, 255, 0.25);
-  color: #ffffff;
+  color: hsl(0, 0%, 100%);
 }
 
 /* ========================================= */
