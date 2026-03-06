@@ -9,19 +9,26 @@ const HighlightsStrip = () => {
     '50+ MASTERS',
   ];
 
-  // We need enough duplicates to ensure we can scroll smoothly. 
-  // 12 sets of items ensures we cover even very large screens multiple times.
-  const marqueeItems = [...items, ...items, ...items, ...items, ...items, ...items, ...items, ...items, ...items, ...items, ...items, ...items];
-
   return (
     <div className={styles.servicesStrip}>
-      <div className={styles.track}>
-        {marqueeItems.map((item, index) => (
-          <React.Fragment key={index}>
-            <span className={styles.item}>{item}</span>
-            <div className={styles.dot}></div>
-          </React.Fragment>
-        ))}
+      <div className={styles.marqueeTrack}>
+        {/* Two identical sets — when first set scrolls off, second takes over seamlessly */}
+        <div className={styles.marqueeContent} aria-hidden="false">
+          {items.map((item, index) => (
+            <React.Fragment key={`a-${index}`}>
+              <span className={styles.item}>{item}</span>
+              <span className={styles.dot} />
+            </React.Fragment>
+          ))}
+        </div>
+        <div className={styles.marqueeContent} aria-hidden="true">
+          {items.map((item, index) => (
+            <React.Fragment key={`b-${index}`}>
+              <span className={styles.item}>{item}</span>
+              <span className={styles.dot} />
+            </React.Fragment>
+          ))}
+        </div>
       </div>
     </div>
   );

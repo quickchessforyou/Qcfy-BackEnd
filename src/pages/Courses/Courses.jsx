@@ -14,8 +14,15 @@ function Courses() {
       rating: 4.9,
       students: 2500,
       icon: <FaChessKnight />,
-      description: 'Master the basics of chess including piece movement, basic tactics, and opening principles.',
-      topics: ['Piece Movement', 'Basic Tactics', 'Opening Principles', 'Endgame Basics']
+      description: 'Build a strong chess foundation — learn every rule, understand the board, and discover your first winning tactics.',
+      topics: [
+        'Piece names, values & movements',
+        'Board visualization & center control',
+        'Castling, En Passant & Pawn Promotion',
+        'King safety & illegal moves',
+        'Forks, Pins & Skewers',
+        'Beginner puzzles & tactical exercises',
+      ]
     },
     {
       id: 2,
@@ -25,8 +32,15 @@ function Courses() {
       rating: 4.8,
       students: 1800,
       icon: <FaChessRook />,
-      description: 'Develop your strategic understanding with advanced tactics, positional play, and middlegame planning.',
-      topics: ['Advanced Tactics', 'Positional Play', 'Pawn Structures', 'Strategic Planning']
+      description: 'Learn to finish games decisively — master checkmate patterns and the key endgame techniques every player needs.',
+      topics: [
+        'King + Queen, Rook & Two-Rook mates',
+        'Mate in 1, 2 & 3–5 move sequences',
+        'Anastasia, Smothered & Back Rank mates',
+        'Pawn endgames & opposition concepts',
+        'Passed pawns & geometrical square',
+        'Endgame puzzles & winning technique',
+      ]
     },
     {
       id: 3,
@@ -36,8 +50,15 @@ function Courses() {
       rating: 4.9,
       students: 950,
       icon: <FaChessQueen />,
-      description: 'Refine your skills with grandmaster-level concepts, deep calculation, and tournament preparation.',
-      topics: ['Deep Calculation', 'Complex Endgames', 'Opening Repertoire', 'Tournament Prep']
+      description: 'Play with confidence from move one — study essential openings and master the most complex endgame scenarios.',
+      topics: [
+        'Opening principles: center, development & king safety',
+        'Italian Game, Ruy Lopez & Sicilian Defense',
+        'Caro-Kann, French, Queen\'s Gambit & King\'s Indian',
+        'Two bishops mate & Bishop + Knight mate',
+        'Queen vs Rook & Rook vs minor piece endgames',
+        'Advanced endgame calculation & technique',
+      ]
     }
   ];
 
