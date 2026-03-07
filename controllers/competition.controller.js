@@ -1,6 +1,6 @@
 import CompetitionModel from "../models/CompetitionSchema.js";
 import PuzzleModel from "../models/PuzzleSchema.js";
-import { getIO, scheduleCompetitionStart, scheduleCompetitionEnd } from "../utils/socketHandlers.js";
+import { getIO, scheduleCompetitionStart, scheduleCompetitionEnd, getCurrentLeaderboard } from "../utils/socketHandlers.js";
 import { validatePuzzleSolution } from "../services/puzzleValidationService.js";
 import ParticipantModel from "../models/ParticipantSchema.js";
 import CompetitionRankingModel from "../models/CompetitionRankingSchema.js";
@@ -524,69 +524,8 @@ export const getLeaderboard = async (req, res) => {
       return res.status(404).json({ message: "Competition not found" });
     }
 
-    let leaderboard = [];
-
-    if (competition.status === "ENDED") {
-      const rankings = await CompetitionRankingModel.find({ competitionId: id }).sort({ finalRank: 1 }).lean();
-
-      if (rankings.length > 0) {
-        leaderboard = rankings.map(r => ({
-          rank: r.finalRank,
-          user: { _id: r.userId, name: r.username, username: r.username }, // Mock user object for frontend compat
-          userId: r.userId,
-          username: r.username,
-          score: r.finalScore,
-          puzzlesSolved: r.puzzlesSolved,
-          timeSpent: r.totalTime,
-          status: "ENDED"
-        }));
-      }
-    } else {
-      const participants = await ParticipantModel.find({ competitionId: id }).lean();
-
-      if (participants.length > 0) {
-        // Sort in-memory for live competitions (if Redis isn't used here)
-        participants.sort((a, b) => {
-          if (b.puzzlesSolved !== a.puzzlesSolved) return b.puzzlesSolved - a.puzzlesSolved;
-          return a.timeSpent - b.timeSpent;
-        });
-
-        leaderboard = participants.map((p, index) => ({
-          rank: index + 1,
-          user: { _id: p.userId, name: p.username, username: p.username },
-          userId: p.userId,
-          username: p.username,
-          score: p.score,
-          puzzlesSolved: p.puzzlesSolved,
-          timeSpent: p.timeSpent,
-          status: p.status,
-          joinedAt: p.joinedAt,
-        }));
-      }
-    }
-
-    // Legacy fallback for any empty leaderboard state (either ENDED or LIVE but pre-schema change)
-    if (leaderboard.length === 0) {
-      const legacyComp = await CompetitionModel.findById(id).populate('participants.user', 'username name').lean();
-      if (legacyComp && legacyComp.participants && legacyComp.participants.length > 0) {
-        leaderboard = legacyComp.participants
-          .sort((a, b) => b.score - a.score)
-          .map((p, index) => ({
-            rank: index + 1,
-            user: {
-              _id: p.user?._id || p.user,
-              username: p.user?.username || p.user?.name || "Unknown",
-              name: p.user?.name || "Unknown"
-            },
-            userId: p.user?._id || p.user,
-            username: p.user?.username || p.user?.name || "Unknown",
-            score: p.score || 0,
-            puzzlesSolved: p.ENDEDPuzzles ? p.ENDEDPuzzles.length : 0,
-            timeSpent: 0,
-            status: competition.status || "ENDED"
-          }));
-      }
-    }
+    // Fetch leaderboard centrally (handles LIVE, ENDED, and LEGACY transparently)
+    const leaderboard = await getCurrentLeaderboard(id);
 
     res.status(200).json({
       competition: {

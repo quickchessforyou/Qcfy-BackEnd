@@ -505,42 +505,8 @@ export const getLiveLeaderboard = async (req, res) => {
       });
     }
 
-    // Fetch leaderboard based on competition state
-    let leaderboard = [];
-    if (competition.status === "ENDED") {
-      const rankings = await CompetitionRankingModel.find({ competitionId }).sort({ finalRank: 1 }).lean();
-      if (rankings.length > 0) {
-        leaderboard = rankings.map(r => ({
-          rank: r.finalRank,
-          userId: r.userId,
-          username: r.username,
-          score: r.finalScore,
-          puzzlesSolved: r.puzzlesSolved,
-          timeSpent: r.totalTime,
-          status: "ENDED"
-        }));
-      }
-    } else {
-      leaderboard = await getCurrentLeaderboard(competitionId);
-    }
-
-    // Legacy fallback for any empty leaderboard state (either ENDED or LIVE but pre-schema change)
-    if (leaderboard.length === 0) {
-      const legacyComp = await CompetitionModel.findById(competitionId).populate('participants.user', 'username name').lean();
-      if (legacyComp && legacyComp.participants && legacyComp.participants.length > 0) {
-        leaderboard = legacyComp.participants
-          .sort((a, b) => b.score - a.score)
-          .map((p, index) => ({
-            rank: index + 1,
-            userId: p.user?._id || p.user,
-            username: p.user?.username || p.user?.name || "Unknown",
-            score: p.score || 0,
-            puzzlesSolved: p.ENDEDPuzzles ? p.ENDEDPuzzles.length : 0,
-            timeSpent: 0,
-            status: competition.status || "ENDED"
-          }));
-      }
-    }
+    // Fetch leaderboard centrally (handles LIVE, ENDED, and LEGACY transparently)
+    const leaderboard = await getCurrentLeaderboard(competitionId);
 
     const participant = userId
       ? await ParticipantModel.findOne({ competitionId, userId }).select("status").lean()
@@ -837,46 +803,8 @@ export const getLobbyState = async (req, res) => {
       // JOINED | PLAYING | SUBMITTED
     }
 
-    // 5. Leaderboard lao
-    let leaderboard = [];
-    if (competitionState === "ENDED") {
-      const rankings = await CompetitionRankingModel.find({ competitionId }).sort({ finalRank: 1 }).lean();
-      if (rankings.length > 0) {
-        leaderboard = rankings.map(r => ({
-          rank: r.finalRank,
-          userId: r.userId,
-          username: r.username,
-          score: r.finalScore,
-          puzzlesSolved: r.puzzlesSolved,
-          timeSpent: r.totalTime,
-          status: "ENDED"
-        }));
-      }
-    } else {
-      leaderboard = await getCurrentLeaderboard(competitionId);
-    }
-
-    // Legacy fallback for any empty leaderboard state
-    if (leaderboard.length === 0 && competition) {
-      if (competition.participants && competition.participants.length > 0) {
-        // We already have participants in memory (but they aren't populated)
-        // Let's populate them just to be safe
-        const legacyComp = await CompetitionModel.findById(competitionId).populate('participants.user', 'username name').lean();
-        if (legacyComp && legacyComp.participants && legacyComp.participants.length > 0) {
-          leaderboard = legacyComp.participants
-            .sort((a, b) => b.score - a.score)
-            .map((p, index) => ({
-              rank: index + 1,
-              userId: p.user?._id || p.user,
-              username: p.user?.username || p.user?.name || "Unknown",
-              score: p.score || 0,
-              puzzlesSolved: p.ENDEDPuzzles ? p.ENDEDPuzzles.length : 0,
-              timeSpent: 0,
-              status: competitionState
-            }));
-        }
-      }
-    }
+    // 5. Leaderboard lao centrally (handles LIVE, ENDED, and LEGACY transparently)
+    const leaderboard = await getCurrentLeaderboard(competitionId);
 
     // 6. Response bhejo with total puzzle count
     res.json({
