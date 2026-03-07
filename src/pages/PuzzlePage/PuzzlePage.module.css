@@ -108,7 +108,7 @@
   flex-direction: column;
   justify-content: space-between;
   gap: 24px;
-  height: 100%;
+  height: auto;
 }
 
 .submitCardBottom {
@@ -1657,7 +1657,7 @@
   border: 1px solid #cb9c7577;
   padding: 10px;
   border-radius: 10px;
-  background: rgb(29, 29, 29);
+  /* background: rgb(29, 29, 29); */
   grid-template-columns: minmax(130px, 1fr) auto minmax(130px, 1fr);
   align-items: center;
   gap: 16px;
@@ -1752,14 +1752,14 @@
 .chapterTab {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 7px 14px;
+  gap: 8px;
+  padding: 8px 18px;
   border-radius: 30px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 1.5px solid transparent;
+  border: 2px solid transparent;
   white-space: nowrap;
   font-family: inherit;
   scroll-snap-align: start;
@@ -1797,11 +1797,21 @@
 
 /* Active tab — gold gradient */
 .chapterTabActive {
-  background: linear-gradient(135deg, #f1a210 0%, #0baa75 100%) !important;
+  background: linear-gradient(180deg, #ffd766 0%, #e6a822 50%, #d89617 100%) !important;
   color: #ffffff !important;
-  border-color: #ff9c3f !important;
-  box-shadow: 0 4px 14px rgba(125, 60, 152, 0.5) !important;
-  /* transform: translateY(-1px); */
+  border-color: #ffca4f !important;
+  box-shadow: 0 4px 10px rgba(223, 160, 25, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.6), inset 0 -2px 6px rgba(0, 0, 0, 0.15) !important;
+  text-shadow: 0 1px 3px rgba(180, 100, 0, 0.6) !important;
+  transform: translateY(-1px);
+}
+
+/* Light mode override for active tab to be cream + black text */
+[data-theme="light"] .chapterTabActive {
+  background: linear-gradient(180deg, #ffffff 0%, #fdfbf7 50%, #f5f0eb 100%) !important;
+  color: #1a1a1a !important;
+  border-color: #e5d5c5 !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05), inset 0 2px 4px rgba(255, 255, 255, 0.8), inset 0 -2px 6px rgba(0, 0, 0, 0.05) !important;
+  text-shadow: none !important;
 }
 
 /* Tab name text */
@@ -1829,8 +1839,16 @@
 }
 
 .chapterTabActive .chapterTabBadge {
-  background: rgba(255, 255, 255, 0.25);
-  color: hsl(0, 0%, 100%);
+  background: rgba(0, 0, 0, 0.15);
+  color: #ffffff;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+  text-shadow: none;
+}
+
+[data-theme="light"] .chapterTabActive .chapterTabBadge {
+  background: rgba(0, 0, 0, 0.06) !important;
+  color: #1a1a1a !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1) !important;
 }
 
 /* ========================================= */

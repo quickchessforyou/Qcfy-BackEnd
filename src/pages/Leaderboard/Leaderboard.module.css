@@ -41,9 +41,10 @@
 }
 
 .topChampionsHeader {
-  background: #d4a373;
-  color: #fff;
-  padding: 1.25rem 2rem;
+  background: linear-gradient(135deg, rgba(212, 163, 115, 0.1), rgba(212, 163, 115, 0.02));
+  border-bottom: 1px solid rgba(212, 163, 115, 0.15);
+  color: #d4a373;
+  padding: 2.15rem 2rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -51,9 +52,17 @@
   gap: 0.5rem;
 }
 
+[data-theme="light"] .topChampionsHeader {
+  background: linear-gradient(135deg, rgba(181, 136, 99, 0.1), rgba(181, 136, 99, 0.02));
+  border: 1px solid rgba(181, 136, 99, 0.15);
+  color: #b58863;
+}
+
 .headerTrophyIcon {
   font-size: 1.8rem;
   margin-bottom: 0.25rem;
+  color: #fbbf24;
+  filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.5));
 }
 
 .topChampionsHeader h2 {
@@ -62,7 +71,7 @@
   font-weight: 800;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Removed old shimmer and sectionTitle */
@@ -73,7 +82,7 @@
   justify-content: center;
   align-items: flex-end;
   gap: 12px;
-  height: 230px;
+  height: 290px;
   padding: 1rem 1rem 0 1rem;
 }
 
@@ -215,21 +224,24 @@
 
 .bar1 {
   height: 110px;
-  background: #d4a373;
+  background: linear-gradient(180deg, rgba(212, 163, 115, 0.4) 0%, rgba(212, 163, 115, 0) 100%);
+  border-top: 3px solid #d4a373;
 }
 
 [data-theme="dark"] .bar1 {
-  background: #d4a373;
+  background: linear-gradient(180deg, rgba(212, 163, 115, 0.4) 0%, rgba(212, 163, 115, 0) 100%);
 }
 
 .bar2 {
   height: 80px;
-  background: #60a5fa;
+  background: linear-gradient(180deg, rgba(96, 165, 250, 0.3) 0%, rgba(96, 165, 250, 0) 100%);
+  border-top: 3px solid #60a5fa;
 }
 
 .bar3 {
   height: 55px;
-  background: #fb7185;
+  background: linear-gradient(180deg, rgba(251, 113, 133, 0.3) 0%, rgba(251, 113, 133, 0) 100%);
+  border-top: 3px solid #fb7185;
 }
 
 .barStats {
@@ -241,22 +253,35 @@
 }
 
 .accBadge {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   font-size: 0.75rem;
   font-weight: 800;
   color: #fff;
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: 6px;
+}
+
+[data-theme="light"] .accBadge {
+  background: rgba(255, 255, 255, 0.8);
+  color: #333;
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .timeBadge {
-  background: #fff;
-  color: #e6b96e;
-  /* Generic color to override per class later if deep matched, or just inherit */
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   font-size: 0.65rem;
   font-weight: 800;
   padding: 2px 8px;
   border-radius: 12px;
+}
+
+[data-theme="light"] .timeBadge {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .bar1 .timeBadge {
@@ -329,10 +354,19 @@
 }
 
 .competitionInfoCard {
-  background: #d4a373;
+  background: linear-gradient(135deg, rgba(30, 30, 30, 0.8), rgba(20, 20, 20, 0.9));
+  border: 1px solid rgba(212, 163, 115, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   border-radius: 14px;
   padding: 1.5rem;
-  color: #fff;
+  color: #f5f0eb;
+}
+
+[data-theme="light"] .competitionInfoCard {
+  background: linear-gradient(135deg, #ffffff, #fafafa);
+  border: 1px solid rgba(212, 163, 115, 0.3);
+  color: #2d2520;
+  box-shadow: 0 8px 32px rgba(181, 136, 99, 0.1);
 }
 
 .compHeaderRow {
@@ -355,29 +389,31 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 2px solid #e0c8b0;
-  background: transparent;
-  color: #fff;
+  border: 2px solid rgba(212, 163, 115, 0.5);
+  background: rgba(212, 163, 115, 0.1);
+  color: #d4a373;
   font-size: 1.1rem;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .backBtnWrapper:hover {
-  background: #fff;
-  color: #d4a373;
+  background: #d4a373;
+  color: #fff;
   transform: scale(1.05);
+  border-color: #d4a373;
 }
 
 .compTitle {
   font-size: 1.4rem;
   font-weight: 800;
   margin: 0;
+  color: #d4a373;
 }
 
 .refreshBtn {
   background: transparent;
-  color: #fff;
+  color: #d4a373;
   border: none;
   font-size: 1.2rem;
   cursor: pointer;
@@ -393,8 +429,9 @@
 }
 
 .metaPill {
-  background: #fff;
-  color: #000;
+  background: rgba(212, 163, 115, 0.1);
+  color: #d4a373;
+  border: 1px solid rgba(212, 163, 115, 0.2);
   padding: 0.5rem 1.2rem;
   border-radius: 8px;
   font-size: 0.8rem;
@@ -405,7 +442,17 @@
 }
 
 .metaPill svg {
-  color: #333;
+  color: #d4a373;
+}
+
+[data-theme="light"] .metaPill {
+  background: rgba(181, 136, 99, 0.1);
+  color: #b58863;
+  border: 1px solid rgba(181, 136, 99, 0.2);
+}
+
+[data-theme="light"] .metaPill svg {
+  color: #b58863;
 }
 
 /* Removed original statsRow as per implementation plan to match the cleaner layout */
@@ -494,26 +541,45 @@
 }
 
 .currentUser {
-  background: #d4a373 !important;
-  color: #fff;
-  border: 1px solid #b58863;
+  background: linear-gradient(90deg, rgba(212, 163, 115, 0.15) 0%, rgba(212, 163, 115, 0.05) 100%) !important;
+  border: 1px solid rgba(212, 163, 115, 0.5);
+  border-left: 4px solid #d4a373;
   border-radius: 10px;
-  box-shadow: 0 4px 16px rgba(200, 150, 74, 0.3);
+  box-shadow: 0 4px 16px rgba(212, 163, 115, 0.15);
+}
+
+[data-theme="light"] .currentUser {
+  background: linear-gradient(90deg, rgba(181, 136, 99, 0.15) 0%, rgba(181, 136, 99, 0.05) 100%) !important;
+  border: 1px solid rgba(181, 136, 99, 0.5);
+  border-left: 4px solid #b58863;
 }
 
 .currentUser .rankName,
-.currentUser .rankMeta,
 .currentUser .scoreNumber,
-.currentUser .scoreLabel,
 .currentUser .rankNumber,
-.currentUser .rankNum,
-.currentUser .youTag {
-  color: #fff !important;
+.currentUser .rankNum {
+  color: #d4a373 !important;
+}
+
+[data-theme="light"] .currentUser .rankName,
+[data-theme="light"] .currentUser .scoreNumber,
+[data-theme="light"] .currentUser .rankNumber,
+[data-theme="light"] .currentUser .rankNum {
+  color: #b58863 !important;
+}
+
+.currentUser .scoreLabel,
+.currentUser .rankMeta {
+  color: var(--text-muted) !important;
 }
 
 .currentUser .youTag {
-  background: rgba(255, 255, 255, 0.3);
+  background: #d4a373;
   color: #fff;
+}
+
+[data-theme="light"] .currentUser .youTag {
+  background: #b58863;
 }
 
 /* Rank number / medal */

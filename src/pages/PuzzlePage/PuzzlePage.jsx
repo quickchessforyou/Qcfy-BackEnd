@@ -915,7 +915,7 @@ function PuzzlePage() {
                 disabled={activeChapterIndex <= 0}
                 title="Previous Chapter"
               >
-                <FaAngleDoubleLeft />
+                <FaAngleDoubleLeft /> Previous
               </button>
 
               {/* Scrollable Wrapper */}
@@ -975,7 +975,7 @@ function PuzzlePage() {
                 disabled={activeChapterIndex >= competitionData.chapters.length - 1}
                 title="Next Chapter"
               >
-                <FaAngleDoubleRight />
+                Next<FaAngleDoubleRight />
               </button>
             </div>
           </div>
@@ -1189,63 +1189,6 @@ function PuzzlePage() {
           <div className={styles.rightColumn}>
             <div className={styles.puzzleNavPanel}>
 
-              {/* ---- Chapter Tabs --- */}
-              {competitionData.chapters && competitionData.chapters.length > 0 && (
-                <>
-                  <div className={styles.chapterNavContainer}>
-                    {/* Scrollable Wrapper without arrows */}
-                    <div
-                      className={styles.chapterScrollWrapper}
-                      ref={chapterScrollRef}
-                      onScroll={handleChapterScroll}
-                    >
-                      <div className={styles.chapterTabBar}>
-                        {competitionData.chapters.map((chapter, idx) => {
-                          const chPuzzleIds = (chapter.puzzleIds || []).map(id => id.toString());
-                          const chPuzzles = puzzles.filter(p => chPuzzleIds.includes((p._id || p.id).toString()));
-                          const solvedCount = chPuzzles.filter(p => puzzleStatuses[(p.id || p._id).toString()] === 'success').length;
-                          return (
-                            <button
-                              key={idx}
-                              type="button"
-                              className={`${styles.chapterTab} ${activeChapterIndex === idx ? styles.chapterTabActive : ''} `}
-                              onClick={() => {
-                                setActiveChapterIndex(idx);
-                                // ALWAYS reset frame to 0 when switching chapters
-                                setCurrentFrame(0);
-                                // Jump to first puzzle of this chapter if any
-                                if (chPuzzles.length > 0) {
-                                  const firstPuzzleId = (chPuzzles[0]._id || chPuzzles[0].id).toString();
-                                  const globalIdx = puzzles.findIndex(p => (p._id || p.id).toString() === firstPuzzleId);
-                                  if (globalIdx !== -1) {
-                                    setCurrentPuzzleIndex(globalIdx);
-                                  }
-                                }
-                              }}
-                            >
-                              <span className={styles.chapterTabName}>{chapter.name}</span>
-                              <span className={styles.chapterTabBadge}>
-                                {solvedCount}/{chPuzzles.length}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Minimalist Sub-indicator */}
-                    {showScrollIndicator && (
-                      <div className={styles.scrollIndicatorTrack} aria-hidden="true">
-                        {/* Thumb dynamic left offset mapping 0% to ~85% (leave 15% width for thumb) */}
-                        <div
-                          className={styles.scrollIndicatorThumb}
-                          style={{ transform: `translateX(${scrollProgress * 400} %)` }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
 
               <div className={styles.controlCard}>
                 {/* Compute chapter-scoped puzzle list ONCE for all nav elements */}
