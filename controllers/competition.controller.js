@@ -1,5 +1,7 @@
 import CompetitionModel from "../models/CompetitionSchema.js";
 import PuzzleModel from "../models/PuzzleSchema.js";
+import { getIO, scheduleCompetitionStart, scheduleCompetitionEnd } from "../utils/socketHandlers.js";
+import { validatePuzzleSolution } from "../services/puzzleValidationService.js";
 
 // Create a new competition
 export const createCompetition = async (req, res) => {
@@ -58,6 +60,15 @@ export const createCompetition = async (req, res) => {
       accessCode,
       createdBy: req.admin._id,
     });
+
+    const io = getIO();
+    if (io) {
+      if (status === "UPCOMING") {
+        scheduleCompetitionStart(io, competition);
+      } else if (status === "LIVE") {
+        scheduleCompetitionEnd(io, competition._id, end);
+      }
+    }
 
     res.status(201).json({
       message: "Competition created successfully",
@@ -320,6 +331,15 @@ export const updateCompetition = async (req, res) => {
 
     await competition.save();
 
+    const io = getIO();
+    if (io) {
+      if (competition.status === "UPCOMING") {
+        scheduleCompetitionStart(io, competition);
+      } else if (competition.status === "LIVE") {
+        scheduleCompetitionEnd(io, competition._id, competition.endTime);
+      }
+    }
+
     res.status(200).json({
       message: "Competition updated successfully",
       competition,
@@ -461,9 +481,7 @@ export const submitSolution = async (req, res) => {
         .json({ message: "Puzzle not part of this competition" });
     }
 
-    // Validate solution (simplified - you can enhance this)
-    const isCorrect =
-      JSON.stringify(moves) === JSON.stringify(puzzle.solutionMoves);
+    const isCorrect = validatePuzzleSolution(puzzle, moves);
 
     if (isCorrect) {
       participant.ENDEDPuzzles.push(puzzleId);

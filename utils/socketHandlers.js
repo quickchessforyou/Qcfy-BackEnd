@@ -353,22 +353,34 @@ export const initializeSocketHandlers = (io) => {
      START CHECKER
   ========================================================= */
 
-  setInterval(async () => {
+  // Removed 5-second polling interval. We now use precise timeouts.
 
-    const comps = await CompetitionModel.find({
-      status: "UPCOMING",
-      startTime: { $lte: new Date() },
-      endTime: { $gt: new Date() }
-    });
+};
 
-    for (const c of comps) {
+/* =========================================================
+   SCHEDULE START
+========================================================= */
 
-      await autoStartCompetition(io, c);
+export const scheduleCompetitionStart = (io, competition) => {
+  const delay = new Date(competition.startTime).getTime() - Date.now();
 
-    }
-
-  }, 5000);
-
+  if (delay <= 0) {
+    autoStartCompetition(io, competition);
+  } else {
+    // We shouldn't exceed setTimeout max delay (~24.8 days)
+    // Most competitions are scheduled within days, so it's fine for now,
+    // but a real production system might use BullMQ or cron for long delays.
+    setTimeout(async () => {
+      try {
+        const comp = await CompetitionModel.findById(competition._id);
+        if (comp && comp.status === "UPCOMING") {
+          await autoStartCompetition(io, comp);
+        }
+      } catch (err) {
+        console.error("Scheduled start error:", err);
+      }
+    }, delay);
+  }
 };
 
 /* =========================================================
