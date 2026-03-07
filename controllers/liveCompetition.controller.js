@@ -509,15 +509,33 @@ export const getLiveLeaderboard = async (req, res) => {
     let leaderboard = [];
     if (competition.status === "ENDED") {
       const rankings = await CompetitionRankingModel.find({ competitionId }).sort({ finalRank: 1 }).lean();
-      leaderboard = rankings.map(r => ({
-        rank: r.finalRank,
-        userId: r.userId,
-        username: r.username,
-        score: r.finalScore,
-        puzzlesSolved: r.puzzlesSolved,
-        timeSpent: r.totalTime,
-        status: "ENDED"
-      }));
+      if (rankings.length > 0) {
+        leaderboard = rankings.map(r => ({
+          rank: r.finalRank,
+          userId: r.userId,
+          username: r.username,
+          score: r.finalScore,
+          puzzlesSolved: r.puzzlesSolved,
+          timeSpent: r.totalTime,
+          status: "ENDED"
+        }));
+      } else {
+        // Legacy fallback
+        const legacyComp = await CompetitionModel.findById(competitionId).populate('participants.user', 'username name').lean();
+        if (legacyComp && legacyComp.participants && legacyComp.participants.length > 0) {
+          leaderboard = legacyComp.participants
+            .sort((a, b) => b.score - a.score)
+            .map((p, index) => ({
+              rank: index + 1,
+              userId: p.user?._id || p.user,
+              username: p.user?.username || p.user?.name || "Unknown",
+              score: p.score,
+              puzzlesSolved: p.ENDEDPuzzles ? p.ENDEDPuzzles.length : 0,
+              timeSpent: 0,
+              status: "ENDED"
+            }));
+        }
+      }
     } else {
       leaderboard = await getCurrentLeaderboard(competitionId);
     }
@@ -821,15 +839,33 @@ export const getLobbyState = async (req, res) => {
     let leaderboard = [];
     if (competitionState === "ENDED") {
       const rankings = await CompetitionRankingModel.find({ competitionId }).sort({ finalRank: 1 }).lean();
-      leaderboard = rankings.map(r => ({
-        rank: r.finalRank,
-        userId: r.userId,
-        username: r.username,
-        score: r.finalScore,
-        puzzlesSolved: r.puzzlesSolved,
-        timeSpent: r.totalTime,
-        status: "ENDED"
-      }));
+      if (rankings.length > 0) {
+        leaderboard = rankings.map(r => ({
+          rank: r.finalRank,
+          userId: r.userId,
+          username: r.username,
+          score: r.finalScore,
+          puzzlesSolved: r.puzzlesSolved,
+          timeSpent: r.totalTime,
+          status: "ENDED"
+        }));
+      } else {
+        // Legacy fallback
+        const legacyComp = await CompetitionModel.findById(competitionId).populate('participants.user', 'username name').lean();
+        if (legacyComp && legacyComp.participants && legacyComp.participants.length > 0) {
+          leaderboard = legacyComp.participants
+            .sort((a, b) => b.score - a.score)
+            .map((p, index) => ({
+              rank: index + 1,
+              userId: p.user?._id || p.user,
+              username: p.user?.username || p.user?.name || "Unknown",
+              score: p.score,
+              puzzlesSolved: p.ENDEDPuzzles ? p.ENDEDPuzzles.length : 0,
+              timeSpent: 0,
+              status: "ENDED"
+            }));
+        }
+      }
     } else {
       leaderboard = await getCurrentLeaderboard(competitionId);
     }
