@@ -58,29 +58,33 @@ const buildRedisLeaderboard = async (competitionId) => {
 ========================================================= */
 
 const getCurrentLeaderboard = async (competitionId, limit = 100) => {
+  try {
+    const redisData = await redis.zrevrange(
+      leaderboardKey(competitionId),
+      0,
+      limit - 1,
+      "WITHSCORES"
+    );
 
-  const redisData = await redis.zrevrange(
-    leaderboardKey(competitionId),
-    0,
-    limit - 1,
-    "WITHSCORES"
-  );
+    if (!redisData || !redisData.length) {
+      return [];
+    }
 
-  if (!redisData.length) {
-    return [];
+    const result = [];
+
+    for (let i = 0; i < redisData.length; i += 2) {
+      result.push({
+        rank: i / 2 + 1,
+        userId: redisData[i],
+        score: Number(redisData[i + 1])
+      });
+    }
+
+    return result;
+  } catch (error) {
+    console.error(`[Leaderboard] Redis fetch error for ${competitionId}:`, error);
+    return []; // Return empty leaderboard on Redis failure instead of crashing
   }
-
-  const result = [];
-
-  for (let i = 0; i < redisData.length; i += 2) {
-    result.push({
-      rank: i / 2 + 1,
-      userId: redisData[i],
-      score: Number(redisData[i + 1])
-    });
-  }
-
-  return result;
 };
 
 /* =========================================================
