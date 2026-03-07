@@ -200,8 +200,11 @@ const handleCompetitionEnd = async (io, competitionId) => {
           leaderboard.map(p => ({
             competitionId,
             userId: p.userId,
+            username: p.username || "Unknown",
             finalRank: p.rank,
-            finalScore: p.score
+            finalScore: p.score,
+            puzzlesSolved: p.puzzlesSolved || 0,
+            totalTime: p.timeSpent || 0
           }))
         );
 

@@ -2,6 +2,8 @@ import CompetitionModel from "../models/CompetitionSchema.js";
 import PuzzleModel from "../models/PuzzleSchema.js";
 import { getIO, scheduleCompetitionStart, scheduleCompetitionEnd } from "../utils/socketHandlers.js";
 import { validatePuzzleSolution } from "../services/puzzleValidationService.js";
+import ParticipantModel from "../models/ParticipantSchema.js";
+import CompetitionRankingModel from "../models/CompetitionRankingSchema.js";
 
 // Create a new competition
 export const createCompetition = async (req, res) => {
@@ -516,25 +518,48 @@ export const getLeaderboard = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const competition = await CompetitionModel.findById(id).populate(
-      "participants.user",
-      "name email"
-    );
+    const competition = await CompetitionModel.findById(id).lean();
 
     if (!competition) {
       return res.status(404).json({ message: "Competition not found" });
     }
 
-    // Sort participants by score
-    const leaderboard = competition.participants
-      .sort((a, b) => b.score - a.score)
-      .map((p, index) => ({
+    let leaderboard = [];
+
+    if (competition.status === "ENDED") {
+      const rankings = await CompetitionRankingModel.find({ competitionId: id }).sort({ finalRank: 1 }).lean();
+
+      leaderboard = rankings.map(r => ({
+        rank: r.finalRank,
+        user: { _id: r.userId, name: r.username, username: r.username }, // Mock user object for frontend compat
+        userId: r.userId,
+        username: r.username,
+        score: r.finalScore,
+        puzzlesSolved: r.puzzlesSolved,
+        timeSpent: r.totalTime,
+        status: "ENDED"
+      }));
+    } else {
+      const participants = await ParticipantModel.find({ competitionId: id }).lean();
+
+      // Sort in-memory for live competitions (if Redis isn't used here)
+      participants.sort((a, b) => {
+        if (b.puzzlesSolved !== a.puzzlesSolved) return b.puzzlesSolved - a.puzzlesSolved;
+        return a.timeSpent - b.timeSpent;
+      });
+
+      leaderboard = participants.map((p, index) => ({
         rank: index + 1,
-        user: p.user,
+        user: { _id: p.userId, name: p.username, username: p.username },
+        userId: p.userId,
+        username: p.username,
         score: p.score,
-        ENDEDPuzzles: p.ENDEDPuzzles.length,
+        puzzlesSolved: p.puzzlesSolved,
+        timeSpent: p.timeSpent,
+        status: p.status,
         joinedAt: p.joinedAt,
       }));
+    }
 
     res.status(200).json({
       competition: {
