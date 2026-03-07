@@ -72,9 +72,9 @@
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  gap: 16px;
-  height: 290px;
-  padding: 1.5rem 1rem 0 1rem;
+  gap: 12px;
+  height: 230px;
+  padding: 1rem 1rem 0 1rem;
 }
 
 .podiumPlace {
@@ -82,7 +82,7 @@
   flex-direction: column;
   align-items: center;
   flex: 1;
-  max-width: 140px;
+  max-width: 120px;
   position: relative;
 }
 
@@ -93,8 +93,8 @@
 }
 
 .avatarCircle {
-  width: 54px;
-  height: 54px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
   border: 3px solid var(--border-color);
   background: var(--bg-secondary);
@@ -108,9 +108,9 @@
 }
 
 .first .avatarCircle {
-  width: 70px;
-  height: 70px;
-  font-size: 1.6rem;
+  width: 60px;
+  height: 60px;
+  font-size: 1.4rem;
   border-color: #f3b953;
   box-shadow: 0 0 0 4px rgba(243, 185, 83, 0.2), 0 0 24px rgba(243, 185, 83, 0.25);
 }
@@ -214,7 +214,7 @@
 }
 
 .bar1 {
-  height: 140px;
+  height: 110px;
   background: #d4a373;
 }
 
@@ -223,12 +223,12 @@
 }
 
 .bar2 {
-  height: 100px;
+  height: 80px;
   background: #60a5fa;
 }
 
 .bar3 {
-  height: 72px;
+  height: 55px;
   background: #fb7185;
 }
 
@@ -418,15 +418,18 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 170px);
+  max-height: calc(100vh - 120px);
   position: sticky;
   top: 1.5rem;
 }
 
 .rankingsPanelHeader {
-  padding: 1.1rem 1.4rem;
+  padding: 0.8rem 1.2rem;
   border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .rankingsTitle {
@@ -476,9 +479,9 @@
   grid-template-columns: 48px 36px 1fr auto auto;
   align-items: center;
   gap: 0.65rem;
-  padding: 0.4rem 1.2rem;
+  padding: 0.3rem 1rem;
   border-radius: 8px;
-  margin: 0.25rem 0.6rem;
+  margin: 0.2rem 0.5rem;
   background: var(--bg-white);
   border: 1px solid var(--border-color);
   transition: transform 0.15s ease, box-shadow 0.15s ease;

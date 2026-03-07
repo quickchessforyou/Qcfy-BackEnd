@@ -249,21 +249,17 @@ const CompetitionLobby = () => {
 
     // Check if competition should have started
     if (competitionState === "UPCOMING" && now >= start) {
-      // Refresh state to get LIVE status (bypass cache)
-      liveCompetitionAPI.getLobbyState(id, true).then(res => {
-        if (res.success && res.competitionState === "LIVE") {
-          setCompetitionState("LIVE");
-          // Auto-redirect if user is joined and we haven't already redirected
-          if (!hasAutoRedirectedRef.current && (res.participantState === "JOINED" || res.participantState === "PLAYING" || participantStateRef.current === "JOINED")) {
-            hasAutoRedirectedRef.current = true;
-            sessionStorage.setItem(`redirected_${id}`, "true");
-            toast.success("Competition Started! Redirecting...");
-            setTimeout(() => {
-              navigate(`/competition/${id}/puzzle`, { replace: true });
-            }, 100);
-          }
-        }
-      }).catch(err => console.error(err));
+      // Trust the synchronized clock for immediate 0-delay redirect
+      setCompetitionState("LIVE");
+      // Auto-redirect if user is joined and we haven't already redirected
+      if (!hasAutoRedirectedRef.current && (participantState === "JOINED" || participantState === "PLAYING" || participantStateRef.current === "JOINED")) {
+        hasAutoRedirectedRef.current = true;
+        sessionStorage.setItem(`redirected_${id}`, "true");
+        toast.success("Competition Started! Redirecting...");
+        setTimeout(() => {
+          navigate(`/competition/${id}/puzzle`, { replace: true });
+        }, 100);
+      }
     }
 
     // Determine target based on state

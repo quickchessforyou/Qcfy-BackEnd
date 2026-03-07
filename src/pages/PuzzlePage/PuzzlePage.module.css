@@ -52,11 +52,9 @@
 
 /* Dark Mode Live Status */
 [data-theme="dark"] .liveStatus {
-  background: linear-gradient(
-    135deg,
-    rgba(5, 150, 105, 0.25) 0%,
-    rgba(5, 150, 105, 0.15) 100%
-  );
+  background: linear-gradient(135deg,
+      rgba(5, 150, 105, 0.25) 0%,
+      rgba(5, 150, 105, 0.15) 100%);
   color: #6ee7b7;
   border-color: rgba(110, 231, 183, 0.3);
 }
@@ -70,16 +68,22 @@
 
 /* Dark Mode Review Status */
 [data-theme="dark"] .reviewStatus {
-  background: linear-gradient(
-    135deg,
-    rgba(75, 85, 99, 0.25) 0%,
-    rgba(75, 85, 99, 0.15) 100%
-  );
+  background: linear-gradient(135deg,
+      rgba(75, 85, 99, 0.25) 0%,
+      rgba(75, 85, 99, 0.15) 100%);
   color: #9ca3af;
   border-color: rgba(156, 163, 175, 0.3);
 }
 
 /* --- MAIN LAYOUT --- */
+/* Wrapper for Header and Chapters to align with Main Content */
+.headerWrapper {
+  max-width: 1800px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1rem 0 0 0;
+}
+
 .mainContent {
   display: grid;
   grid-template-columns: minmax(250px, 1fr) auto minmax(250px, 1fr);
@@ -206,6 +210,7 @@
 }
 
 @keyframes kingFloat {
+
   0%,
   100% {
     transform: translateY(0px);
@@ -278,11 +283,9 @@
 }
 
 [data-theme="dark"] .categoryBadge {
-  background: linear-gradient(
-    135deg,
-    rgba(217, 119, 6, 0.25),
-    rgba(217, 119, 6, 0.12)
-  );
+  background: linear-gradient(135deg,
+      rgba(217, 119, 6, 0.25),
+      rgba(217, 119, 6, 0.12));
   color: #fcd34d;
   border: 1px solid rgba(251, 191, 36, 0.3);
 }
@@ -427,7 +430,8 @@
 .timerDisplay {
   display: flex;
   flex-direction: column;
-  align-items: flex-start; /* Changed to left align */
+  align-items: flex-start;
+  /* Changed to left align */
   justify-content: center;
 }
 
@@ -441,7 +445,8 @@
 .statsColumn {
   display: flex;
   flex-direction: column;
-  align-items: flex-end; /* Align right side */
+  align-items: flex-end;
+  /* Align right side */
   gap: 0.5rem;
 }
 
@@ -485,7 +490,8 @@
 
 .timerBadge {
   font-family: "JetBrains Mono", monospace;
-  font-size: 2.2rem; /* Slightly smaller to fit side-by-side */
+  font-size: 2.2rem;
+  /* Slightly smaller to fit side-by-side */
   font-weight: 700;
   line-height: 1;
   color: #b58863;
@@ -682,7 +688,8 @@
 .navGrid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 0.5rem; /* Expanded gap to stretch over the new width */
+  gap: 0.5rem;
+  /* Expanded gap to stretch over the new width */
   max-height: 200px;
   overflow-y: auto;
   padding-right: 5px;
@@ -718,10 +725,12 @@
   justify-content: center;
   cursor: pointer;
   font-weight: 600;
-  font-size: 0.85rem; /* Slightly larger text to balance width */
+  font-size: 0.85rem;
+  /* Slightly larger text to balance width */
   transition: all 0.2s;
   border: 1px solid transparent;
-  padding: 8px; /* Increased internal padding for wider stance */
+  padding: 8px;
+  /* Increased internal padding for wider stance */
 }
 
 [data-theme="light"] .navItem {
@@ -840,7 +849,8 @@
 .btnSubmit:hover {
   background: linear-gradient(45deg, #ff5252, #e53935) !important;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3) !important; /* Reduced shadow slightly */
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3) !important;
+  /* Reduced shadow slightly */
 }
 
 .submitBtnBottom {
@@ -927,13 +937,11 @@
   font-size: 2rem;
   font-weight: 800;
   line-height: 1;
-  background: linear-gradient(
-    135deg,
-    #d4a373 0%,
-    #b58863 40%,
-    #e8c9a0 60%,
-    #b58863 100%
-  );
+  background: linear-gradient(135deg,
+      #d4a373 0%,
+      #b58863 40%,
+      #e8c9a0 60%,
+      #b58863 100%);
   background-size: 200% 200%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -942,6 +950,7 @@
 }
 
 @keyframes rankShimmer {
+
   0%,
   100% {
     background-position: 0% 50%;
@@ -963,12 +972,10 @@
 }
 
 [data-theme="dark"] .rankDivider {
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    rgba(212, 163, 115, 0.4),
-    transparent
-  );
+  background: linear-gradient(to bottom,
+      transparent,
+      rgba(212, 163, 115, 0.4),
+      transparent);
 }
 
 .rankMeta {
@@ -1043,6 +1050,7 @@
 }
 
 @keyframes progressShimmer {
+
   0%,
   100% {
     background-position: 0% 50%;
@@ -1069,9 +1077,11 @@
 
 .paginationInfo {
   text-align: center;
-  font-size: 0.75rem; /* Reduced font size */
+  font-size: 0.75rem;
+  /* Reduced font size */
   font-weight: 600;
-  margin-bottom: 0.25rem; /* Reduced margin */
+  margin-bottom: 0.25rem;
+  /* Reduced margin */
   color: #b58863;
   opacity: 0.9;
 }
@@ -1088,9 +1098,12 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 0.5rem; /* Expanded gap */
-  margin-top: 0.5rem; /* Expanded margin */
-  padding-top: 0.5rem; /* Expanded padding */
+  gap: 0.5rem;
+  /* Expanded gap */
+  margin-top: 0.5rem;
+  /* Expanded margin */
+  padding-top: 0.5rem;
+  /* Expanded padding */
   border-top: 1px solid transparent;
   flex-wrap: wrap;
 }
@@ -1221,6 +1234,35 @@
   pointer-events: none;
   transform: none !important;
   background: transparent !important;
+}
+
+/* Golden Arrow Styles */
+.goldArrow {
+  font-size: 1.2rem;
+  transition: transform 0.2s, filter 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+[data-theme="light"] .goldArrow {
+  color: #b58863;
+  filter: drop-shadow(0 0 2px rgba(181, 136, 99, 0.4));
+}
+
+[data-theme="light"] .goldArrow:hover {
+  transform: scale(1.15);
+  filter: drop-shadow(0 0 6px rgba(181, 136, 99, 0.8));
+}
+
+[data-theme="dark"] .goldArrow {
+  color: #ffd700;
+  filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.5));
+}
+
+[data-theme="dark"] .goldArrow:hover {
+  transform: scale(1.15);
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.9));
 }
 
 /* Feedback Messages */
@@ -1573,6 +1615,7 @@
 }
 
 @media (max-width: 600px) {
+
   .leftPanel,
   .rightPanel {
     flex-direction: column;
@@ -1604,7 +1647,8 @@
   max-width: 1800px;
   width: 100%;
   margin: 1rem auto 0;
-  padding: 0; /* match mainContent padding */
+  padding: 0;
+  /* match mainContent padding */
 }
 
 /* Tab bar container wrapped around tabs and arrows */
@@ -1616,7 +1660,8 @@
   background: rgb(29, 29, 29);
   grid-template-columns: minmax(130px, 1fr) auto minmax(130px, 1fr);
   align-items: center;
-  gap: 16px; /* give some room between the arrows and the scroll region */
+  gap: 16px;
+  /* give some room between the arrows and the scroll region */
   width: 100%;
 }
 
@@ -1624,8 +1669,10 @@
 .chapterScrollWrapper {
   flex: 1;
   overflow-x: auto;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
   text-align: center;
@@ -1633,7 +1680,8 @@
 }
 
 .chapterScrollWrapper::-webkit-scrollbar {
-  display: none; /* Chrome, Safari and Opera */
+  display: none;
+  /* Chrome, Safari and Opera */
 }
 
 /* Tab bar now stays in a single line */
@@ -1814,11 +1862,9 @@
 .countdownCircle {
   width: 180px;
   height: 180px;
-  background: linear-gradient(
-    135deg,
-    rgba(212, 163, 115, 0.2) 0%,
-    rgba(139, 98, 66, 0.4) 100%
-  );
+  background: linear-gradient(135deg,
+      rgba(212, 163, 115, 0.2) 0%,
+      rgba(139, 98, 66, 0.4) 100%);
   border: 2px solid rgba(212, 163, 115, 0.6);
   border-radius: 50%;
   box-shadow: 0 0 30px rgba(212, 163, 115, 0.3);

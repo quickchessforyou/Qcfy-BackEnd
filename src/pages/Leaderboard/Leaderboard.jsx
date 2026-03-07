@@ -332,6 +332,28 @@ function Leaderboard() {
                 <div className={styles.rankingsTitle}>
                   <FaChartLine /> Full Ranking
                 </div>
+                {/* Pagination UI moved to TOP */}
+                {totalPages > 1 && (
+                  <div className={styles.paginationContainer} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      style={{ padding: '4px 12px', borderRadius: '4px', background: currentPage === 1 ? 'rgba(255,255,255,0.1)' : '#d4a373', color: currentPage === 1 ? '#666' : '#fff', border: 'none', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', fontWeight: 'bold', fontSize: '0.8rem' }}
+                    >
+                      Prev
+                    </button>
+                    <span style={{ color: '#d4a373', fontWeight: '600', fontSize: '0.85rem' }}>
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      style={{ padding: '4px 12px', borderRadius: '4px', background: currentPage === totalPages ? 'rgba(255,255,255,0.1)' : '#d4a373', color: currentPage === totalPages ? '#666' : '#fff', border: 'none', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', fontWeight: 'bold', fontSize: '0.8rem' }}
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className={styles.rankingsList}>
@@ -370,29 +392,6 @@ function Leaderboard() {
                   );
                 })}
               </div>
-
-              {/* Pagination UI */}
-              {totalPages > 1 && (
-                <div className={styles.paginationContainer} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', marginTop: '20px', paddingBottom: '15px' }}>
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    style={{ padding: '8px 16px', borderRadius: '6px', background: currentPage === 1 ? 'rgba(255,255,255,0.1)' : '#d4a373', color: currentPage === 1 ? '#666' : '#fff', border: 'none', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
-                  >
-                    Prev
-                  </button>
-                  <span style={{ color: '#d4a373', fontWeight: '600' }}>
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    style={{ padding: '8px 16px', borderRadius: '6px', background: currentPage === totalPages ? 'rgba(255,255,255,0.1)' : '#d4a373', color: currentPage === totalPages ? '#666' : '#fff', border: 'none', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
-                  >
-                    Next
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </div>

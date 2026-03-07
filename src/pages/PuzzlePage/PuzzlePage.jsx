@@ -857,127 +857,130 @@ function PuzzlePage() {
     <div className={styles.container}>
       <Toaster position="top-right" />
 
-      {/* Page Header */}
-      <PageHeader
-        title={competitionData ? competitionData.name : "Daily Training"}
-        subtitle={(() => {
-          const chapters = competitionData?.chapters;
-          if (chapters && chapters.length > 0) {
-            const chPuzzleIds = chapters[activeChapterIndex]?.puzzleIds || [];
-            const chPuzzles = puzzles.filter(p => chPuzzleIds.includes(p._id || p.id));
-            const chIdx = chPuzzles.findIndex(p => (p._id || p.id) === (puzzles[currentPuzzleIndex]?._id || puzzles[currentPuzzleIndex]?.id));
-            return `Puzzle ${chIdx + 1} of ${chPuzzles.length} · ${chapters[activeChapterIndex]?.name || ''}`;
+      {/* Header Wrapper to align with mainContent grid */}
+      <div className={styles.headerWrapper}>
+        {/* Page Header */}
+        <PageHeader
+          title={competitionData ? competitionData.name : "Daily Training"}
+          subtitle={(() => {
+            const chapters = competitionData?.chapters;
+            if (chapters && chapters.length > 0) {
+              const chPuzzleIds = chapters[activeChapterIndex]?.puzzleIds || [];
+              const chPuzzles = puzzles.filter(p => chPuzzleIds.includes(p._id || p.id));
+              const chIdx = chPuzzles.findIndex(p => (p._id || p.id) === (puzzles[currentPuzzleIndex]?._id || puzzles[currentPuzzleIndex]?.id));
+              return `Puzzle ${chIdx + 1} of ${chPuzzles.length} · ${chapters[activeChapterIndex]?.name || ''}`;
+            }
+            return `Puzzle ${currentPuzzleIndex + 1} of ${puzzles.length}`;
+          })()}
+          icon={<FaPuzzlePiece />}
+          showBackButton
+          onBack={() => navigate(-1)}
+          actions={
+            <>
+              {isLiveCompetition && !isReviewMode && (
+                <div className={styles.liveIndicator}>
+                  <span className={styles.liveStatus}>🟢 LIVE</span>
+                </div>
+              )}
+              {isReviewMode && (
+                <div className={styles.liveIndicator}>
+                  <span className={styles.reviewStatus}>Review Mode</span>
+                </div>
+              )}
+            </>
           }
-          return `Puzzle ${currentPuzzleIndex + 1} of ${puzzles.length}`;
-        })()}
-        icon={<FaPuzzlePiece />}
-        showBackButton
-        onBack={() => navigate(-1)}
-        actions={
-          <>
-            {isLiveCompetition && !isReviewMode && (
-              <div className={styles.liveIndicator}>
-                <span className={styles.liveStatus}>🟢 LIVE</span>
-              </div>
-            )}
-            {isReviewMode && (
-              <div className={styles.liveIndicator}>
-                <span className={styles.reviewStatus}>Review Mode</span>
-              </div>
-            )}
-          </>
-        }
-      />
+        />
 
-      {/* Chapter Tabs Container (Full Width, Below PageHeader) */}
-      {competitionData && competitionData.chapters && competitionData.chapters.length > 0 && (
-        <div className={styles.fullWidthChapterContainer}>
-          <div className={styles.chapterNavContainer}>
-            {/* Left Scroll Arrow (Prev Chapter) */}
-            <button
-              className={`${styles.navArrow} ${styles.chapterNavArrow} ${styles.navArrowLeft}`}
-              onClick={() => {
-                const newIdx = Math.max(0, activeChapterIndex - 1);
-                setActiveChapterIndex(newIdx);
-                setCurrentFrame(0);
-                const chPuzzleIds = (competitionData.chapters[newIdx].puzzleIds || []).map(id => id.toString());
-                const chPuzzles = puzzles.filter(p => chPuzzleIds.includes((p._id || p.id).toString()));
-                if (chPuzzles.length > 0) {
-                  const firstPuzzleId = (chPuzzles[0]._id || chPuzzles[0].id).toString();
-                  const globalIdx = puzzles.findIndex(p => (p._id || p.id).toString() === firstPuzzleId);
-                  if (globalIdx !== -1) {
-                    setCurrentPuzzleIndex(globalIdx);
-                  }
-                }
-              }}
-              disabled={activeChapterIndex <= 0}
-              title="Previous Chapter"
-            >
-              ← Prev Chapter
-            </button>
-
-            {/* Scrollable Wrapper */}
-            <div
-              className={styles.chapterScrollWrapper}
-              ref={chapterScrollRef}
-            >
-              <div className={styles.chapterTabBar}>
-                {competitionData.chapters.map((chapter, idx) => {
-                  const chPuzzleIds = (chapter.puzzleIds || []).map(id => id.toString());
+        {/* Chapter Tabs Container (Full Width, Below PageHeader) */}
+        {competitionData && competitionData.chapters && competitionData.chapters.length > 0 && (
+          <div className={styles.fullWidthChapterContainer}>
+            <div className={styles.chapterNavContainer}>
+              {/* Left Scroll Arrow (Prev Chapter) */}
+              <button
+                className={`${styles.navArrow} ${styles.chapterNavArrow} ${styles.navArrowLeft} ${styles.goldArrow}`}
+                onClick={() => {
+                  const newIdx = Math.max(0, activeChapterIndex - 1);
+                  setActiveChapterIndex(newIdx);
+                  setCurrentFrame(0);
+                  const chPuzzleIds = (competitionData.chapters[newIdx].puzzleIds || []).map(id => id.toString());
                   const chPuzzles = puzzles.filter(p => chPuzzleIds.includes((p._id || p.id).toString()));
-                  const solvedCount = chPuzzles.filter(p => puzzleStatuses[(p.id || p._id).toString()] === 'success').length;
-                  return (
-                    <button
-                      key={idx}
-                      type="button"
-                      className={`${styles.chapterTab} ${activeChapterIndex === idx ? styles.chapterTabActive : ''}`}
-                      onClick={() => {
-                        setActiveChapterIndex(idx);
-                        setCurrentFrame(0);
-                        if (chPuzzles.length > 0) {
-                          const firstPuzzleId = (chPuzzles[0]._id || chPuzzles[0].id).toString();
-                          const globalIdx = puzzles.findIndex(p => (p._id || p.id).toString() === firstPuzzleId);
-                          if (globalIdx !== -1) {
-                            setCurrentPuzzleIndex(globalIdx);
-                          }
-                        }
-                      }}
-                    >
-                      <span className={styles.chapterTabName}>{chapter.name}</span>
-                      <span className={styles.chapterTabBadge}>
-                        {solvedCount}/{chPuzzles.length}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Right Scroll Arrow (Next Chapter) */}
-            <button
-              className={`${styles.navArrow} ${styles.chapterNavArrow} ${styles.navArrowRight}`}
-              onClick={() => {
-                const newIdx = Math.min(competitionData.chapters.length - 1, activeChapterIndex + 1);
-                setActiveChapterIndex(newIdx);
-                setCurrentFrame(0);
-                const chPuzzleIds = (competitionData.chapters[newIdx].puzzleIds || []).map(id => id.toString());
-                const chPuzzles = puzzles.filter(p => chPuzzleIds.includes((p._id || p.id).toString()));
-                if (chPuzzles.length > 0) {
-                  const firstPuzzleId = (chPuzzles[0]._id || chPuzzles[0].id).toString();
-                  const globalIdx = puzzles.findIndex(p => (p._id || p.id).toString() === firstPuzzleId);
-                  if (globalIdx !== -1) {
-                    setCurrentPuzzleIndex(globalIdx);
+                  if (chPuzzles.length > 0) {
+                    const firstPuzzleId = (chPuzzles[0]._id || chPuzzles[0].id).toString();
+                    const globalIdx = puzzles.findIndex(p => (p._id || p.id).toString() === firstPuzzleId);
+                    if (globalIdx !== -1) {
+                      setCurrentPuzzleIndex(globalIdx);
+                    }
                   }
-                }
-              }}
-              disabled={activeChapterIndex >= competitionData.chapters.length - 1}
-              title="Next Chapter"
-            >
-              Next Chapter →
-            </button>
+                }}
+                disabled={activeChapterIndex <= 0}
+                title="Previous Chapter"
+              >
+                <FaAngleDoubleLeft />
+              </button>
+
+              {/* Scrollable Wrapper */}
+              <div
+                className={styles.chapterScrollWrapper}
+                ref={chapterScrollRef}
+              >
+                <div className={styles.chapterTabBar}>
+                  {competitionData.chapters.map((chapter, idx) => {
+                    const chPuzzleIds = (chapter.puzzleIds || []).map(id => id.toString());
+                    const chPuzzles = puzzles.filter(p => chPuzzleIds.includes((p._id || p.id).toString()));
+                    const solvedCount = chPuzzles.filter(p => puzzleStatuses[(p.id || p._id).toString()] === 'success').length;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        className={`${styles.chapterTab} ${activeChapterIndex === idx ? styles.chapterTabActive : ''}`}
+                        onClick={() => {
+                          setActiveChapterIndex(idx);
+                          setCurrentFrame(0);
+                          if (chPuzzles.length > 0) {
+                            const firstPuzzleId = (chPuzzles[0]._id || chPuzzles[0].id).toString();
+                            const globalIdx = puzzles.findIndex(p => (p._id || p.id).toString() === firstPuzzleId);
+                            if (globalIdx !== -1) {
+                              setCurrentPuzzleIndex(globalIdx);
+                            }
+                          }
+                        }}
+                      >
+                        <span className={styles.chapterTabName}>{chapter.name}</span>
+                        <span className={styles.chapterTabBadge}>
+                          {solvedCount}/{chPuzzles.length}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Right Scroll Arrow (Next Chapter) */}
+              <button
+                className={`${styles.navArrow} ${styles.chapterNavArrow} ${styles.navArrowRight} ${styles.goldArrow}`}
+                onClick={() => {
+                  const newIdx = Math.min(competitionData.chapters.length - 1, activeChapterIndex + 1);
+                  setActiveChapterIndex(newIdx);
+                  setCurrentFrame(0);
+                  const chPuzzleIds = (competitionData.chapters[newIdx].puzzleIds || []).map(id => id.toString());
+                  const chPuzzles = puzzles.filter(p => chPuzzleIds.includes((p._id || p.id).toString()));
+                  if (chPuzzles.length > 0) {
+                    const firstPuzzleId = (chPuzzles[0]._id || chPuzzles[0].id).toString();
+                    const globalIdx = puzzles.findIndex(p => (p._id || p.id).toString() === firstPuzzleId);
+                    if (globalIdx !== -1) {
+                      setCurrentPuzzleIndex(globalIdx);
+                    }
+                  }
+                }}
+                disabled={activeChapterIndex >= competitionData.chapters.length - 1}
+                title="Next Chapter"
+              >
+                <FaAngleDoubleRight />
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Main Content - New Grid Layout: Timer/Submit Left, Board Center, Info/Nav Right, Race Bottom */}
       <div className={styles.mainContent}>
@@ -1241,55 +1244,6 @@ function PuzzlePage() {
                       </div>
                     )}
                   </div>
-                  {/* Chapter Navigation Arrows */}
-                  {competitionData.chapters.length > 1 && (
-                    <div className={styles.navControls} style={{ marginBottom: '15px' }}>
-                      <button
-                        className={styles.navArrow}
-                        onClick={() => {
-                          const newIdx = Math.max(0, activeChapterIndex - 1);
-                          setActiveChapterIndex(newIdx);
-                          setCurrentFrame(0);
-                          const chPuzzleIds = (competitionData.chapters[newIdx].puzzleIds || []).map(id => id.toString());
-                          const chPuzzles = puzzles.filter(p => chPuzzleIds.includes((p._id || p.id).toString()));
-                          if (chPuzzles.length > 0) {
-                            const firstPuzzleId = (chPuzzles[0]._id || chPuzzles[0].id).toString();
-                            const globalIdx = puzzles.findIndex(p => (p._id || p.id).toString() === firstPuzzleId);
-                            if (globalIdx !== -1) {
-                              setCurrentPuzzleIndex(globalIdx);
-                            }
-                          }
-                        }}
-                        disabled={activeChapterIndex <= 0}
-                        title="Previous Chapter"
-                        style={{ flex: 1 }}
-                      >
-                        ← Prev Chapter
-                      </button>
-                      <button
-                        className={styles.navArrow}
-                        onClick={() => {
-                          const newIdx = Math.min(competitionData.chapters.length - 1, activeChapterIndex + 1);
-                          setActiveChapterIndex(newIdx);
-                          setCurrentFrame(0);
-                          const chPuzzleIds = (competitionData.chapters[newIdx].puzzleIds || []).map(id => id.toString());
-                          const chPuzzles = puzzles.filter(p => chPuzzleIds.includes((p._id || p.id).toString()));
-                          if (chPuzzles.length > 0) {
-                            const firstPuzzleId = (chPuzzles[0]._id || chPuzzles[0].id).toString();
-                            const globalIdx = puzzles.findIndex(p => (p._id || p.id).toString() === firstPuzzleId);
-                            if (globalIdx !== -1) {
-                              setCurrentPuzzleIndex(globalIdx);
-                            }
-                          }
-                        }}
-                        disabled={activeChapterIndex >= competitionData.chapters.length - 1}
-                        title="Next Chapter"
-                        style={{ flex: 1 }}
-                      >
-                        Next Chapter →
-                      </button>
-                    </div>
-                  )}
                 </>
               )}
 
