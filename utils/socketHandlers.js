@@ -70,14 +70,42 @@ const getCurrentLeaderboard = async (competitionId, limit = 100) => {
       return [];
     }
 
-    const result = [];
-
+    const userIds = [];
     for (let i = 0; i < redisData.length; i += 2) {
-      result.push({
-        rank: i / 2 + 1,
-        userId: redisData[i],
-        score: Number(redisData[i + 1])
-      });
+      userIds.push(redisData[i]);
+    }
+
+    // Fetch participant details for names, status, avatar, puzzlesSolved, etc.
+    const participants = await ParticipantModel.find({
+      competitionId,
+      userId: { $in: userIds }
+    }).lean();
+
+    const participantMap = {};
+    participants.forEach(p => {
+      participantMap[p.userId.toString()] = p;
+    });
+
+    const result = [];
+    for (let i = 0; i < redisData.length; i += 2) {
+      const uId = redisData[i];
+      const participant = participantMap[uId];
+
+      if (participant) {
+        result.push({
+          ...participant,
+          rank: i / 2 + 1,
+          userId: uId,
+          score: Number(redisData[i + 1])
+        });
+      } else {
+        // Fallback if DB sync is missing for some reason
+        result.push({
+          rank: i / 2 + 1,
+          userId: uId,
+          score: Number(redisData[i + 1])
+        });
+      }
     }
 
     return result;
