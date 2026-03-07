@@ -4,6 +4,7 @@ import PuzzleSolutionModel from "../models/PuzzleSolutionSchema.js";
 import PuzzleAttemptModel from "../models/PuzzleAttemptSchema.js";
 import PuzzleModel from "../models/PuzzleSchema.js";
 import UserModel from "../models/UserSchema.js";
+import CompetitionRankingModel from "../models/CompetitionRankingSchema.js";
 import { io } from "../index.js";
 import redis from "../config/redis.js";
 
@@ -504,15 +505,26 @@ export const getLiveLeaderboard = async (req, res) => {
       });
     }
 
-    // Run leaderboard + participant queries in parallel
-    const [leaderboard, participant] = await Promise.all([
-      getCurrentLeaderboard(competitionId),
-      userId
-        ? ParticipantModel.findOne({ competitionId, userId })
-          .select("status")
-          .lean()
-        : null,
-    ]);
+    // Fetch leaderboard based on competition state
+    let leaderboard = [];
+    if (competition.status === "ENDED") {
+      const rankings = await CompetitionRankingModel.find({ competitionId }).sort({ finalRank: 1 }).lean();
+      leaderboard = rankings.map(r => ({
+        rank: r.finalRank,
+        userId: r.userId,
+        username: r.username,
+        score: r.finalScore,
+        puzzlesSolved: r.puzzlesSolved,
+        timeSpent: r.totalTime,
+        status: "ENDED"
+      }));
+    } else {
+      leaderboard = await getCurrentLeaderboard(competitionId);
+    }
+
+    const participant = userId
+      ? await ParticipantModel.findOne({ competitionId, userId }).select("status").lean()
+      : null;
 
     const participantState = participant ? participant.status : "NOT_JOINED";
 
@@ -806,7 +818,21 @@ export const getLobbyState = async (req, res) => {
     }
 
     // 5. Leaderboard lao
-    const leaderboard = await getCurrentLeaderboard(competitionId);
+    let leaderboard = [];
+    if (competitionState === "ENDED") {
+      const rankings = await CompetitionRankingModel.find({ competitionId }).sort({ finalRank: 1 }).lean();
+      leaderboard = rankings.map(r => ({
+        rank: r.finalRank,
+        userId: r.userId,
+        username: r.username,
+        score: r.finalScore,
+        puzzlesSolved: r.puzzlesSolved,
+        timeSpent: r.totalTime,
+        status: "ENDED"
+      }));
+    } else {
+      leaderboard = await getCurrentLeaderboard(competitionId);
+    }
 
     // 6. Response bhejo with total puzzle count
     res.json({
