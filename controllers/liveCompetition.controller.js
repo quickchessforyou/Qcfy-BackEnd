@@ -254,238 +254,195 @@ export const submitCompetition = async (req, res) => {
 
 // Submit puzzle solution with Socket.IO notification
 export const submitPuzzleSolution = async (req, res) => {
+
   try {
+
     const { competitionId, puzzleId } = req.params;
-    const { solution, timeSpent, boardPosition, moveHistory } = req.body;
+    const { solution, timeSpent } = req.body;
+
     const userId = req.user._id;
 
-    /* ================= COMPETITION CHECK ================= */
-    const competition = await CompetitionModel.findById(competitionId);
+    /* =============================
+       1️⃣ Validate competition
+    ============================= */
+
+    const competition = await CompetitionModel
+      .findById(competitionId)
+      .select("status endTime")
+      .lean();
+
     if (!competition || new Date() > competition.endTime) {
+
       return res.status(400).json({
         success: false,
-        message: "Competition has ended",
+        message: "Competition ended"
       });
+
     }
 
-    if (competition.status !== "LIVE") {
-      return res.status(400).json({
-        success: false,
-        message: "Competition is not live",
-      });
-    }
+    /* =============================
+       2️⃣ Validate participant
+    ============================= */
 
-    /* ================= PARTICIPANT CHECK ================= */
     const participant = await ParticipantModel.findOne({
       competitionId,
-      userId,
+      userId
     });
 
     if (!participant) {
+
       return res.status(404).json({
         success: false,
-        message: "You are not participating in this competition",
+        message: "Participant not found"
       });
+
     }
 
     if (participant.status === "SUBMITTED") {
+
       return res.status(400).json({
         success: false,
-        message: "You have already submitted the competition",
+        message: "Competition already submitted"
       });
+
     }
 
-    /* ================= CHECK FOR EXISTING ATTEMPT ================= */
-    const existingAttempt = await PuzzleAttemptModel.findOne({
-      competitionId,
-      puzzleId,
-      userId,
-    });
+    /* =============================
+       3️⃣ Puzzle validation
+    ============================= */
 
-    // If puzzle is already completed (solved or failed), prevent new attempts
-    if (existingAttempt && (existingAttempt.status === 'solved' || existingAttempt.status === 'failed')) {
-      return res.status(400).json({
-        success: false,
-        message: `Puzzle already ${existingAttempt.status}`,
-        puzzleStatus: existingAttempt.status
-      });
-    }
+    const puzzle = await PuzzleModel
+      .findById(puzzleId)
+      .select("difficulty solutionMoves alternativeSolutions");
 
-    /* ================= PUZZLE CHECK ================= */
-    const puzzle = await PuzzleModel.findById(puzzleId);
     if (!puzzle) {
+
       return res.status(404).json({
         success: false,
-        message: "Puzzle not found",
+        message: "Puzzle not found"
       });
+
     }
 
-    const isCorrect = validatePuzzleSolution(puzzle, solution);
+    const isCorrect =
+      validatePuzzleSolution(puzzle, solution);
 
-    /* ================= MARK PLAYER AS PLAYING ================= */
-    if (participant.status === "JOINED") {
-      participant.status = "PLAYING";
-      await participant.save();
+    /* =============================
+       4️⃣ Correct solution
+    ============================= */
 
-      // Notify lobby immediately
-      io.to(`competition_${competitionId}`).emit("player-progress", {
-        userId,
-        participantState: "PLAYING",
-      });
-    }
-
-    /* ================= HANDLE SOLUTION RESULT ================= */
     if (isCorrect) {
-      // CORRECT SOLUTION
-      const scoreEarned = calculateScore(puzzle.difficulty, timeSpent);
 
-      // Create or update puzzle attempt
-      const puzzleAttempt = await PuzzleAttemptModel.findOneAndUpdate(
-        { competitionId, puzzleId, userId },
-        {
-          status: 'solved',
-          solution,
-          boardPosition,
-          moveHistory: moveHistory || [],
-          timeSpent,
-          scoreEarned,
-          isLocked: true,
-          completedAt: new Date()
-        },
-        { upsert: true, new: true }
-      );
+      const scoreEarned = 10;
 
-      console.log('Created/updated puzzle attempt (solved):', {
-        puzzleId,
-        userId,
-        status: puzzleAttempt.status,
-        isLocked: puzzleAttempt.isLocked
-      });
+      const updatedParticipant =
+        await ParticipantModel.findOneAndUpdate(
 
-      // Create puzzle solution record (for backward compatibility)
-      const puzzleSolution = new PuzzleSolutionModel({
-        competitionId,
-        puzzleId,
-        userId,
-        solution,
-        timeSpent,
-        scoreEarned,
-        isCorrect: true,
-        solvedAt: new Date(),
-      });
+          { competitionId, userId },
 
-      await puzzleSolution.save();
+          {
+            $inc: {
+              score: scoreEarned,
+              puzzlesSolved: 1,
+              timeSpent: timeSpent
+            },
 
-      // Update participant score
-      const updatedParticipant = await ParticipantModel.findOneAndUpdate(
-        { competitionId, userId },
-        {
-          $inc: {
-            score: scoreEarned,
-            puzzlesSolved: 1,
-            timeSpent: timeSpent,
+            lastActivity: new Date(),
+            status: "PLAYING"
           },
-          lastActivity: new Date(),
-        },
-        { new: true }
+
+          { new: true }
+
+        );
+
+      /* =============================
+         5️⃣ Redis leaderboard update
+      ============================= */
+
+      await redis.zadd(
+
+        leaderboardKey(competitionId),
+
+        redisScore(updatedParticipant),
+
+        userId.toString()
+
       );
 
-      /* ================= UPDATE REDIS + BROADCAST ================= */
-      // Sync Redis sorted set with fresh score BEFORE reading leaderboard
-      try {
-        await redis.zadd(
-          leaderboardKey(competitionId),
-          redisScore(updatedParticipant),
-          userId.toString()
-        );
-      } catch (redisError) {
-        console.error(`[Leaderboard] Redis zadd error in submit:`, redisError);
+      /* =============================
+         6️⃣ Broadcast leaderboard
+      ============================= */
+
+      const leaderboard =
+        await getCurrentLeaderboard(competitionId);
+
+      getIO()
+        .to(`competition_${competitionId}`)
+        .emit("leaderboardUpdate", leaderboard);
+
+      /* =============================
+         7️⃣ Response
+      ============================= */
+
+      return res.json({
+
+        success: true,
+
+        isCorrect: true,
+
+        scoreEarned,
+
+        totalScore: updatedParticipant.score,
+
+        puzzlesSolved: updatedParticipant.puzzlesSolved
+
+      });
+
+    }
+
+    /* =============================
+       8️⃣ Incorrect solution
+    ============================= */
+
+    await ParticipantModel.findOneAndUpdate(
+
+      { competitionId, userId },
+
+      {
+        $inc: { timeSpent: timeSpent },
+
+        lastActivity: new Date()
       }
 
-      // Broadcast leaderboard updates asynchronously
-      getCurrentLeaderboard(competitionId).then(leaderboard => {
-        io.to(`competition_${competitionId}`).emit("leaderboardUpdate", leaderboard);
-      }).catch(err => console.error('Puzzle solve leaderboard error:', err));
+    );
 
-      // Emit live score update for immediate feedback in lobby
-      io.to(`competition_${competitionId}`).emit("liveScoreUpdate", {
-        userId: updatedParticipant.userId,
-        username: updatedParticipant.username,
-        score: updatedParticipant.score,
-        puzzlesSolved: updatedParticipant.puzzlesSolved,
-        timeSpent: updatedParticipant.timeSpent,
-        status: updatedParticipant.status
-      });
+    res.json({
 
-      /* ================= SUCCESS RESPONSE ================= */
-      res.json({
-        success: true,
-        isCorrect: true,
-        scoreEarned,
-        totalScore: updatedParticipant.score,
-        puzzlesSolved: updatedParticipant.puzzlesSolved,
-        puzzleStatus: 'solved',
-        message: "Puzzle solved successfully!",
-      });
+      success: false,
 
-    } else {
-      // INCORRECT SOLUTION
-      // Create or update puzzle attempt as failed
-      const puzzleAttempt = await PuzzleAttemptModel.findOneAndUpdate(
-        { competitionId, puzzleId, userId },
-        {
-          status: 'failed',
-          solution,
-          boardPosition,
-          moveHistory: moveHistory || [],
-          timeSpent,
-          scoreEarned: 0,
-          isLocked: true,
-          completedAt: new Date()
-        },
-        { upsert: true, new: true }
-      );
+      isCorrect: false,
 
-      console.log('Created/updated puzzle attempt (failed):', {
-        puzzleId,
-        userId,
-        status: puzzleAttempt.status,
-        isLocked: puzzleAttempt.isLocked
-      });
+      scoreEarned: 0,
 
-      // Update participant time spent (but no score)
-      const updatedParticipant = await ParticipantModel.findOneAndUpdate(
-        { competitionId, userId },
-        {
-          $inc: {
-            timeSpent: timeSpent,
-          },
-          lastActivity: new Date(),
-        },
-        { new: true }
-      );
+      message: "Incorrect solution"
 
-      /* ================= FAILURE RESPONSE ================= */
-      res.json({
-        success: false,
-        isCorrect: false,
-        scoreEarned: 0,
-        totalScore: updatedParticipant.score,
-        puzzlesSolved: updatedParticipant.puzzlesSolved,
-        puzzleStatus: 'failed',
-        message: "Incorrect solution. .",
-      });
-    }
+    });
 
   } catch (error) {
-    console.error("Puzzle submission error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Server error during submission",
-    });
-  }
-};
 
+    console.error("Puzzle submission error:", error);
+
+    res.status(500).json({
+
+      success: false,
+
+      message: "Server error"
+
+    });
+
+  }
+
+};
 
 // Get live leaderboard
 export const getLiveLeaderboard = async (req, res) => {
@@ -760,76 +717,131 @@ export const startCompetition = async (req, res) => {
 
 // getLobbyState function continues below...
 export const getLobbyState = async (req, res) => {
+
   try {
+
     const { competitionId } = req.params;
     const userId = req.user._id;
 
-    // 1. Competition lao with ONLY necessary fields (DO NOT populate heavy puzzles array)
-    // We only need the length of the puzzles array, not the full puzzle objects
-    const competition = await CompetitionModel.findById(competitionId)
-      .select('name startTime endTime duration puzzles accessCode status')
+    /* ===============================
+       1️⃣ Competition (light query)
+    =============================== */
+
+    const competition = await CompetitionModel
+      .findById(competitionId)
+      .select("name startTime endTime duration puzzles accessCode status")
       .lean();
 
     if (!competition) {
-      return res.status(404).json({ success: false, message: "Competition not found" });
+
+      return res.status(404).json({
+        success: false,
+        message: "Competition not found"
+      });
+
     }
 
-    // 2. Participant lao (sirf ParticipantModel se)
-    const participant = await ParticipantModel.findOne({
-      competitionId,
-      userId
-    }).lean();
+    /* ===============================
+       2️⃣ Participant state
+    =============================== */
 
-    // 3. Competition state - check time-based status
-    const now = new Date();
-    let competitionState = competition.status ? competition.status.toUpperCase() : "UPCOMING";
+    const participant = await ParticipantModel
+      .findOne({
+        competitionId,
+        userId
+      })
+      .select("status")
+      .lean();
 
-    // Update status based on current time if needed
-    if (competitionState === "UPCOMING" && now >= competition.startTime && now <= competition.endTime) {
-      competitionState = "LIVE";
-      // Update in DB asynchronously to not block response
-      CompetitionModel.findByIdAndUpdate(competitionId, { status: "LIVE", isActive: true }).exec();
-    } else if (now > competition.endTime) {
-      competitionState = "ENDED";
-      if (competition.status !== "ENDED") {
-        CompetitionModel.findByIdAndUpdate(competitionId, { status: "ENDED", isActive: false }).exec();
-      }
-    }
-
-    // 4. Participant state
     let participantState = "NOT_JOINED";
+
     if (participant) {
+
       participantState = participant.status || "JOINED";
-      // JOINED | PLAYING | SUBMITTED
+
     }
 
-    // 5. Leaderboard lao centrally (handles LIVE, ENDED, and LEGACY transparently)
-    const leaderboard = await getCurrentLeaderboard(competitionId);
+    /* ===============================
+       3️⃣ Competition state
+    =============================== */
 
-    // 6. Response bhejo with total puzzle count
+    const now = Date.now();
+
+    let competitionState =
+      competition.status?.toUpperCase() || "UPCOMING";
+
+    if (
+      competitionState === "UPCOMING" &&
+      now >= new Date(competition.startTime).getTime()
+    ) {
+
+      competitionState = "LIVE";
+
+    }
+
+    if (now > new Date(competition.endTime).getTime()) {
+
+      competitionState = "ENDED";
+
+    }
+
+    /* ===============================
+       4️⃣ Fast leaderboard (Redis)
+    =============================== */
+
+    const leaderboard =
+      await getCurrentLeaderboard(competitionId);
+
+    /* ===============================
+       5️⃣ Response
+    =============================== */
+
     res.json({
+
       success: true,
+
       competition: {
+
         id: competition._id,
         name: competition.name,
+
         startTime: competition.startTime,
         endTime: competition.endTime,
+
         duration: competition.duration,
-        totalPuzzles: Array.isArray(competition.puzzles) ? competition.puzzles.length : 0, // Add total puzzle count
-        requiresAccessCode: !!(competition.accessCode && competition.accessCode.trim() !== '')
+
+        totalPuzzles: Array.isArray(competition.puzzles)
+          ? competition.puzzles.length
+          : 0,
+
+        requiresAccessCode:
+          !!(competition.accessCode &&
+            competition.accessCode.trim() !== "")
+
       },
+
       competitionState,
+
       participantState,
+
       leaderboard,
-      serverTime: Date.now()
+
+      serverTime: now
+
     });
 
   } catch (err) {
-    console.error("Lobby state error:", err);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-};
 
+    console.error("Lobby state error:", err);
+
+    res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
+
+  }
+
+};
 
 // Helper function to calculate score
 // All puzzles are worth 10 points - winner determined by time taken

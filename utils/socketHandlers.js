@@ -29,28 +29,56 @@ const redisScore = (p) =>
 ========================================================= */
 
 const buildRedisLeaderboard = async (competitionId) => {
+
   try {
-    const participants = await ParticipantModel.find({ competitionId }).lean();
+
+    const participants = await ParticipantModel
+      .find({ competitionId })
+      .select("userId score puzzlesSolved timeSpent")
+      .lean();
 
     if (!participants.length) return;
 
+    const key = leaderboardKey(competitionId);
+
     const pipeline = redis.pipeline();
 
+    // Clear previous leaderboard (safe rebuild)
+    pipeline.del(key);
+
     for (const p of participants) {
-      if (p.userId) {
-        pipeline.zadd(
-          leaderboardKey(competitionId),
-          redisScore(p),
-          p.userId.toString()
-        );
-      }
+
+      if (!p.userId) continue;
+
+      const score =
+        (p.puzzlesSolved || 0) * 1000000 -
+        (p.timeSpent || 0) * 1000 +
+        (p.score || 0);
+
+      pipeline.zadd(
+        key,
+        score,
+        p.userId.toString()
+      );
+
     }
+
+    // Auto expire leaderboard after 2 hours
+    pipeline.expire(key, 7200);
 
     await pipeline.exec();
 
+    console.log(`⚡ Redis leaderboard built for ${competitionId}`);
+
   } catch (error) {
-    console.error(`[Leaderboard] Redis build error`, error);
+
+    console.error(
+      `[Leaderboard] Redis build error for ${competitionId}`,
+      error
+    );
+
   }
+
 };
 
 /* =========================================================
@@ -59,7 +87,8 @@ const buildRedisLeaderboard = async (competitionId) => {
 
 const getCurrentLeaderboard = async (competitionId, limit = 100) => {
   try {
-    // 1. Try Fast Redis (Active / Live Competitions)
+
+    // 1️⃣ Get Redis leaderboard (FAST)
     const redisData = await redis.zrevrange(
       leaderboardKey(competitionId),
       0,
@@ -68,54 +97,71 @@ const getCurrentLeaderboard = async (competitionId, limit = 100) => {
     );
 
     if (redisData && redisData.length > 0) {
+
       const userIds = [];
+
       for (let i = 0; i < redisData.length; i += 2) {
         userIds.push(redisData[i]);
       }
 
-      // Fetch participant details for names, status, avatar, puzzlesSolved, etc.
-      const participants = await ParticipantModel.find({
-        competitionId,
-        userId: { $in: userIds }
-      }).lean();
+      // 2️⃣ Fetch participant data with username
+      const participants = await ParticipantModel
+        .find({
+          competitionId,
+          userId: { $in: userIds }
+        })
+        .populate("userId", "username name email")
+        .lean();
 
       const participantMap = {};
+
       participants.forEach(p => {
-        participantMap[p.userId.toString()] = p;
+        participantMap[p.userId._id.toString()] = p;
       });
 
       const result = [];
+
       for (let i = 0; i < redisData.length; i += 2) {
+
         const uId = redisData[i];
         const participant = participantMap[uId];
 
-        if (participant) {
-          result.push({
-            ...participant,
-            rank: i / 2 + 1,
-            userId: uId,
-            score: Number(redisData[i + 1])
-          });
-        } else {
-          // Fallback if DB sync is missing for some reason
-          result.push({
-            rank: i / 2 + 1,
-            userId: uId,
-            score: Number(redisData[i + 1])
-          });
-        }
+        if (!participant) continue;
+
+        result.push({
+          rank: i / 2 + 1,
+          userId: uId,
+
+          username:
+            participant.username ||
+            participant.userId?.username ||
+            participant.userId?.name ||
+            "Unknown",
+
+          score: participant.score || 0,
+          puzzlesSolved: participant.puzzlesSolved || 0,
+          timeSpent: participant.timeSpent || 0,
+          status: participant.status || "PLAYING"
+        });
+
       }
 
       return result;
+
     }
 
-    // 2. Redis empty. Try Finalized Rankings (Recently Ended Competitions)
-    const rankings = await CompetitionRankingModel.find({ competitionId })
+    /* =============================
+       FALLBACK : FINALIZED RANKINGS
+    ============================= */
+
+    const rankings = await CompetitionRankingModel
+      .find({ competitionId })
       .sort({ finalRank: 1 })
       .limit(limit)
       .lean();
 
     if (rankings && rankings.length > 0) {
+
       return rankings.map(r => ({
         rank: r.finalRank,
         userId: r.userId,
@@ -125,34 +171,20 @@ const getCurrentLeaderboard = async (competitionId, limit = 100) => {
         timeSpent: r.totalTime || 0,
         status: "ENDED"
       }));
+
     }
 
-    // 3. Rankings empty. Try Legacy DB Array (Old Competitions before update)
-    const legacyComp = await CompetitionModel.findById(competitionId).populate('participants.user', 'username name email').lean();
-    if (legacyComp && legacyComp.participants && legacyComp.participants.length > 0) {
-      let legacyLeaderboard = legacyComp.participants
-        .sort((a, b) => b.score - a.score)
-        .map((p, index) => ({
-          rank: index + 1,
-          user: p.user, // Keep populated user obj for old frontend expectations
-          userId: p.user?._id || p.user,
-          username: p.user?.username || p.user?.name || "Unknown",
-          score: p.score || 0,
-          puzzlesSolved: p.ENDEDPuzzles ? p.ENDEDPuzzles.length : 0,
-          timeSpent: 0,
-          status: legacyComp.status || "ENDED",
-          joinedAt: p.joinedAt
-        }));
-
-      return legacyLeaderboard.slice(0, limit);
-    }
-
-    // 4. Truly empty
     return [];
 
   } catch (error) {
-    console.error(`[Leaderboard] Universal fetch error for ${competitionId}:`, error);
-    return []; // Return empty leaderboard on failure instead of crashing
+
+    console.error(
+      `[Leaderboard] fetch error for ${competitionId}:`,
+      error
+    );
+
+    return [];
+
   }
 };
 
