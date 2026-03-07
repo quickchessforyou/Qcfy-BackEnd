@@ -519,25 +519,27 @@ export const getLiveLeaderboard = async (req, res) => {
           timeSpent: r.totalTime,
           status: "ENDED"
         }));
-      } else {
-        // Legacy fallback
-        const legacyComp = await CompetitionModel.findById(competitionId).populate('participants.user', 'username name').lean();
-        if (legacyComp && legacyComp.participants && legacyComp.participants.length > 0) {
-          leaderboard = legacyComp.participants
-            .sort((a, b) => b.score - a.score)
-            .map((p, index) => ({
-              rank: index + 1,
-              userId: p.user?._id || p.user,
-              username: p.user?.username || p.user?.name || "Unknown",
-              score: p.score,
-              puzzlesSolved: p.ENDEDPuzzles ? p.ENDEDPuzzles.length : 0,
-              timeSpent: 0,
-              status: "ENDED"
-            }));
-        }
       }
     } else {
       leaderboard = await getCurrentLeaderboard(competitionId);
+    }
+
+    // Legacy fallback for any empty leaderboard state (either ENDED or LIVE but pre-schema change)
+    if (leaderboard.length === 0) {
+      const legacyComp = await CompetitionModel.findById(competitionId).populate('participants.user', 'username name').lean();
+      if (legacyComp && legacyComp.participants && legacyComp.participants.length > 0) {
+        leaderboard = legacyComp.participants
+          .sort((a, b) => b.score - a.score)
+          .map((p, index) => ({
+            rank: index + 1,
+            userId: p.user?._id || p.user,
+            username: p.user?.username || p.user?.name || "Unknown",
+            score: p.score || 0,
+            puzzlesSolved: p.ENDEDPuzzles ? p.ENDEDPuzzles.length : 0,
+            timeSpent: 0,
+            status: competition.status || "ENDED"
+          }));
+      }
     }
 
     const participant = userId
@@ -849,8 +851,16 @@ export const getLobbyState = async (req, res) => {
           timeSpent: r.totalTime,
           status: "ENDED"
         }));
-      } else {
-        // Legacy fallback
+      }
+    } else {
+      leaderboard = await getCurrentLeaderboard(competitionId);
+    }
+
+    // Legacy fallback for any empty leaderboard state
+    if (leaderboard.length === 0 && competition) {
+      if (competition.participants && competition.participants.length > 0) {
+        // We already have participants in memory (but they aren't populated)
+        // Let's populate them just to be safe
         const legacyComp = await CompetitionModel.findById(competitionId).populate('participants.user', 'username name').lean();
         if (legacyComp && legacyComp.participants && legacyComp.participants.length > 0) {
           leaderboard = legacyComp.participants
@@ -859,15 +869,13 @@ export const getLobbyState = async (req, res) => {
               rank: index + 1,
               userId: p.user?._id || p.user,
               username: p.user?.username || p.user?.name || "Unknown",
-              score: p.score,
+              score: p.score || 0,
               puzzlesSolved: p.ENDEDPuzzles ? p.ENDEDPuzzles.length : 0,
               timeSpent: 0,
-              status: "ENDED"
+              status: competitionState
             }));
         }
       }
-    } else {
-      leaderboard = await getCurrentLeaderboard(competitionId);
     }
 
     // 6. Response bhejo with total puzzle count
