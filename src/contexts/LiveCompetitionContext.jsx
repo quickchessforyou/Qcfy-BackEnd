@@ -64,57 +64,39 @@ export const LiveCompetitionProvider = ({ children }) => {
   // Initialize state on mount - restore from localStorage if available
   useEffect(() => {
     const initializeState = async () => {
-      // Check if we're on a competition page
       const currentPath = window.location.pathname;
-      console.log("Current path:", currentPath);
 
       // Match both /competition/:id and /competition/:id/puzzle patterns
       const competitionMatch = currentPath.match(/\/competition\/([^\/]+)/);
 
-      if (competitionMatch) {
-        const competitionId = competitionMatch[1];
-        console.log("Initializing competition state for:", competitionId);
+      // PERFORMANCE: Skip heavy init if not on a competition page
+      // Also skip on LOBBY pages — lobby has its own loadLobby() function
+      if (!competitionMatch || currentPath.includes('/lobby')) return;
 
-        try {
-          // Try to load competition puzzles to restore state
-          await loadCompetitionPuzzles(competitionId);
-          console.log("Competition state restored successfully");
+      const competitionId = competitionMatch[1];
 
-          // Fetch leaderboard immediately on initialization
-          console.log("Fetching initial leaderboard on mount");
-          await getLeaderboard(competitionId);
+      try {
+        // Parallel: load puzzles + leaderboard simultaneously
+        await Promise.all([
+          loadCompetitionPuzzles(competitionId),
+          getLeaderboard(competitionId)
+        ]);
 
-          // AUTO-RECONNECT SOCKET on page refresh if user is already a participant
-          // This ensures real-time updates continue after refresh
-          const token = localStorage.getItem("token");
-          const user = JSON.parse(localStorage.getItem("user") || "{}");
-          if (token && user && !socketService.isConnected) {
-            console.log(
-              "[LiveComp] Auto-reconnecting socket after page refresh",
-            );
-            try {
-              const compData = { competition: { id: competitionId, name: "" } };
-              await socketService.connect(compData);
-              setIsConnected(true);
-              socketService.emit("joinCompetition", {
-                competitionId,
-              });
-
-              console.log("[LiveComp] Socket reconnected successfully");
-            } catch (sockErr) {
-              console.error(
-                "[LiveComp] Socket reconnect failed:",
-                sockErr.message,
-              );
-              // Not critical — REST polling will cover us
-            }
+        // AUTO-RECONNECT SOCKET on page refresh
+        const token = localStorage.getItem("token");
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        if (token && user && !socketService.isConnected) {
+          try {
+            const compData = { competition: { id: competitionId, name: "" } };
+            await socketService.connect(compData);
+            setIsConnected(true);
+            socketService.emit("joinCompetition", { competitionId });
+          } catch (sockErr) {
+            // Not critical — REST polling will cover us
           }
-        } catch (error) {
-          console.error("Failed to restore competition state:", error);
-          // This is expected if user hasn't participated yet
         }
-      } else {
-        console.log("Not on a competition page, skipping state restoration");
+      } catch (error) {
+        // Expected if user hasn't participated yet
       }
     };
 
@@ -608,9 +590,8 @@ export const LiveCompetitionProvider = ({ children }) => {
     if (!isLive) return;
 
     const syncInterval = setInterval(() => {
-      console.log("[LiveComp] Periodic leaderboard sync");
       getLeaderboard(competition.id);
-    }, 5000);
+    }, 30000);
 
     return () => clearInterval(syncInterval);
   }, [competition?.id, competition?.status, competitionEnded]);

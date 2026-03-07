@@ -33,13 +33,13 @@ function Contact() {
             <a href="#coaching" className={styles.linkItem}>Coaching</a>
           </div>
 
-          <div className={styles.addressGroup}>
+          {/* <div className={styles.addressGroup}>
             <h4 className={styles.addressTitle}>Office</h4>
             <p className={styles.addressText}>
               Odisha, India<br />
               Mon - Fri: 9AM - 6PM
             </p>
-          </div>
+          </div> */}
         </div>
 
         {/* Bottom: Massive Brand Text */}

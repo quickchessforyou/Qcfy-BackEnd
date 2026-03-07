@@ -4,6 +4,7 @@ import About from '../About/About';
 import Courses from '../Courses/Courses';
 import Pricing from '../Pricing/Pricing';
 import Coaching from '../Coaching/Coaching';
+import Syllabus from '../Syllabus/Syllabus';
 import Contact from '../Contact/Contact';
 import Footer from '../../components/Footer/Footer';
 import styles from './Home.module.css';
@@ -23,8 +24,12 @@ const Home = () => {
         <Courses />
       </div>
 
+      <div id="syllabus" className={styles.sectionWrapper}>
+        <Syllabus />
+      </div>
+
       <div id="pricing" className={styles.sectionWrapper}>
-        <Pricing />
+        {/* <Pricing /> */}
       </div>
 
       <div id="coaching" className={styles.sectionWrapper}>

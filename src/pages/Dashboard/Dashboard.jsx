@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { competitionAPI } from "../../services/api";
+import { liveCompetitionAPI } from "../../services/liveCompetitionAPI";
 import PageHeader from "../../components/PageHeader/PageHeader";
 import styles from "./Dashboard.module.css";
 import { useAuth } from "../../contexts/AuthContext";
@@ -94,7 +95,7 @@ function Dashboard() {
 
   useEffect(() => {
     fetchCompetitions();
-  }, [fetchCompetitions, activeTab]);
+  }, [fetchCompetitions]);
 
   useEffect(() => {
     if (activeTab === "All") {
@@ -128,6 +129,15 @@ function Dashboard() {
     } else {
       navigate(`/competition/${competition._id}/lobby`);
     }
+  };
+
+  // PERFORMANCE: Prefetch lobby data when user hovers over a tournament card
+  const prefetchedRef = new Set();
+  const handlePrefetch = (competitionId) => {
+    if (prefetchedRef.has(competitionId)) return;
+    prefetchedRef.add(competitionId);
+    // Fire-and-forget — browser caches the response
+    liveCompetitionAPI.getLobbyState(competitionId).catch(() => { });
   };
 
   const handleViewPuzzles = (e, competition) => {
@@ -186,6 +196,7 @@ function Dashboard() {
                 key={comp.id}
                 className={`${styles.card} ${styles[comp.status.toLowerCase()]}`}
                 onClick={() => handleParticipate(comp)}
+                onMouseEnter={() => comp.status !== 'Ended' && handlePrefetch(comp._id)}
               >
                 <div className={styles.cardMain}>
                   {/* Header: Status + Title */}

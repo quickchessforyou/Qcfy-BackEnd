@@ -53,6 +53,10 @@ const apiRequest = async (endpoint, options = {}, token = null) => {
 /**
  * Live Competition APIs
  */
+// ─── Short-lived cache for getLobbyState (supports prefetching from Dashboard) ───
+const lobbyCache = new Map();
+const LOBBY_CACHE_TTL = 3000; // 3 seconds
+
 export const liveCompetitionAPI = {
   // Participate in live competition (REST API validation)
   participate: async (competitionId, username, accessCode = null) => {
@@ -112,13 +116,27 @@ export const liveCompetitionAPI = {
       method: "GET",
     });
   },
-  getLobbyState: async (competitionId) => {
+
+  getLobbyState: async (competitionId, bypassCache = false) => {
+    // Check cache first (supports prefetch from Dashboard hover without delay)
+    if (!bypassCache) {
+      const cached = lobbyCache.get(competitionId);
+      if (cached && (Date.now() - cached.timestamp) < LOBBY_CACHE_TTL) {
+        return cached.data;
+      }
+    }
+
     const token = localStorage.getItem("token");
-    return apiRequest(
+    const result = await apiRequest(
       `/live-competition/${competitionId}/lobby-state`,
       { method: "GET" },
       token
     );
+
+    // Cache the result ONLY if it wasn't a bypass call, 
+    // or cache it anyway since it's fresh data
+    lobbyCache.set(competitionId, { data: result, timestamp: Date.now() });
+    return result;
   },
 
   // Check for active participation

@@ -49,7 +49,12 @@ const CompetitionLobby = () => {
   // serverTime state removed to prevent re-renders
   const [isJoinProcessing, setIsJoinProcessing] = useState(false);
   const timeOffsetRef = useRef(0);
-  const hasAutoRedirectedRef = useRef(false); // Track if we've already auto-redirected
+  // Track redirect to prevent back-button loops
+  const hasAutoRedirectedRef = useRef(sessionStorage.getItem(`redirected_${id}`) === "true");
+
+  // REF that always holds the latest participantState — solves stale closure bug
+  const participantStateRef = useRef(participantState);
+  participantStateRef.current = participantState;
 
   // Access Code Modal State
   const [showCodeModal, setShowCodeModal] = useState(false);
@@ -161,6 +166,20 @@ const CompetitionLobby = () => {
       navigate(`/leaderboard/${id}`, { replace: true });
     }
   }, [competitionState, id, navigate]);
+
+  // Declarative Auto-Redirect (Handles background tabs securely)
+  useEffect(() => {
+    if (
+      !hasAutoRedirectedRef.current &&
+      (competitionState === "LIVE" || competitionState === "PLAYING") &&
+      (participantState === "JOINED" || participantState === "PLAYING")
+    ) {
+      hasAutoRedirectedRef.current = true;
+      sessionStorage.setItem(`redirected_${id}`, "true");
+      navigate(`/competition/${id}/puzzle`, { replace: true });
+    }
+  }, [competitionState, participantState, navigate, id]);
+
   // Main Load Effect
   useEffect(() => {
     async function loadLobby() {
@@ -191,8 +210,23 @@ const CompetitionLobby = () => {
 
     loadLobby();
 
-    // Poll occasionally to sync server time/state if socket fails
-    const interval = setInterval(loadLobby, 15000);
+    // Poll occasionally to sync server time/state if socket fails (bypass cache)
+    const interval = setInterval(() => {
+      liveCompetitionAPI.getLobbyState(id, true).then(res => {
+        if (res.success) {
+          setCompetition(res.competition);
+          setParticipants(res.leaderboard);
+          setCompetitionState(res.competitionState);
+          // Only update participantState if we haven't optimistically joined
+          if (res.participantState !== "NOT_JOINED") {
+            setParticipantState(res.participantState);
+          } else if (participantStateRef.current === "NOT_JOINED") {
+            setParticipantState(res.participantState);
+          }
+          if (res.serverTime) timeOffsetRef.current = res.serverTime - Date.now();
+        }
+      }).catch(() => { });
+    }, 15000);
     return () => clearInterval(interval);
   }, [id]);
 
@@ -215,18 +249,17 @@ const CompetitionLobby = () => {
 
     // Check if competition should have started
     if (competitionState === "UPCOMING" && now >= start) {
-      // Refresh state to get LIVE status
-      liveCompetitionAPI.getLobbyState(id).then(res => {
-        // silently update
+      // Refresh state to get LIVE status (bypass cache)
+      liveCompetitionAPI.getLobbyState(id, true).then(res => {
         if (res.success && res.competitionState === "LIVE") {
           setCompetitionState("LIVE");
-
           // Auto-redirect if user is joined and we haven't already redirected
-          if (!hasAutoRedirectedRef.current && (res.participantState === "JOINED" || res.participantState === "PLAYING")) {
-            hasAutoRedirectedRef.current = true; // Mark that we've redirected
+          if (!hasAutoRedirectedRef.current && (res.participantState === "JOINED" || res.participantState === "PLAYING" || participantStateRef.current === "JOINED")) {
+            hasAutoRedirectedRef.current = true;
+            sessionStorage.setItem(`redirected_${id}`, "true");
             toast.success("Competition Started! Redirecting...");
             setTimeout(() => {
-              navigate(`/competition/${id}/puzzle`);
+              navigate(`/competition/${id}/puzzle`, { replace: true });
             }, 100);
           }
         }
@@ -281,6 +314,7 @@ const CompetitionLobby = () => {
         setShowCodeModal(false);
         setAccessCodeInput("");
         setParticipantState("JOINED");
+        participantStateRef.current = "JOINED";
 
         // Optimistically add user to leaderboard
         setParticipants(prev => {
@@ -294,10 +328,13 @@ const CompetitionLobby = () => {
           }];
         });
 
-        // 2. Refresh full state in background (non-blocking)
-        liveCompetitionAPI.getLobbyState(id).then(res => {
+        // 2. Refresh full state in background (non-blocking) - *bypass cache!*
+        liveCompetitionAPI.getLobbyState(id, true).then(res => {
           if (res.success) {
-            setParticipantState(res.participantState);
+            // Only update if it doesn't overwrite our optimistic join
+            if (res.participantState !== "NOT_JOINED") {
+              setParticipantState(res.participantState);
+            }
             setCompetitionState(res.competitionState);
             setParticipants(res.leaderboard);
 
@@ -329,11 +366,14 @@ const CompetitionLobby = () => {
       // If already joined, just update state optimistically
       if (msg.toLowerCase().includes("already") || msg.toLowerCase().includes("participating")) {
         setParticipantState("JOINED");
+        participantStateRef.current = "JOINED";
         setShowCodeModal(false);
         setAccessCodeInput("");
 
-        liveCompetitionAPI.getLobbyState(id).then(res => {
-          if (res.success) setParticipantState(res.participantState);
+        liveCompetitionAPI.getLobbyState(id, true).then(res => {
+          if (res.success && res.participantState !== "NOT_JOINED") {
+            setParticipantState(res.participantState);
+          }
         }).catch(e => console.error("Background lobby refresh failed:", e));
       } else {
         if (code !== null) {

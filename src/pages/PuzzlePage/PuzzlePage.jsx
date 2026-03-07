@@ -75,8 +75,10 @@ function PuzzlePage() {
 
   const [activeChapterIndex, setActiveChapterIndex] = useState(0);
 
-  // Chapter scroll reference
+  // Chapter scroll reference and minimal indicator state
   const chapterScrollRef = useRef(null);
+  const [showScrollIndicator, setShowScrollIndicator] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
 
   // Automatically scroll active chapter into view whenever activeChapterIndex changes
   useEffect(() => {
@@ -93,6 +95,30 @@ function PuzzlePage() {
       }
     }
   }, [activeChapterIndex]);
+
+  // Check if chapters overflow container to show/hide scroll indicator
+  const checkScrollOverflow = () => {
+    if (chapterScrollRef.current) {
+      const { scrollWidth, clientWidth } = chapterScrollRef.current;
+      setShowScrollIndicator(scrollWidth > clientWidth + 5);
+    }
+  };
+
+  useEffect(() => {
+    checkScrollOverflow();
+    window.addEventListener("resize", checkScrollOverflow);
+    return () => window.removeEventListener("resize", checkScrollOverflow);
+  }, [competitionData?.chapters]);
+
+  // Handle native scroll to update the custom indicator thumb
+  const handleChapterScroll = (e) => {
+    const { scrollLeft, scrollWidth, clientWidth } = e.target;
+    const maxScroll = scrollWidth - clientWidth;
+    if (maxScroll > 0) {
+      setScrollProgress(scrollLeft / maxScroll);
+    }
+  };
+
 
   // If we have initial location state, we don't need to show the loading screen at all!
   const [loading, setLoading] = useState(!location.state?.competitionId);
@@ -241,14 +267,17 @@ function PuzzlePage() {
 
       // Check if this is a competition
       if (paramCompetitionId) {
-        // Fetch competition data
-        const response = await competitionAPI.getById(paramCompetitionId);
+        // PERFORMANCE: Parallel fetch of competition data + puzzles
+        const [compResponse, puzzleRes] = await Promise.all([
+          competitionAPI.getById(paramCompetitionId),
+          liveCompetitionAPI.getPuzzles(paramCompetitionId).catch(() => ({ success: false }))
+        ]);
 
-        if (!response.success || !response.data) {
+        if (!compResponse.success || !compResponse.data) {
           throw new Error("Failed to load competition data");
         }
 
-        const comp = response.data;
+        const comp = compResponse.data;
         setCompetitionData(comp);
 
         // Check active status
@@ -279,55 +308,13 @@ function PuzzlePage() {
         // LIVE COMPETITION LOGIC OR REVIEW MODE
         if (isLive || reviewMode) {
           try {
-            const user = JSON.parse(localStorage.getItem("user") || "{}");
-
             if (!reviewMode && isLive) {
-              // Check if we already have valid puzzle data to avoid duplicate participation calls
-              const stateKey = `puzzleState_${paramCompetitionId}`;
-              const savedState = localStorage.getItem(stateKey);
-              let hasValidState = false;
-
-              if (savedState) {
-                try {
-                  const parsed = JSON.parse(savedState);
-                  hasValidState =
-                    parsed.puzzleStatuses &&
-                    Object.keys(parsed.puzzleStatuses).length > 0;
-                } catch (e) {
-                  console.error("Error parsing saved state:", e);
-                }
-              }
-
-              // Only participate if we don't have valid state already
-              if (!hasValidState) {
-                try {
-                  await participateInCompetition(
-                    paramCompetitionId,
-                    user.username || user.name,
-                  );
-                } catch (participationError) {
-                  // Silent handling of participation errors during initialization
-                  console.log(
-                    "Participation error (continuing with fallback):",
-                    participationError.message,
-                  );
-                }
-              } else {
-                console.log(
-                  "Using existing valid state, skipping participation call",
-                );
-              }
-
-              // Immediately explicitly fetch the leaderboard so rank is available
+              // Fire leaderboard + socket as non-blocking background calls
               getLeaderboard(paramCompetitionId);
               ensureSocketConnection(paramCompetitionId);
             }
 
-            // Parallel loading for performance
-            const [puzzleRes] = await Promise.all([
-              liveCompetitionAPI.getPuzzles(paramCompetitionId)
-            ]);
-
+            // Use puzzle data from parallel fetch above
             if (puzzleRes.success) {
               // Update Puzzles with IsSolved status
               const normalized = puzzleRes.puzzles.map((p, index) => ({

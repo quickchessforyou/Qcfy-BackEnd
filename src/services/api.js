@@ -29,7 +29,6 @@ const apiRequest = async (endpoint, options = {}, token = null) => {
 
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-    console.log(response.data);
 
     // Handle non-JSON responses
     let data;
