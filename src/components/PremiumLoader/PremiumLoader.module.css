@@ -1,0 +1,109 @@
+/* ========== PREMIUM LOADER ========== */
+.premiumLoaderOverlay {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+    gap: 1.5rem;
+    width: 100%;
+}
+
+.loaderSpinner {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.loaderRing {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    border-top-color: var(--accent-gold, #b58863);
+    border-bottom-color: var(--accent-gold, #b58863);
+    animation: spin 1.5s linear infinite;
+    filter: drop-shadow(0 0 15px rgba(181, 136, 99, 0.4));
+}
+
+.loaderRingInner {
+    position: absolute;
+    width: 70%;
+    height: 70%;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    border-left-color: #d97706;
+    border-right-color: #d97706;
+    animation: spin-reverse 1s linear infinite;
+}
+
+.loaderIcon {
+    font-size: 2.2rem;
+    color: var(--text-primary, #f8fafc);
+    animation: pulse-icon 2s ease-in-out infinite;
+    z-index: 2;
+}
+
+.loaderText {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text-primary, #f8fafc);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    animation: pulse-text 2s ease-in-out infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes spin-reverse {
+    0% {
+        transform: rotate(360deg);
+    }
+
+    100% {
+        transform: rotate(0deg);
+    }
+}
+
+@keyframes pulse-icon {
+
+    0%,
+    100% {
+        transform: scale(0.9);
+        opacity: 0.8;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+}
+
+@keyframes pulse-text {
+
+    0%,
+    100% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+[data-theme="light"] .loaderIcon,
+[data-theme="light"] .loaderText {
+    color: #1f2937;
+}

@@ -91,7 +91,7 @@ const syllabusData = [
     },
     {
         id: 4,
-        title: 'Lichess: Grab the Stars',
+        title: ' Grab the Stars',
         icon: <FaStar />,
         color: '#d94f70',
         description: 'Interactive training to build speed and accuracy.',
@@ -109,7 +109,7 @@ const syllabusData = [
             'Beat your personal best',
             'Challenge a classmate',
         ],
-        platform: 'Lichess',
+
     },
     {
         id: 5,
@@ -132,7 +132,7 @@ const syllabusData = [
             'Puzzle race challenges',
         ],
         homework: 'Solve 5 puzzles daily',
-        platform: 'Lichess',
+
         duration: '2 Sessions',
     },
     {

@@ -241,7 +241,7 @@
 .bar3 {
   height: 55px;
   background: linear-gradient(180deg, rgba(251, 113, 133, 0.3) 0%, rgba(251, 113, 133, 0) 100%);
-  border-top: 3px solid #fb7185;
+  border-top: 3px solid #71dffb;
 }
 
 .barStats {
@@ -293,7 +293,7 @@
 }
 
 .bar3 .timeBadge {
-  color: #fb7185;
+  color: #71e9fb;
 }
 
 /* ========== FASTEST SOLVER BANNER ========== */

@@ -16,6 +16,8 @@ import { liveCompetitionAPI } from "../../services/liveCompetitionAPI";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLiveCompetition } from "../../contexts/LiveCompetitionContext";
 import PuzzleRacer from "../../components/PuzzleRacer/PuzzleRacer";
+import GameTimer from "./components/GameTimer";
+import PremiumLoader from "../../components/PremiumLoader/PremiumLoader";
 import styles from "./PuzzlePage.module.css";
 
 function PuzzlePage() {
@@ -164,10 +166,8 @@ function PuzzlePage() {
   useEffect(() => {
     if (isLiveCompetition && paramCompetitionId) {
       const onCompetitionEnded = () => {
-        toast.success("Competition Ended! Redirecting to lobby...");
-        setTimeout(() => {
-          navigate(`/competition/${paramCompetitionId}/lobby`);
-        }, 1000);
+        toast.success("Competition Ended! Redirecting to leaderboard...");
+        navigate(`/competition/${paramCompetitionId}/lobby`);
       };
 
       // Attach
@@ -845,10 +845,7 @@ function PuzzlePage() {
   if (loading) {
     return (
       <div className={styles.container}>
-        <div className={styles.loading}>
-          <div className={styles.spinner}></div>
-          <p>Loading your chess training session...</p>
-        </div>
+        <PremiumLoader text="PREPARING PUZZLES..." />
       </div>
     );
   }
@@ -988,82 +985,16 @@ function PuzzlePage() {
         <div className={styles.leftColumn}>
           {/* Timer Card - Top Left */}
           {competitionData && (
-            <div className={styles.timerCard}>
-              <div className={styles.statCard}>
-                <div className={styles.timerScoreWrapper}>
-                  {/* Timer Display */}
-                  <div className={styles.timerDisplay}>
-                    <FaClock className={styles.timerIcon} />
-                    <div className={styles.statLabel}>Time Left</div>
-                    <div className={styles.timerBadge}>
-                      {isReviewMode ? "∞" : formatTime(timeLeft)}
-                    </div>
-                  </div>
-
-                  {/* Stacked Score & Solved */}
-                  <div className={styles.statsColumn}>
-                    <div className={styles.statItemCompact}>
-                      <span className={styles.compactLabel}>Score:</span>
-                      <span className={`${styles.compactValue} ${styles.highlight}`}>
-                        {Math.round(score)}
-                      </span>
-                    </div>
-                    <div className={styles.statItemCompact}>
-                      <span className={styles.compactLabel}>Solved:</span>
-                      <span className={styles.compactValue}>{solvedCount}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <GameTimer
+              isReviewMode={isReviewMode}
+              timeLeft={timeLeft}
+              score={score}
+              solvedCount={solvedCount}
+              attemptedCount={puzzles.length - getUnattemptedCount()}
+              remainingCount={getUnattemptedCount()}
+            />
           )}
 
-          {/* Puzzle Info Card (White/Black to Play) - Moved from Right to Left, Below Timer */}
-          {competitionData && currentPuzzle && (
-            <div className={styles.puzzleInfoPanel}>
-              {/* Category badge above card */}
-              {currentPuzzle.category && (
-                <div className={styles.categoryBadge}>
-                  <span className={styles.categoryDot} />
-                  {currentPuzzle.category}
-                </div>
-              )}
-              <div className={styles.puzzleInfoCard}>
-                {(() => {
-                  const fenTurn = currentPuzzle.fen?.split(' ')[1];
-                  const userColor = fenTurn === 'w' ? 'b' : 'w';
-                  return (
-                    <>
-                      {/* Left: King Icon */}
-                      <div className={styles.puzzleKingIcon}>{userColor === 'w' ? '♔' : '♚'}</div>
-                      {/* Right: Info */}
-                      <div className={styles.puzzleInfoRight}>
-                        {/* Turn indicator — now replaces the title */}
-                        <div className={`${styles.turnPillInline} ${userColor === 'w' ? styles.turnWhite : styles.turnBlack}`}>
-                          <span className={`${styles.turnDot} ${userColor === 'w' ? styles.dotWhite : styles.dotBlack}`} />
-                          {userColor === 'w' ? 'White to play' : 'Black to play'}
-                        </div>
-
-                        <div className={styles.puzzleMetadata}>
-                          <div className={styles.metadataItem}>
-                            <span className={styles.metadataLabel}>Level</span>
-                            <span className={styles.metadataValue}>{currentPuzzle.level || 1}</span>
-                          </div>
-                          <div className={styles.metadataDivider} />
-                          <div className={styles.metadataItem}>
-                            <span className={styles.metadataLabel}>Difficulty</span>
-                            <span className={`${styles.metadataValue} ${styles['diff_' + (currentPuzzle.difficulty || 'medium').toLowerCase()]}`}>
-                              {currentPuzzle.difficulty || 'Medium'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-            </div>
-          )}
 
           {/* Real-time Rank Card (Submit button removed from here) */}
           {competitionData && isLiveCompetition && !isReviewMode && (
@@ -1451,6 +1382,72 @@ function PuzzlePage() {
                 >
                   Submit Competition
                 </button>
+              </div>
+            )}
+
+            {/* Puzzle Info Card (White/Black to Play) - Moved to Right Column Below Submit Button */}
+            {competitionData && currentPuzzle && (
+              <div className={styles.puzzleInfoPanel} style={{ marginTop: 'auto' }}>
+                {/* Category badge above card */}
+                {currentPuzzle.category && (
+                  <div className={styles.categoryBadge}>
+                    <span className={styles.categoryDot} />
+                    {currentPuzzle.category}
+                  </div>
+                )}
+                <div className={styles.puzzleInfoCard} style={{ marginTop: isLiveCompetition && !isReviewMode ? '0' : 'auto' }}>
+                  {(() => {
+                    const fenTurn = currentPuzzle.fen?.split(' ')[1];
+                    const userColor = fenTurn === 'w' ? 'b' : 'w';
+                    return (
+                      <>
+                        {/* Left: King Icon */}
+                        <div className={styles.puzzleKingIcon}>{userColor === 'w' ? '♔' : '♚'}</div>
+                        {/* Right: Info */}
+                        <div className={styles.puzzleInfoRight}>
+                          {/* Turn indicator — now replaces the title */}
+                          <div className={`${styles.turnPillInline} ${userColor === 'w' ? styles.turnWhite : styles.turnBlack}`} style={{ alignSelf: 'flex-start' }}>
+                            <span className={`${styles.turnDot} ${userColor === 'w' ? styles.dotWhite : styles.dotBlack}`} />
+                            {userColor === 'w' ? 'White to play' : 'Black to play'}
+                          </div>
+
+                          <div className={styles.puzzleMetadata}>
+                            <div className={styles.metadataItem}>
+                              <span className={styles.metadataLabel}>Level</span>
+                              <span className={styles.metadataValue}>{currentPuzzle.level || 1}</span>
+                            </div>
+                            <div className={styles.metadataDivider} />
+                            <div className={styles.metadataItem}>
+                              <span className={styles.metadataLabel}>Difficulty</span>
+                              <span className={`${styles.metadataValue} ${styles['diff_' + (currentPuzzle.difficulty || 'medium').toLowerCase()]}`}>
+                                {currentPuzzle.difficulty || 'Medium'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {/* Scroll Down Indicator (Galaxy View) */}
+            {isLiveCompetition && !isReviewMode && (
+              <div
+                className={styles.scrollIndicator}
+                onClick={() => {
+                  window.scrollTo({
+                    top: document.body.scrollHeight,
+                    behavior: 'smooth'
+                  });
+                }}
+                title="Scroll down to see Galaxy View"
+              >
+                <div className={styles.scrollIcon}>
+                  <div className={styles.scrollDot}></div>
+                </div>
+                <span>View Galaxy Race</span>
               </div>
             )}
           </div>

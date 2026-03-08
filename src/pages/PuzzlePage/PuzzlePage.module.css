@@ -416,14 +416,14 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.85rem;
-  /* Reduced font size slightly */
+  font-size: 1.05rem;
+  /* Increased font size for better visibility */
   font-weight: 800;
   letter-spacing: 0.3px;
-  padding: 6px 14px;
+  padding: 8px 16px;
   border-radius: 20px;
   border: 1.5px solid transparent;
-  align-self: flex-start;
+  align-self: flex-end;
 }
 
 /* --- TIMER & STATS --- */
@@ -516,15 +516,16 @@
 }
 
 .statsRow {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   text-align: center;
   gap: 1rem;
 }
 
 .statItem {
   flex: 1;
-  padding: 0.75rem;
+  padding: 1rem 0.75rem;
+  /* Increased vertical padding to stretch height */
   border-radius: 10px;
 }
 
@@ -653,7 +654,7 @@
 }
 
 .boardWrapper {
-  width: min(85vw, 65vh, 600px);
+  width: min(85vw, 70vh, 640px);
   aspect-ratio: 1 / 1;
   border-radius: 8px;
   border: 6px solid transparent;
@@ -860,7 +861,8 @@
 /* --- RANK CARD --- */
 .rankCard {
   border-radius: 14px;
-  padding: 1rem;
+  padding: 1.5rem 1rem;
+  /* Increased vertical padding for height */
   border: 2px solid transparent;
   transition: all 0.3s ease;
   overflow: hidden;
@@ -894,7 +896,8 @@
 }
 
 .rankTrophy {
-  font-size: 1.3rem;
+  font-size: 1.5rem;
+  /* Increased trophy size */
   filter: drop-shadow(0 0 6px rgba(255, 193, 7, 0.5));
   animation: trophyGlow 2s ease-in-out infinite alternate;
 }
@@ -910,7 +913,8 @@
 }
 
 .rankTitle {
-  font-size: 0.7rem;
+  font-size: 0.85rem;
+  /* Increased font size */
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1.5px;
@@ -934,7 +938,8 @@
 
 .rankNumber {
   font-family: "JetBrains Mono", "Fira Code", monospace;
-  font-size: 2rem;
+  font-size: 2.75rem;
+  /* Significantly increased rank number */
   font-weight: 800;
   line-height: 1;
   background: linear-gradient(135deg,
@@ -1062,9 +1067,11 @@
 }
 
 .rankParticipants {
-  font-size: 0.65rem;
+  font-size: 0.8rem;
+  /* Increased font size */
   font-weight: 500;
   text-align: right;
+  margin-top: 0.25rem;
 }
 
 [data-theme="light"] .rankParticipants {
@@ -1342,6 +1349,83 @@
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* --- SCROLL INDICATOR --- */
+.scrollIndicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+  margin-top: 1rem;
+}
+
+.scrollIndicator:hover {
+  opacity: 1;
+  transform: translateY(2px);
+}
+
+[data-theme="light"] .scrollIndicator {
+  color: #8b6242;
+}
+
+[data-theme="light"] .scrollIndicator:hover {
+  color: #b58863;
+}
+
+[data-theme="dark"] .scrollIndicator {
+  color: #d4a373;
+}
+
+[data-theme="dark"] .scrollIndicator:hover {
+  color: #b58863;
+}
+
+.scrollIndicator span {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.scrollIcon {
+  width: 24px;
+  height: 36px;
+  border-radius: 12px;
+  border: 2px solid currentColor;
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.scrollDot {
+  width: 6px;
+  height: 6px;
+  background-color: currentColor;
+  border-radius: 50%;
+  margin-top: 6px;
+  animation: scrollDownAnimation 2s infinite;
+}
+
+@keyframes scrollDownAnimation {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  75% {
+    transform: translateY(14px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 0;
   }
 }
 
@@ -1805,13 +1889,13 @@
   transform: translateY(-1px);
 }
 
-/* Light mode override for active tab to be cream + black text */
+/* Light mode override for active tab to maintain golden glow */
 [data-theme="light"] .chapterTabActive {
-  background: linear-gradient(180deg, #ffffff 0%, #fdfbf7 50%, #f5f0eb 100%) !important;
-  color: #1a1a1a !important;
-  border-color: #e5d5c5 !important;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05), inset 0 2px 4px rgba(255, 255, 255, 0.8), inset 0 -2px 6px rgba(0, 0, 0, 0.05) !important;
-  text-shadow: none !important;
+  background: linear-gradient(180deg, #ffd766 0%, #e6a822 50%, #d89617 100%) !important;
+  color: #ffffff !important;
+  border-color: #ffca4f !important;
+  box-shadow: 0 4px 10px rgba(223, 160, 25, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.6), inset 0 -2px 6px rgba(0, 0, 0, 0.15) !important;
+  text-shadow: 0 1px 3px rgba(180, 100, 0, 0.6) !important;
 }
 
 /* Tab name text */

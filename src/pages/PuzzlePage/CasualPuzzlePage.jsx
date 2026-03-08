@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Chess } from "chess.js";
+// import { Chess } from "chess.js";
 import ChessBoard from "../../components/ChessBoard/ChessBoard";
+import PremiumLoader from "../../components/PremiumLoader/PremiumLoader";
 
 // Curated working puzzles with proper FEN and solutions
 const PUZZLES = [

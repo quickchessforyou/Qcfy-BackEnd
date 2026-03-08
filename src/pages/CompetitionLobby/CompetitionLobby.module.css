@@ -79,7 +79,8 @@
     flex-wrap: wrap;
     gap: 20px;
     background: var(--bg-card);
-    padding: 1.5rem 2rem; /* Reduced from default 2rem */
+    padding: 1.5rem 2rem;
+    /* Reduced from default 2rem */
     min-height: 100px;
 }
 
@@ -100,12 +101,14 @@
 }
 
 .compTitle {
-    font-size: 1.6rem; /* Slightly smaller for compactness */
+    font-size: 1.6rem;
+    /* Slightly smaller for compactness */
     font-weight: 800;
     color: var(--text-primary);
     margin: 0 0 0.25rem 0;
     display: flex;
-    align-items: center; /* Side-by-side title and date */
+    align-items: center;
+    /* Side-by-side title and date */
     flex-wrap: wrap;
     gap: 12px;
 }
@@ -120,7 +123,8 @@
 }
 
 .statusBadgeContainer {
-    margin-top: 8px; /* Tighter margin */
+    margin-top: 8px;
+    /* Tighter margin */
 }
 
 .statusPill {
@@ -163,14 +167,16 @@
 
 .timerSection {
     display: flex;
-    flex-direction: row; /* Make timer and action horizontal! */
+    flex-direction: row;
+    /* Make timer and action horizontal! */
     align-items: center;
     gap: 1.5rem;
     background: var(--bg-primary);
     padding: 0.75rem 1.5rem;
     border-radius: 12px;
     border: 1px solid var(--border-color);
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); /* Soft inner shadow for depth */
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+    /* Soft inner shadow for depth */
 }
 
 .countdownDisplay {
@@ -189,7 +195,8 @@
 }
 
 .timerValue {
-    font-size: 1.4rem; /* Scaled down slightly */
+    font-size: 1.4rem;
+    /* Scaled down slightly */
     font-weight: 800;
     color: var(--text-accent);
     display: flex;
@@ -209,7 +216,8 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    border-left: 2px solid var(--border-color); /* Partition line between timer and button */
+    border-left: 2px solid var(--border-color);
+    /* Partition line between timer and button */
     padding-left: 1.5rem;
 }
 
@@ -263,6 +271,27 @@
     box-shadow: 0 6px 12px rgba(16, 185, 129, 0.4);
 }
 
+.enterBtnLive {
+    background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+    color: white;
+    border: 2px solid #fcd34d;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 0 15px rgba(251, 191, 36, 0.6);
+    animation: goldBreathing 2s infinite alternate;
+}
+
+@keyframes goldBreathing {
+    0% {
+        box-shadow: 0 0 10px rgba(251, 191, 36, 0.4), inset 0 0 5px rgba(255, 255, 255, 0.3);
+        transform: scale(1);
+    }
+
+    100% {
+        box-shadow: 0 0 25px rgba(251, 191, 36, 0.9), inset 0 0 10px rgba(255, 255, 255, 0.6);
+        transform: scale(1.03);
+    }
+}
+
 .joinedText {
     color: #10b981;
     font-weight: 700;
@@ -274,7 +303,8 @@
     padding: 10px 16px;
     border-radius: 8px;
     border: 1px solid rgba(16, 185, 129, 0.2);
-    white-space: nowrap; /* Prevent wrapping in row flow */
+    white-space: nowrap;
+    /* Prevent wrapping in row flow */
 }
 
 /* Mobile responsiveness: stack them gracefully via flex-wrap and overrides */
@@ -286,11 +316,11 @@
         padding: 1rem;
         width: 100%;
     }
-    
+
     .countdownDisplay {
         align-items: center;
     }
-    
+
     .actionButtons {
         border-left: none;
         padding-left: 0;
@@ -484,16 +514,135 @@
     justify-content: center;
 }
 
-/* ========== LOADING & ERROR ========== */
-.loadingContainer,
-.errorContainer {
+/* ========== PREMIUM LOADER & ERROR ========== */
+.premiumLoaderOverlay {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     min-height: 60vh;
-    font-size: 1.2rem;
+    gap: 1.5rem;
+}
+
+.loaderSpinner {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.loaderRing {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    border-top-color: var(--accent-gold);
+    border-bottom-color: var(--accent-gold);
+    animation: spin 1.5s linear infinite;
+    filter: drop-shadow(var(--shadow-glow));
+}
+
+.loaderRingInner {
+    position: absolute;
+    width: 70%;
+    height: 70%;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    border-left-color: #d97706;
+    border-right-color: #d97706;
+    animation: spin-reverse 1s linear infinite;
+}
+
+.loaderIcon {
+    font-size: 2.2rem;
+    color: var(--text-primary);
+    animation: pulse-icon 2s ease-in-out infinite;
+    z-index: 2;
+}
+
+.loaderText {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    animation: pulse-text 2s ease-in-out infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes spin-reverse {
+    0% {
+        transform: rotate(360deg);
+    }
+
+    100% {
+        transform: rotate(0deg);
+    }
+}
+
+@keyframes pulse-icon {
+
+    0%,
+    100% {
+        transform: scale(0.9);
+        opacity: 0.8;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+}
+
+@keyframes pulse-text {
+
+    0%,
+    100% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+.errorBox {
+    background: var(--bg-card);
+    padding: 3rem 2rem;
+    border-radius: 16px;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    box-shadow: var(--shadow-lg), 0 0 20px rgba(239, 68, 68, 0.1);
+    text-align: center;
+    max-width: 400px;
+}
+
+.errorIcon {
+    font-size: 3rem;
+    color: #ef4444;
+    margin-bottom: 1rem;
+}
+
+.errorBox h3 {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-primary);
+    font-size: 1.5rem;
+}
+
+.errorBox p {
     color: var(--text-secondary);
-    font-weight: 500;
+    margin: 0;
 }
 
 

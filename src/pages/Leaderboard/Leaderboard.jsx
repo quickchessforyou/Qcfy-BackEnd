@@ -19,6 +19,7 @@ import {
 import { liveCompetitionAPI } from "../../services/liveCompetitionAPI";
 import { competitionAPI } from "../../services/api";
 import socketService from "../../services/socketService";
+import PremiumLoader from "../../components/PremiumLoader/PremiumLoader";
 import styles from "./Leaderboard.module.css";
 
 function Leaderboard() {
@@ -157,11 +158,7 @@ function Leaderboard() {
   };
 
   if (loading) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.loader}></div>
-      </div>
-    );
+    return <PremiumLoader text="LOADING LEADERBOARD..." />;
   }
 
   const totalPuzzles = competition?.totalPuzzles || competition?.puzzles?.length || 20;
