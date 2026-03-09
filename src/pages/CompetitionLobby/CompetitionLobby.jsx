@@ -116,12 +116,12 @@ const CompetitionLobby = () => {
         const updated = prev.map((p) =>
           p.userId === data.userId
             ? {
-              ...p,
-              score: data.score,
-              puzzlesSolved: data.puzzlesSolved,
-              timeSpent: data.timeSpent,
-              status: data.status,
-            }
+                ...p,
+                score: data.score,
+                puzzlesSolved: data.puzzlesSolved,
+                timeSpent: data.timeSpent,
+                status: data.status,
+              }
             : p,
         );
         // Re-sort by puzzles solved, then time
@@ -206,7 +206,7 @@ const CompetitionLobby = () => {
           if (res.serverTime) {
             timeOffsetRef.current = res.serverTime - Date.now();
           }
-          // Intentionally removed local setTimeout prediction for redirect. 
+          // Intentionally removed local setTimeout prediction for redirect.
           // We strictly rely on the server's WebSocket event `competitionStarted` for exact 0ms precision redirect.
         } else {
           setError(res.message || "Failed to load lobby.");
@@ -240,7 +240,7 @@ const CompetitionLobby = () => {
               timeOffsetRef.current = res.serverTime - Date.now();
           }
         })
-        .catch(() => { });
+        .catch(() => {});
     }, 15000);
     return () => clearInterval(interval);
   }, [id]);
@@ -262,35 +262,57 @@ const CompetitionLobby = () => {
     const end = new Date(competition.endTime).getTime();
     const now = Date.now() + timeOffsetRef.current;
 
-    // Check if competition should have started
+    // Check if competition should have started or is about to start (10s buffer)
     if (
       competitionState === "UPCOMING" &&
-      now >= start &&
       !hasAutoRedirectedRef.current &&
       (participantStateRef.current === "JOINED" ||
         participantStateRef.current === "PLAYING")
     ) {
-      // Refresh state to get LIVE status (bypass cache)
-      liveCompetitionAPI
-        .getLobbyState(id, true)
-        .then((res) => {
-          if (res.success && res.competitionState === "LIVE") {
-            setCompetitionState("LIVE");
-            // Auto-redirect if user is joined and we haven't already redirected
-            if (
-              !hasAutoRedirectedRef.current &&
-              (res.participantState === "JOINED" ||
-                res.participantState === "PLAYING" ||
-                participantStateRef.current === "JOINED")
-            ) {
-              hasAutoRedirectedRef.current = true;
-              sessionStorage.setItem(`redirected_${id}`, "true");
-              toast.success("Competition Started! Redirecting...");
-              navigate(`/competition/${id}/puzzle`, { replace: true });
+      const diffToStart = start - now;
+
+      // Auto-redirect when 10 seconds left
+      if (diffToStart <= 10000 && diffToStart > 0) {
+        hasAutoRedirectedRef.current = true;
+        sessionStorage.setItem(`redirected_${id}`, "true");
+        toast.success("Competition starting in 10s! Redirecting...");
+        navigate(`/competition/${id}/puzzle`, {
+          replace: true,
+          state: {
+            competitionId: competition._id,
+            competitionTitle: competition.title || competition.name,
+            puzzles: competition.puzzles,
+            time: competition.duration,
+            isEarlyRedirect: true,
+          },
+        });
+        return;
+      }
+
+      // Existing logic for when it should have already started
+      if (now >= start) {
+        // Refresh state to get LIVE status (bypass cache)
+        liveCompetitionAPI
+          .getLobbyState(id, true)
+          .then((res) => {
+            if (res.success && res.competitionState === "LIVE") {
+              setCompetitionState("LIVE");
+              // Auto-redirect if user is joined and we haven't already redirected
+              if (
+                !hasAutoRedirectedRef.current &&
+                (res.participantState === "JOINED" ||
+                  res.participantState === "PLAYING" ||
+                  participantStateRef.current === "JOINED")
+              ) {
+                hasAutoRedirectedRef.current = true;
+                sessionStorage.setItem(`redirected_${id}`, "true");
+                toast.success("Competition Started! Redirecting...");
+                navigate(`/competition/${id}/puzzle`, { replace: true });
+              }
             }
-          }
-        })
-        .catch((err) => console.error(err));
+          })
+          .catch((err) => console.error(err));
+      }
     }
 
     // Determine target based on state
