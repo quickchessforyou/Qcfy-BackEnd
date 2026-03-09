@@ -717,15 +717,10 @@ export const startCompetition = async (req, res) => {
 
 // getLobbyState function continues below...
 export const getLobbyState = async (req, res) => {
-
   try {
 
     const { competitionId } = req.params;
     const userId = req.user._id;
-
-    /* ===============================
-       1️⃣ Competition (light query)
-    =============================== */
 
     const competition = await CompetitionModel
       .findById(competitionId)
@@ -733,100 +728,60 @@ export const getLobbyState = async (req, res) => {
       .lean();
 
     if (!competition) {
-
       return res.status(404).json({
         success: false,
         message: "Competition not found"
       });
-
     }
 
-    /* ===============================
-       2️⃣ Participant state
-    =============================== */
-
     const participant = await ParticipantModel
-      .findOne({
-        competitionId,
-        userId
-      })
+      .findOne({ competitionId, userId })
       .select("status")
       .lean();
+
+    const now = new Date();
+
+    let competitionState = competition.status?.toUpperCase() || "UPCOMING";
+
+    if (competitionState === "UPCOMING" &&
+      now >= competition.startTime &&
+      now <= competition.endTime) {
+
+      competitionState = "LIVE";
+    }
+
+    if (now > competition.endTime) {
+      competitionState = "ENDED";
+    }
 
     let participantState = "NOT_JOINED";
 
     if (participant) {
-
       participantState = participant.status || "JOINED";
-
     }
 
-    /* ===============================
-       3️⃣ Competition state
-    =============================== */
-
-    const now = Date.now();
-
-    let competitionState =
-      competition.status?.toUpperCase() || "UPCOMING";
-
-    if (
-      competitionState === "UPCOMING" &&
-      now >= new Date(competition.startTime).getTime()
-    ) {
-
-      competitionState = "LIVE";
-
-    }
-
-    if (now > new Date(competition.endTime).getTime()) {
-
-      competitionState = "ENDED";
-
-    }
-
-    /* ===============================
-       4️⃣ Fast leaderboard (Redis)
-    =============================== */
-
-    const leaderboard =
-      await getCurrentLeaderboard(competitionId);
-
-    /* ===============================
-       5️⃣ Response
-    =============================== */
+    const leaderboard = await getCurrentLeaderboard(competitionId);
 
     res.json({
-
       success: true,
 
       competition: {
-
         id: competition._id,
         name: competition.name,
-
         startTime: competition.startTime,
         endTime: competition.endTime,
-
         duration: competition.duration,
-
-        totalPuzzles: Array.isArray(competition.puzzles)
-          ? competition.puzzles.length
-          : 0,
-
-        requiresAccessCode:
-          !!(competition.accessCode &&
-            competition.accessCode.trim() !== "")
-
+        totalPuzzles: competition.puzzles?.length || 0,
+        requiresAccessCode: !!(
+          competition.accessCode &&
+          competition.accessCode.trim() !== ""
+        )
       },
 
       competitionState,
-
       participantState,
-
       leaderboard,
-
-      serverTime: now
+      serverTime: Date.now()
 
     });
 
@@ -840,7 +795,6 @@ export const getLobbyState = async (req, res) => {
     });
 
   }
-
 };
 
 // Helper function to calculate score
