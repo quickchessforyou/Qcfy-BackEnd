@@ -214,10 +214,7 @@ function Leaderboard() {
                 {/* 2nd Place */}
                 <div className={`${styles.podiumPlace} ${styles.second}`}>
                   <div className={styles.podiumAvatar}>
-                    <div className={styles.avatarCircle}>
-                      {top3[1] ? top3[1].username?.[0]?.toUpperCase() : '?'}
-                    </div>
-                    <div className={`${styles.rankBadge} ${styles.badge2}`}>2</div>
+                    <img src="/assets/silver-trophy.svg" alt="2nd Place" className={styles.trophyImg} />
                   </div>
                   <div className={styles.podiumName}>{top3[1]?.username || '—'}</div>
                   <div className={styles.podiumScore}>{top3[1]?.score || 0} pts</div>
@@ -233,12 +230,8 @@ function Leaderboard() {
 
                 {/* 1st Place */}
                 <div className={`${styles.podiumPlace} ${styles.first}`}>
-                  <FaCrown className={styles.crownIcon} />
                   <div className={styles.podiumAvatar}>
-                    <div className={styles.avatarCircle}>
-                      {top3[0] ? top3[0].username?.[0]?.toUpperCase() : '?'}
-                    </div>
-                    <div className={`${styles.rankBadge} ${styles.badge1}`}>1</div>
+                    <img src="/assets/gold-trophy.svg" alt="1st Place" className={`${styles.trophyImg} ${styles.goldTrophy}`} />
                   </div>
                   <div className={styles.podiumName}>{top3[0]?.username || '—'}</div>
                   <div className={styles.podiumScore}>{top3[0]?.score || 0} pts</div>
@@ -255,10 +248,7 @@ function Leaderboard() {
                 {/* 3rd Place */}
                 <div className={`${styles.podiumPlace} ${styles.third}`}>
                   <div className={styles.podiumAvatar}>
-                    <div className={styles.avatarCircle}>
-                      {top3[2] ? top3[2].username?.[0]?.toUpperCase() : '?'}
-                    </div>
-                    <div className={`${styles.rankBadge} ${styles.badge3}`}>3</div>
+                    <img src="/assets/bronze-trophy.svg" alt="3rd Place" className={styles.trophyImg} />
                   </div>
                   <div className={styles.podiumName}>{top3[2]?.username || '—'}</div>
                   <div className={styles.podiumScore}>{top3[2]?.score || 0} pts</div>
@@ -331,21 +321,21 @@ function Leaderboard() {
                 </div>
                 {/* Pagination UI moved to TOP */}
                 {totalPages > 1 && (
-                  <div className={styles.paginationContainer} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
+                  <div className={styles.paginationContainer} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
                     <button
                       onClick={() => handlePageChange(currentPage - 1)}
                       disabled={currentPage === 1}
-                      style={{ padding: '4px 12px', borderRadius: '4px', background: currentPage === 1 ? 'rgba(255,255,255,0.1)' : '#d4a373', color: currentPage === 1 ? '#666' : '#fff', border: 'none', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', fontWeight: 'bold', fontSize: '0.8rem' }}
+                      style={{ padding: '4px 10px', borderRadius: '6px', background: currentPage === 1 ? 'rgba(255,255,255,0.05)' : 'rgba(212,163,115,0.1)', color: currentPage === 1 ? '#555' : '#d4a373', border: 'none', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', fontWeight: '600', fontSize: '0.75rem', transition: 'all 0.2s' }}
                     >
                       Prev
                     </button>
-                    <span style={{ color: '#d4a373', fontWeight: '600', fontSize: '0.85rem' }}>
-                      Page {currentPage} of {totalPages}
+                    <span style={{ color: '#d4a373', fontWeight: '500', fontSize: '0.8rem', letterSpacing: '0.02em', margin: '0 4px' }}>
+                      Page <strong style={{ color: '#fbbf24' }}>{currentPage}</strong> of {totalPages}
                     </span>
                     <button
                       onClick={() => handlePageChange(currentPage + 1)}
                       disabled={currentPage === totalPages}
-                      style={{ padding: '4px 12px', borderRadius: '4px', background: currentPage === totalPages ? 'rgba(255,255,255,0.1)' : '#d4a373', color: currentPage === totalPages ? '#666' : '#fff', border: 'none', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', fontWeight: 'bold', fontSize: '0.8rem' }}
+                      style={{ padding: '4px 10px', borderRadius: '6px', background: currentPage === totalPages ? 'rgba(255,255,255,0.05)' : '#d4a373', color: currentPage === totalPages ? '#555' : '#171412', border: 'none', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', fontWeight: '700', fontSize: '0.75rem', transition: 'all 0.2s' }}
                     >
                       Next
                     </button>

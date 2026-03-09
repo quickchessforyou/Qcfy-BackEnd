@@ -477,12 +477,27 @@
 .modalContent {
     background: var(--bg-card);
     padding: 2.5rem;
-    border-radius: 16px;
+    border-radius: 20px;
     width: 100%;
-    max-width: 420px;
+    max-width: 440px;
     text-align: center;
     border: 1px solid var(--border-color);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    border-top: 4px solid var(--accent-gold);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px rgba(212, 163, 115, 0.1);
+    position: relative;
+    animation: modal-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes modal-pop {
+    0% {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 .modalContent h3 {
@@ -499,29 +514,81 @@
 
 .codeInput {
     width: 100%;
-    padding: 14px;
+    padding: 16px;
     border-radius: 12px;
     border: 2px solid var(--border-color);
     background: var(--bg-primary);
     color: var(--text-primary);
-    margin-bottom: 1rem;
-    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+    font-weight: 700;
     text-align: center;
-    letter-spacing: 0.1em;
-    font-family: 'Roboto Mono', monospace;
+    letter-spacing: 0.25em;
+    font-family: 'Outfit', 'Roboto Mono', monospace;
     box-sizing: border-box;
+    transition: all 0.3s ease;
 }
 
 .codeInput:focus {
     outline: none;
     border-color: var(--accent-gold);
-    box-shadow: 0 0 0 4px rgba(181, 136, 99, 0.1);
+    box-shadow: 0 0 0 4px rgba(212, 163, 115, 0.15);
+    background: var(--bg-card);
 }
 
 .modalActions {
     display: flex;
-    gap: 12px;
+    gap: 16px;
     justify-content: center;
+    margin-top: 1.5rem;
+}
+
+.modalBtnCancel {
+    padding: 12px 28px;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    background: transparent;
+    border: 2px solid var(--text-muted);
+    color: var(--text-muted);
+    transition: all 0.2s;
+}
+
+.modalBtnCancel:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
+}
+
+.modalBtnJoin {
+    padding: 12px 32px;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+    background: var(--accent-gold-gradient);
+    color: #1a1510;
+    border: none;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 4px 15px rgba(212, 163, 115, 0.3);
+}
+
+.modalBtnJoin:hover:not(:disabled) {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 6px 20px rgba(212, 163, 115, 0.4);
+}
+
+.modalBtnJoin:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+}
+
+.modalBtnJoin:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: var(--border-color);
+    color: var(--text-muted);
+    box-shadow: none;
 }
 
 /* ========== PREMIUM LOADER & ERROR ========== */

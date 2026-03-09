@@ -33,18 +33,20 @@
 
 /* --- Podium Section --- */
 .podiumSection {
-  background: var(--bg-white);
+  background: #171412;
   border-radius: 12px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(212, 163, 115, 0.08);
+  /* subtle warm border */
 }
 
 .topChampionsHeader {
-  background: linear-gradient(135deg, rgba(212, 163, 115, 0.1), rgba(212, 163, 115, 0.02));
-  border-bottom: 1px solid rgba(212, 163, 115, 0.15);
-  color: #d4a373;
-  padding: 2.15rem 2rem;
+  background: transparent;
+  border-bottom: none;
+  color: #fff;
+  padding: 1.5rem 2rem 0.5rem 2rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -52,10 +54,14 @@
   gap: 0.5rem;
 }
 
+[data-theme="light"] .podiumSection {
+  background: #1e1915;
+}
+
 [data-theme="light"] .topChampionsHeader {
-  background: linear-gradient(135deg, rgba(181, 136, 99, 0.1), rgba(181, 136, 99, 0.02));
-  border: 1px solid rgba(181, 136, 99, 0.15);
-  color: #b58863;
+  background: transparent;
+  border: none;
+  color: #fff;
 }
 
 .headerTrophyIcon {
@@ -95,61 +101,34 @@
   position: relative;
 }
 
-/* Avatar + Rank Badge */
+/* Trophies instead of avatars */
 .podiumAvatar {
   position: relative;
   margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  height: 80px;
 }
 
-.avatarCircle {
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  border: 3px solid var(--border-color);
-  background: var(--bg-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: var(--text-primary);
+.trophyImg {
+  width: 55px;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.5));
   transition: transform 0.3s ease;
 }
 
-.first .avatarCircle {
-  width: 60px;
-  height: 60px;
-  font-size: 1.4rem;
-  border-color: #f3b953;
-  box-shadow: 0 0 0 4px rgba(243, 185, 83, 0.2), 0 0 24px rgba(243, 185, 83, 0.25);
+.first .goldTrophy {
+  width: 75px;
+  filter: drop-shadow(0 6px 12px rgba(251, 191, 36, 0.5));
+  animation: float 3.5s ease-in-out infinite;
 }
 
-.second .avatarCircle {
-  border-color: #94a3b8;
-  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.15);
-}
-
-.third .avatarCircle {
-  border-color: #cd7f32;
-  box-shadow: 0 0 0 3px rgba(205, 127, 50, 0.15);
-}
-
-/* Numbered rank badge */
+/* Optional: Small rank dots if desired, but image handles it natively well. 
+   Leaving class in case we need it, but it's removed from JSX. */
 .rankBadge {
-  position: absolute;
-  bottom: -5px;
-  right: -5px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.65rem;
-  font-weight: 900;
-  color: #fff;
-  border: 2px solid var(--bg-white);
-  z-index: 2;
+  display: none;
 }
 
 .badge1 {
@@ -210,46 +189,49 @@
   letter-spacing: 0.01em;
 }
 
-/* Podium bars — color coded + bigger */
+/* Podium bars — solid dark theme matching reference */
 .podiumBar {
-  width: 100%;
-  border-radius: 10px 10px 0 0;
+  width: 90%;
+  border-radius: 12px;
   position: relative;
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  margin-top: 0.6rem;
+  margin-top: 0.8rem;
   padding-top: 0.6rem;
+  background: #25201d;
+  /* Solid dark */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 .bar1 {
-  height: 110px;
-  background: linear-gradient(180deg, rgba(212, 163, 115, 0.4) 0%, rgba(212, 163, 115, 0) 100%);
-  border-top: 3px solid #d4a373;
+  height: 120px;
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  box-shadow: inset 0 8px 16px -8px rgba(251, 191, 36, 0.25), 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 [data-theme="dark"] .bar1 {
-  background: linear-gradient(180deg, rgba(212, 163, 115, 0.4) 0%, rgba(212, 163, 115, 0) 100%);
+  background: #25201d;
 }
 
 .bar2 {
-  height: 80px;
-  background: linear-gradient(180deg, rgba(148, 163, 184, 0.3) 0%, rgba(148, 163, 184, 0) 100%);
-  border-top: 3px solid #94a3b8;
+  height: 90px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: inset 0 8px 16px -8px rgba(148, 163, 184, 0.25), 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 [data-theme="dark"] .bar2 {
-  background: linear-gradient(180deg, rgba(148, 163, 184, 0.4) 0%, rgba(148, 163, 184, 0) 100%);
+  background: #25201d;
 }
 
 .bar3 {
-  height: 55px;
-  background: linear-gradient(180deg, rgba(205, 127, 50, 0.3) 0%, rgba(205, 127, 50, 0) 100%);
-  border-top: 3px solid #cd7f32;
+  height: 65px;
+  border: 1px solid rgba(205, 127, 50, 0.2);
+  box-shadow: inset 0 8px 16px -8px rgba(205, 127, 50, 0.25), 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 [data-theme="dark"] .bar3 {
-  background: linear-gradient(180deg, rgba(205, 127, 50, 0.4) 0%, rgba(205, 127, 50, 0) 100%);
+  background: #25201d;
 }
 
 .barStats {
@@ -306,9 +288,11 @@
 
 /* ========== FASTEST SOLVER BANNER ========== */
 .fastestSolverCard {
-  background: var(--bg-white);
+  background: #171412 !important;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(212, 163, 115, 0.08);
+  /* subtle warm border */
   margin-top: 1.5rem;
   padding: 1.5rem;
   display: flex;
@@ -320,8 +304,8 @@
   width: 100%;
   padding: 0.75rem 1.25rem;
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(212, 163, 115, 0.1), rgba(212, 163, 115, 0.02));
-  border: 1px solid rgba(212, 163, 115, 0.2);
+  background: transparent;
+  border: 1px solid rgba(212, 163, 115, 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -369,12 +353,12 @@
 }
 
 .competitionInfoCard {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  background: #171412 !important;
+  border: 1px solid rgba(212, 163, 115, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   border-radius: 12px;
   padding: 1.5rem;
-  color: var(--text-primary);
+  color: #fff;
 }
 
 .compHeaderRow {
@@ -477,24 +461,26 @@
 
 /* ========== RIGHT PANEL: FULL RANKINGS ========== */
 .rankingsPanel {
-  background: var(--bg-white);
-  border: 1px solid var(--border-color);
-  border-radius: 18px;
+  background: #171412 !important;
+  border: 1px solid rgba(212, 163, 115, 0.08);
+  border-radius: 12px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   max-height: calc(100vh - 120px);
   position: sticky;
   top: 1.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
 .rankingsPanelHeader {
-  padding: 0.8rem 1.2rem;
-  border-bottom: 1px solid var(--border-color);
+  padding: 1.2rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background: transparent;
 }
 
 .rankingsTitle {
@@ -538,52 +524,55 @@
   border-radius: 3px;
 }
 
-/* Each rank row */
+/* Each rank row matches reference: seamless flat dark rows */
 .rankRow {
   display: grid;
   grid-template-columns: 48px 36px 1fr auto auto;
   align-items: center;
   gap: 0.65rem;
-  padding: 0.3rem 1rem;
-  border-radius: 8px;
-  margin: 0.2rem 0.5rem;
-  background: var(--bg-white);
-  border: 1px solid var(--border-color);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0;
+  margin: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  transition: background 0.15s ease;
   cursor: default;
 }
 
+.rankRow:last-child {
+  border-bottom: none;
+}
+
 .rankRow:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .currentUser {
-  background: linear-gradient(90deg, rgba(212, 163, 115, 0.15) 0%, rgba(212, 163, 115, 0.05) 100%) !important;
-  border: 1px solid rgba(212, 163, 115, 0.5);
-  border-left: 4px solid #d4a373;
-  border-radius: 10px;
-  box-shadow: 0 4px 16px rgba(212, 163, 115, 0.15);
+  background: rgba(212, 163, 115, 0.03) !important;
+  border-bottom: 1px solid rgba(212, 163, 115, 0.1);
+  border-left: 3px solid #d4a373;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 [data-theme="light"] .currentUser {
-  background: linear-gradient(90deg, rgba(181, 136, 99, 0.15) 0%, rgba(181, 136, 99, 0.05) 100%) !important;
-  border: 1px solid rgba(181, 136, 99, 0.5);
-  border-left: 4px solid #b58863;
+  background: rgba(212, 163, 115, 0.03) !important;
+  border-left: 3px solid #b58863;
 }
 
 .currentUser .rankName,
 .currentUser .scoreNumber,
 .currentUser .rankNumber,
 .currentUser .rankNum {
-  color: #d4a373 !important;
+  color: #fbbf24 !important;
 }
 
 [data-theme="light"] .currentUser .rankName,
 [data-theme="light"] .currentUser .scoreNumber,
 [data-theme="light"] .currentUser .rankNumber,
 [data-theme="light"] .currentUser .rankNum {
-  color: #b58863 !important;
+  color: #d97706 !important;
 }
 
 .currentUser .scoreLabel,
@@ -655,19 +644,13 @@
 }
 
 /* Player info */
-.rankInfo {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
 .rankName {
-  font-weight: 700;
-  font-size: 0.84rem;
-  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #e2e8f0;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -701,14 +684,14 @@
 }
 
 .scoreNumber {
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 800;
-  color: var(--text-heading);
+  color: #fff;
 }
 
 .scoreLabel {
-  font-size: 0.62rem;
-  color: var(--text-muted);
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.5);
   font-weight: 600;
   text-transform: lowercase;
 }

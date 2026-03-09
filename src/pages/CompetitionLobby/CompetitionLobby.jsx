@@ -622,11 +622,11 @@ const CompetitionLobby = () => {
                 <button
                   type="button"
                   onClick={() => setShowCodeModal(false)}
-                  className={styles.cancelBtn}
+                  className={styles.modalBtnCancel}
                 >
                   Cancel
                 </button>
-                <button type="submit" className={styles.submitBtn}>
+                <button type="submit" className={styles.modalBtnJoin}>
                   Join
                 </button>
               </div>
