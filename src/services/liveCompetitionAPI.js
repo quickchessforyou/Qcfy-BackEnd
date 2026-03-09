@@ -57,6 +57,35 @@ const apiRequest = async (endpoint, options = {}, token = null) => {
 const lobbyCache = new Map();
 const LOBBY_CACHE_TTL = 3000; // 3 seconds
 
+// Helper to get from sessionStorage safely
+const getSessionCache = (competitionId) => {
+  try {
+    const cachedStr = sessionStorage.getItem(`lobbyCache_${competitionId}`);
+    if (cachedStr) {
+      const parsed = JSON.parse(cachedStr);
+      // Let sessionStorage cache live for 60 seconds to survive page reloads smoothly
+      if (Date.now() - parsed.timestamp < 60000) {
+        return parsed.data;
+      }
+    }
+  } catch (err) {
+    console.error("Session storage cache read error", err);
+  }
+  return null;
+};
+
+// Helper to save to sessionStorage safely
+const saveSessionCache = (competitionId, data) => {
+  try {
+    sessionStorage.setItem(`lobbyCache_${competitionId}`, JSON.stringify({
+      data,
+      timestamp: Date.now()
+    }));
+  } catch (err) {
+    // Ignore QuotaExceeded errors
+  }
+};
+
 export const liveCompetitionAPI = {
   // Participate in live competition (REST API validation)
   participate: async (competitionId, username, accessCode = null) => {
@@ -120,9 +149,17 @@ export const liveCompetitionAPI = {
   getLobbyState: async (competitionId, bypassCache = false) => {
     // Check cache first (supports prefetch from Dashboard hover without delay)
     if (!bypassCache) {
+      // 1. Check tight memory cache first (3s TTL)
       const cached = lobbyCache.get(competitionId);
       if (cached && (Date.now() - cached.timestamp) < LOBBY_CACHE_TTL) {
         return cached.data;
+      }
+
+      // 2. Check slightly longer sessionStorage cache to prevent 4s load times on hard reload
+      const sessionCachedData = getSessionCache(competitionId);
+      if (sessionCachedData) {
+        // Return instantly, but we might still want to trigger a background sweep in the UI later
+        return sessionCachedData;
       }
     }
 
@@ -136,6 +173,7 @@ export const liveCompetitionAPI = {
     // Cache the result ONLY if it wasn't a bypass call, 
     // or cache it anyway since it's fresh data
     lobbyCache.set(competitionId, { data: result, timestamp: Date.now() });
+    saveSessionCache(competitionId, result);
     return result;
   },
 

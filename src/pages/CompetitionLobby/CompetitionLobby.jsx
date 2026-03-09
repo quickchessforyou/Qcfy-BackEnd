@@ -191,31 +191,54 @@ const CompetitionLobby = () => {
 
   // Main Load Effect
   useEffect(() => {
+    let isMounted = true;
+
     async function loadLobby() {
       try {
-        const res = await liveCompetitionAPI.getLobbyState(id);
+        // FAST PATH: Try to get data with cache entirely bypassed first
+        // If the cache hits (either Memory or SessionStorage), it returns instantly.
+        const res = await liveCompetitionAPI.getLobbyState(id, false);
 
-        if (res.success) {
+        if (isMounted && res.success) {
           setCompetition(res.competition);
-          // Always update participants from server (server is source of truth)
           setParticipants(res.leaderboard);
-
           setCompetitionState(res.competitionState);
           setParticipantState(res.participantState);
 
           if (res.serverTime) {
             timeOffsetRef.current = res.serverTime - Date.now();
           }
-          // Intentionally removed local setTimeout prediction for redirect. 
-          // We strictly rely on the server's WebSocket event `competitionStarted` for exact 0ms precision redirect.
-        } else {
+
+          // Clear the loading screen IMMEDAIATELY since we have acceptable data.
+          setLoading(false);
+
+          // If the data came from cache (it was fast), silently trigger a background 
+          // fetch to ensure we have the absolute latest accurate leaderboard/timer.
+          // This ensures instant UX but fresh data.
+          liveCompetitionAPI.getLobbyState(id, true).then((freshRes) => {
+            if (isMounted && freshRes.success) {
+              setCompetition(freshRes.competition);
+              setParticipants(freshRes.leaderboard);
+              setCompetitionState(freshRes.competitionState);
+              if (freshRes.participantState !== "NOT_JOINED") {
+                setParticipantState(freshRes.participantState);
+              }
+              if (freshRes.serverTime) {
+                timeOffsetRef.current = freshRes.serverTime - Date.now();
+              }
+            }
+          }).catch(console.error);
+
+        } else if (isMounted) {
           setError(res.message || "Failed to load lobby.");
+          setLoading(false);
         }
       } catch (err) {
-        console.error(err);
-        setError("Error loading competition.");
-      } finally {
-        setLoading(false);
+        if (isMounted) {
+          console.error(err);
+          setError("Error loading competition.");
+          setLoading(false);
+        }
       }
     }
 
@@ -242,7 +265,11 @@ const CompetitionLobby = () => {
         })
         .catch(() => { });
     }, 15000);
-    return () => clearInterval(interval);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [id]);
 
   // Timer Logic simplified
