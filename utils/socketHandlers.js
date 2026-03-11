@@ -1,305 +1,4 @@
-// import jwt from "jsonwebtoken";
-// import CompetitionModel from "../models/CompetitionSchema.js";
-// import ParticipantModel from "../models/ParticipantSchema.js";
-// import CompetitionRankingModel from "../models/CompetitionRankingSchema.js";
 
-// /* =========================================================
-//    HELPER: Get Live Leaderboard (DB = single source of truth)
-// ========================================================= */
-// const getCurrentLeaderboard = async (competitionId) => {
-//   try {
-//     const leaderboard = await ParticipantModel.find({ competitionId })
-//       .sort({ puzzlesSolved: -1, timeSpent: 1, score: -1 }) // Sort by puzzles solved, then time, then score
-//       .limit(100) // Increased limit for larger competitions
-//       .populate("userId", "name avatar")
-//       .select("userId username score puzzlesSolved timeSpent status submittedAt isSubmitted joinedAt") // Only select needed fields for performance
-//       .lean();
-
-//     return leaderboard.map((p, index) => ({
-//       rank: index + 1,
-//       userId: p.userId?._id,
-//       username: p.username,
-//       name: p.userId?.name,
-//       avatar: p.userId?.avatar,
-//       score: p.score || 0,
-//       puzzlesSolved: p.puzzlesSolved || 0,
-//       timeSpent: p.timeSpent || 0,
-//       status: p.status || (p.isSubmitted ? "SUBMITTED" : "JOINED"), // Fallback for older records
-//       submittedAt: p.submittedAt || null,
-//     }));
-//   } catch (err) {
-//     console.error("Leaderboard error:", err);
-//     return [];
-//   }
-// };
-
-// /* =========================================================
-//    AUTO START COMPETITION (SERVER CONTROL)
-// ========================================================= */
-// const autoStartCompetition = async (io, competition) => {
-//   const now = new Date();
-
-//   if (competition.status === "UPCOMING" && now >= competition.startTime) {
-//     competition.status = "LIVE";
-//     competition.isActive = true;
-//     await competition.save();
-
-//     console.log(`Competition ${competition._id} AUTO STARTED`);
-
-//     io.to(`competition_${competition._id}`).emit("competitionStarted");
-
-//     // schedule auto end
-//     scheduleCompetitionEnd(io, competition._id, competition.endTime);
-//   }
-// };
-
-// /* =========================================================
-//    HANDLE COMPETITION END (SERVER CONTROL)
-// ========================================================= */
-// const handleCompetitionEnd = async (io, competitionId) => {
-//   try {
-//     const finalLeaderboard = await getCurrentLeaderboard(competitionId);
-
-//     await CompetitionModel.findByIdAndUpdate(competitionId, {
-//       status: "ENDED",
-//       isActive: false,
-//       updatedAt: new Date(),
-//     });
-
-//     await CompetitionRankingModel.deleteMany({ competitionId });
-
-//     if (finalLeaderboard.length) {
-//       await CompetitionRankingModel.insertMany(
-//         finalLeaderboard.map((p) => ({
-//           competitionId,
-//           userId: p.userId,
-//           username: p.username,
-//           finalRank: p.rank,
-//           finalScore: p.score,
-//           puzzlesSolved: p.puzzlesSolved,
-//           totalTime: p.timeSpent,
-//           ENDEDAt: new Date(),
-//         }))
-//       );
-//     }
-
-//     io.to(`competition_${competitionId}`).emit("competitionEnded", {
-//       leaderboard: finalLeaderboard,
-//     });
-
-//     console.log(`Competition ${competitionId} ENDED`);
-//   } catch (err) {
-//     console.error("Competition end error:", err);
-//   }
-// };
-
-// /* =========================================================
-//    SCHEDULE AUTO END
-// ========================================================= */
-// const scheduleCompetitionEnd = (io, competitionId, endTime) => {
-//   const now = new Date();
-//   const delay = endTime.getTime() - now.getTime();
-
-//   if (delay > 0) {
-//     setTimeout(() => {
-//       handleCompetitionEnd(io, competitionId);
-//     }, delay);
-
-//     console.log(
-//       `Competition ${competitionId} scheduled to end in ${Math.round(
-//         delay / 1000
-//       )} seconds`
-//     );
-//   }
-// };
-
-// /* =========================================================
-//    SOCKET AUTH MIDDLEWARE
-// ========================================================= */
-// const authenticateSocket = (socket, next) => {
-//   try {
-//     const token = socket.handshake.auth.token;
-//     if (!token) return next(new Error("Auth token required"));
-
-//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-//     socket.userId = decoded.id;
-//     next();
-//   } catch {
-//     next(new Error("Invalid token"));
-//   }
-// };
-
-// /* =========================================================
-//    INITIALIZE SOCKET HANDLERS
-// ========================================================= */
-// export const initializeSocketHandlers = (io) => {
-//   io.use(authenticateSocket);
-
-//   io.on("connection", (socket) => {
-//     console.log("Socket connected:", socket.id, socket.userId);
-
-//     /* ---------------- JOIN ROOM ---------------- */
-//     socket.on("joinCompetition", async ({ competitionId }) => {
-//       try {
-//         const participant = await ParticipantModel.findOne({
-//           competitionId,
-//           userId: socket.userId,
-//         });
-
-//         if (!participant) {
-//           socket.emit("error", {
-//             message: "Join competition first (REST API)",
-//           });
-//           return;
-//         }
-
-//         socket.join(`competition_${competitionId}`);
-
-//         // Send initial data immediately
-//         const leaderboard = await getCurrentLeaderboard(competitionId);
-
-//         // Send server time for synchronization
-//         socket.emit("competitionJoined", {
-//           serverTime: Date.now(),
-//           leaderboard
-//         });
-
-//         // Also send standard update (redundant but safe for existing clients)
-//         socket.emit("leaderboardUpdate", leaderboard);
-
-//       } catch (err) {
-//         console.error("joinCompetition error:", err);
-//         socket.emit("error", { message: "Join failed" });
-//       }
-//     });
-
-//     /* ---------------- SUBMIT COMPETITION ---------------- */
-//     // Queue for throttled updates
-//     // Map<competitionId, { timeout: Timer, lastUpdate: timestamp }>
-//     const leaderboardUpdateQueue = new Map();
-
-//     const scheduleLeaderboardUpdate = (competitionId) => {
-//       const now = Date.now();
-//       const queueItem = leaderboardUpdateQueue.get(competitionId) || { lastUpdate: 0, timeout: null };
-//       const THROTTLE_MS = 2000; // 2 seconds throttle
-
-//       if (queueItem.timeout) return; // Already scheduled
-
-//       const timeSinceLast = now - queueItem.lastUpdate;
-//       const delay = Math.max(0, THROTTLE_MS - timeSinceLast);
-
-//       queueItem.timeout = setTimeout(async () => {
-//         try {
-//           const leaderboard = await getCurrentLeaderboard(competitionId);
-//           io.to(`competition_${competitionId}`).emit("leaderboardUpdate", leaderboard);
-
-//           // Update tracking
-//           leaderboardUpdateQueue.set(competitionId, {
-//             lastUpdate: Date.now(),
-//             timeout: null
-//           });
-//         } catch (error) {
-//           console.error("Throttled leaderboard update failed:", error);
-//           // Clear timeout so we can try again next time
-//           leaderboardUpdateQueue.set(competitionId, {
-//             lastUpdate: Date.now(), // Treat failed attempt as update to avoid tight loops
-//             timeout: null
-//           });
-//         }
-//       }, delay);
-
-//       leaderboardUpdateQueue.set(competitionId, queueItem);
-//     };
-
-//     socket.on("submitCompetition", async ({ competitionId }) => {
-//       try {
-//         await ParticipantModel.findOneAndUpdate(
-//           { competitionId, userId: socket.userId },
-//           {
-//             status: "SUBMITTED",
-//             submittedAt: new Date(),
-//           }
-//         );
-
-//         // Replaced immediate broadcast with throttled schedule
-//         scheduleLeaderboardUpdate(competitionId);
-
-//       } catch (err) {
-//         console.error("submitCompetition error:", err);
-//       }
-//     });
-
-//     socket.on("disconnect", () => {
-//       console.log("Socket disconnected:", socket.id);
-//     });
-//   });
-
-//   /* =========================================================
-//      SERVER START / RESTART SAFETY
-//   ========================================================= */
-//   const recoverCompetitions = async () => {
-//     try {
-//       const competitions = await CompetitionModel.find({
-//         endTime: { $gt: new Date() },
-//       });
-
-//       for (const comp of competitions) {
-//         if (comp.status === "LIVE") {
-//           scheduleCompetitionEnd(io, comp._id, comp.endTime);
-//         }
-
-//         if (comp.status === "UPCOMING") {
-//           await autoStartCompetition(io, comp);
-//           // Schedule start if not already started
-//           const now = new Date();
-//           const startDelay = comp.startTime.getTime() - now.getTime();
-//           if (startDelay > 0 && comp.status === "UPCOMING") {
-//             setTimeout(async () => {
-//               const updatedComp = await CompetitionModel.findById(comp._id);
-//               if (updatedComp && updatedComp.status === "UPCOMING") {
-//                 await autoStartCompetition(io, updatedComp);
-//               }
-//             }, startDelay);
-//           }
-//         }
-//       }
-
-//       console.log(
-//         `Recovered ${competitions.length} competitions on server start`
-//       );
-//     } catch (err) {
-//       console.error("Recovery error:", err);
-//     }
-//   };
-
-//   recoverCompetitions();
-
-//   // Periodic check for competitions that should start (every 10 seconds)
-//   setInterval(async () => {
-//     try {
-//       const competitions = await CompetitionModel.find({
-//         status: "UPCOMING",
-//         startTime: { $lte: new Date() },
-//         endTime: { $gt: new Date() }
-//       });
-
-//       for (const comp of competitions) {
-//         await autoStartCompetition(io, comp);
-//       }
-//     } catch (err) {
-//       console.error("Auto-start check error:", err);
-//     }
-//   }, 10000); // Check every 10 seconds
-// };
-
-// /* =========================================================
-//    EXPORTS
-// ========================================================= */
-// export {
-//   getCurrentLeaderboard,
-//   handleCompetitionEnd,
-//   scheduleCompetitionEnd,
-// };
 
 // ==================== Redis Implemenatation starts form here onwards
 
@@ -319,8 +18,7 @@ const getIO = () => _io;
 /* =========================================================
    REDIS HELPERS
 ========================================================= */
-const leaderboardKey = (competitionId) =>
-  `leaderboard:${competitionId}`;
+const leaderboardKey = (competitionId) => `leaderboard:${competitionId}`;
 
 const redisScore = (p) =>
   p.puzzlesSolved * 1_000_000 -
@@ -332,22 +30,35 @@ const redisScore = (p) =>
 ========================================================= */
 const buildRedisLeaderboard = async (competitionId) => {
   try {
-    const participants = await ParticipantModel.find({ competitionId }).lean();
+    const participants = await ParticipantModel.find({ competitionId })
+      .select("userId username score puzzlesSolved timeSpent")
+      .populate("userId", "name avatar")
+      .lean();
+
     if (!participants.length) return;
 
     const pipeline = redis.pipeline();
+    const key = leaderboardKey(competitionId);
 
     for (const p of participants) {
-      if (p.userId) {
-        pipeline.zadd(
-          leaderboardKey(competitionId),
-          redisScore(p),
-          p.userId.toString()
-        );
-      }
+      if (!p.userId) continue;
+
+      const entry = {
+        userId: p.userId._id.toString(),
+        username: p.username,
+        name: p.userId.name,
+        avatar: p.userId.avatar,
+        score: p.score || 0,
+        puzzlesSolved: p.puzzlesSolved || 0,
+        timeSpent: p.timeSpent || 0,
+      };
+
+      pipeline.zadd(key, redisScore(p), JSON.stringify(entry));
     }
 
     await pipeline.exec();
+
+    console.log(`🔥 Redis leaderboard built for ${competitionId}`);
   } catch (error) {
     console.error(`[Leaderboard] Redis build error for ${competitionId}:`, error);
   }
@@ -357,100 +68,67 @@ const buildRedisLeaderboard = async (competitionId) => {
    GET LEADERBOARD (REDIS → DB MAP)
 ========================================================= */
 const getCurrentLeaderboard = async (competitionId, limit = 100) => {
-  let userIds = [];
+  const key = leaderboardKey(competitionId);
 
   try {
-    userIds = await redis.zrevrange(
-      leaderboardKey(competitionId),
-      0,
-      limit - 1
-    );
+    const cached = await redis.zrevrange(key, 0, limit - 1);
+
+    if (cached?.length) {
+      return cached.map((entry, index) => {
+        const data = JSON.parse(entry);
+
+        return {
+          rank: index + 1,
+          ...data,
+        };
+      });
+    }
   } catch (error) {
     console.error(`[Leaderboard] Redis error for ${competitionId}:`, error);
   }
 
-  // DB fallback
-  if (!userIds?.length) {
-    const participants = await ParticipantModel.find({ competitionId })
-      .select("userId username score puzzlesSolved timeSpent status submittedAt")
-      .sort({ puzzlesSolved: -1, timeSpent: 1, score: -1 })
-      .limit(limit)
-      .populate("userId", "name avatar")
-      .lean();
-
-    if (!participants.length) return [];
-
-    // rebuild redis asynchronously
-    setImmediate(async () => {
-      try {
-        const pipeline = redis.pipeline();
-
-        participants.forEach((p) => {
-          if (p.userId?._id) {
-            pipeline.zadd(
-              leaderboardKey(competitionId),
-              redisScore(p),
-              p.userId._id.toString()
-            );
-          }
-        });
-
-        await pipeline.exec();
-      } catch (err) {
-        console.error("Redis rebuild error:", err);
-      }
-    });
-
-    return participants.map((p, index) => ({
-      rank: index + 1,
-      userId: p.userId?._id?.toString(),
-      username: p.username,
-      name: p.userId?.name,
-      avatar: p.userId?.avatar,
-      score: p.score || 0,
-      puzzlesSolved: p.puzzlesSolved || 0,
-      timeSpent: p.timeSpent || 0,
-      status: p.status,
-      submittedAt: p.submittedAt,
-    }));
-  }
-
-  const participants = await ParticipantModel.find({
-    competitionId,
-    userId: { $in: userIds },
-  })
+  // Fallback to DB
+  const participants = await ParticipantModel.find({ competitionId })
     .select("userId username score puzzlesSolved timeSpent status submittedAt")
+    .sort({ puzzlesSolved: -1, timeSpent: 1, score: -1 })
+    .limit(limit)
     .populate("userId", "name avatar")
     .lean();
 
-  const map = new Map();
+  if (!participants.length) return [];
 
-  participants.forEach((p) => {
-    if (p.userId) {
-      const uid = p.userId._id.toString();
-      map.set(uid, p);
+  const leaderboard = participants.map((p, index) => ({
+    rank: index + 1,
+    userId: p.userId?._id?.toString(),
+    username: p.username,
+    name: p.userId?.name,
+    avatar: p.userId?.avatar,
+    score: p.score || 0,
+    puzzlesSolved: p.puzzlesSolved || 0,
+    timeSpent: p.timeSpent || 0,
+    status: p.status,
+    submittedAt: p.submittedAt,
+  }));
+
+  // Async Redis rebuild
+  setImmediate(async () => {
+    try {
+      const exists = await redis.exists(key);
+      if (exists) return;
+
+      const pipeline = redis.pipeline();
+
+      leaderboard.forEach((entry) => {
+        pipeline.zadd(key, redisScore(entry), JSON.stringify(entry));
+      });
+
+      await pipeline.exec();
+    } catch (err) {
+      console.error("Redis rebuild error:", err);
     }
   });
 
-  return userIds
-    .map((id, index) => {
-      const p = map.get(id);
-      if (!p) return null;
-
-      return {
-        rank: index + 1,
-        userId: id,
-        username: p.username,
-        name: p.userId?.name,
-        avatar: p.userId?.avatar,
-        score: p.score,
-        puzzlesSolved: p.puzzlesSolved,
-        timeSpent: p.timeSpent,
-        status: p.status,
-        submittedAt: p.submittedAt,
-      };
-    })
-    .filter(Boolean);
+  return leaderboard;
 };
 
 /* =========================================================
@@ -474,14 +152,21 @@ const authenticateSocket = (socket, next) => {
 ========================================================= */
 const autoStartCompetition = async (io, competition) => {
   const now = new Date();
+
   if (competition.status !== "UPCOMING") return;
   if (now < competition.startTime) return;
 
   competition.status = "LIVE";
   competition.isActive = true;
+
   await competition.save();
 
-  await buildRedisLeaderboard(competition._id);
+  const key = leaderboardKey(competition._id);
+  const exists = await redis.exists(key);
+
+  if (!exists) {
+    await buildRedisLeaderboard(competition._id);
+  }
 
   io.to(`competition_${competition._id}`).emit("competitionStarted");
 
@@ -576,61 +261,70 @@ export const initializeSocketHandlers = (io) => {
     console.log("🔌 Connected:", socket.userId);
 
     /* ---------- JOIN ---------- */
-    socket.on("joinCompetition", async ({ competitionId }) => {
-      try {
-        socket.join(`competition_${competitionId}`);
+   socket.on("joinCompetition", async ({ competitionId }) => {
+  try {
+    socket.join(`competition_${competitionId}`);
 
-        // Get leaderboard directly from Redis
-        const leaderboard = await redis.zrevrange(
-          leaderboardKey(competitionId),
-          0,
-          49,
-          "WITHSCORES"
-        );
+    const cached = await redis.zrevrange(
+      leaderboardKey(competitionId),
+      0,
+      49
+    );
 
-        const formatted = formatLeaderboardFromRedis(leaderboard);
+    const leaderboard = cached.map((entry, index) => ({
+      rank: index + 1,
+      ...JSON.parse(entry),
+    }));
 
-        socket.emit("competitionJoined", {
-          serverTime: Date.now(),
-          leaderboard: formatted,
-        });
-
-      } catch (err) {
-        console.error("joinCompetition:", err);
-      }
+    socket.emit("competitionJoined", {
+      serverTime: Date.now(),
+      leaderboard,
     });
+
+  } catch (err) {
+    console.error("joinCompetition:", err);
+  }
+});
 
     /* ---------- SUBMIT ---------- */
-    socket.on("submitCompetition", async ({ competitionId }) => {
-      try {
-        const participant = await ParticipantModel.findOneAndUpdate(
-          { competitionId, userId: socket.userId },
-          {
-            status: "SUBMITTED",
-            submittedAt: new Date(),
-          },
-          { new: true }
-        );
+   socket.on("submitCompetition", async ({ competitionId }) => {
+  try {
+    const participant = await ParticipantModel.findOneAndUpdate(
+      { competitionId, userId: socket.userId },
+      {
+        status: "SUBMITTED",
+        submittedAt: new Date(),
+      },
+      { new: true }
+    ).populate("userId", "name avatar");
 
-        try {
-          await redis.zadd(
-            leaderboardKey(competitionId),
-            redisScore(participant),
-            participant.userId.toString()
-          );
-        } catch (error) {
-          console.error(`[Leaderboard] Redis zadd error for ${competitionId} on submitCompetition socket:`, error);
-        }
+    const entry = {
+      userId: participant.userId._id.toString(),
+      username: participant.username,
+      name: participant.userId.name,
+      avatar: participant.userId.avatar,
+      score: participant.score,
+      puzzlesSolved: participant.puzzlesSolved,
+      timeSpent: participant.timeSpent,
+    };
 
-        const leaderboard = await getCurrentLeaderboard(competitionId);
-        io.to(`competition_${competitionId}`).emit(
-          "leaderboardUpdate",
-          leaderboard
-        );
-      } catch (err) {
-        console.error("submitCompetition:", err);
-      }
-    });
+    await redis.zadd(
+      leaderboardKey(competitionId),
+      redisScore(participant),
+      JSON.stringify(entry)
+    );
+
+    const leaderboard = await getCurrentLeaderboard(competitionId);
+
+    io.to(`competition_${competitionId}`).emit(
+      "leaderboardUpdate",
+      leaderboard
+    );
+
+  } catch (err) {
+    console.error("submitCompetition:", err);
+  }
+});
 
     /* ---------- REFRESH LEADERBOARD ---------- */
     socket.on("refreshLeaderboard", async ({ competitionId }) => {
@@ -652,23 +346,29 @@ export const initializeSocketHandlers = (io) => {
      SERVER RESTART RECOVERY
   ========================================================= */
   const recover = async () => {
-    const competitions = await CompetitionModel.find({
-      endTime: { $gt: new Date() },
-    });
+  const competitions = await CompetitionModel.find({
+    endTime: { $gt: new Date() },
+  });
 
-    for (const comp of competitions) {
-      if (comp.status === "LIVE") {
+  for (const comp of competitions) {
+    if (comp.status === "LIVE") {
+      const key = leaderboardKey(comp._id);
+      const exists = await redis.exists(key);
+
+      if (!exists) {
         await buildRedisLeaderboard(comp._id);
-        scheduleCompetitionEnd(io, comp._id, comp.endTime);
       }
 
-      if (comp.status === "UPCOMING") {
-        autoStartCompetition(io, comp);
-      }
+      scheduleCompetitionEnd(io, comp._id, comp.endTime);
     }
 
-    console.log(`♻️ Recovered ${competitions.length} competitions`);
-  };
+    if (comp.status === "UPCOMING") {
+      autoStartCompetition(io, comp);
+    }
+  }
+
+  console.log(`♻️ Recovered ${competitions.length} competitions`);
+};
 
   recover();
 
