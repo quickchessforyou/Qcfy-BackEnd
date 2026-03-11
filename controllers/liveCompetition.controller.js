@@ -813,53 +813,67 @@ export const getLobbyState = async (req, res) => {
   try {
     const { competitionId } = req.params;
     const userId = req.user._id;
+    const now = new Date();
 
-    // 1. Competition lao with puzzles populated
-    const competition = await CompetitionModel.findById(competitionId).populate('puzzles');
+    // 1. Fetch competition (only required fields)
+    console.time("competitionQuery");
+    const competition = await CompetitionModel
+      .findById(competitionId)
+      .select("name startTime endTime duration puzzles status isActive accessCode")
+      .lean();
+    console.timeEnd("competitionQuery");
+
     if (!competition) {
-      return res.status(404).json({ success: false, message: "Competition not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Competition not found"
+      });
     }
 
-    // 2. Participant lao (sirf ParticipantModel se)
-    const participant = await ParticipantModel.findOne({
-      competitionId,
-      userId
-    });
+    // 2. Fetch participant (only status)
+    console.time("participantQuery");
+    const participant = await ParticipantModel
+      .findOne({ competitionId, userId })
+      .select("status")
+      .lean();
+    console.timeEnd("participantQuery");
 
-    // 3. Competition state - check time-based status
-    const now = new Date();
-    let competitionState = competition.status ? competition.status.toUpperCase() : "UPCOMING";
+    // 3. Determine competition state
+    let competitionState = competition.status?.toUpperCase() || "UPCOMING";
 
-    // Update status based on current time if needed
-    if (competitionState === "UPCOMING" && now >= competition.startTime && now <= competition.endTime) {
+    if (
+      competitionState === "UPCOMING" &&
+      now >= competition.startTime &&
+      now <= competition.endTime
+    ) {
       competitionState = "LIVE";
-      // Update in DB if needed
-      if (competition.status !== "LIVE") {
-        competition.status = "LIVE";
-        competition.isActive = true;
-        await competition.save();
-      }
-    } else if (now > competition.endTime) {
+
+      // Async update (non-blocking)
+      CompetitionModel.updateOne(
+        { _id: competitionId },
+        { status: "LIVE", isActive: true }
+      ).catch(() => {});
+    }
+
+    if (now > competition.endTime && competitionState !== "ENDED") {
       competitionState = "ENDED";
-      if (competition.status !== "ENDED") {
-        competition.status = "ENDED";
-        competition.isActive = false;
-        await competition.save();
-      }
+
+      CompetitionModel.updateOne(
+        { _id: competitionId },
+        { status: "ENDED", isActive: false }
+      ).catch(() => {});
     }
 
     // 4. Participant state
-    let participantState = "NOT_JOINED";
-    if (participant) {
-      participantState = participant.status || "JOINED";
-      // JOINED | PLAYING | SUBMITTED
-    }
+    const participantState = participant?.status || "NOT_JOINED";
 
-    // 5. Leaderboard lao
+    // 5. Leaderboard
+    console.time("leaderboardQuery");
     const leaderboard = await getCurrentLeaderboard(competitionId);
+    console.timeEnd("leaderboardQuery");
 
-    // 6. Response bhejo with total puzzle count
-    res.json({
+    // 6. Response
+    return res.json({
       success: true,
       competition: {
         id: competition._id,
@@ -867,8 +881,8 @@ export const getLobbyState = async (req, res) => {
         startTime: competition.startTime,
         endTime: competition.endTime,
         duration: competition.duration,
-        totalPuzzles: Array.isArray(competition.puzzles) ? competition.puzzles.length : 0, // Add total puzzle count
-        requiresAccessCode: !!(competition.accessCode && competition.accessCode.trim() !== '')
+        totalPuzzles: competition.puzzles?.length || 0,
+        requiresAccessCode: !!competition.accessCode?.trim()
       },
       competitionState,
       participantState,
@@ -878,7 +892,10 @@ export const getLobbyState = async (req, res) => {
 
   } catch (err) {
     console.error("Lobby state error:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
   }
 };
 
