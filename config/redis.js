@@ -8,15 +8,15 @@ const redis = new Redis({
 });
 
 redis.on("connect", () => {
-  console.log("✅ Redis connected");
+  console.log(" Redis connected");
 });
 
 redis.on("ready", () => {
-  console.log("🚀 Redis ready");
+  console.log(" Redis ready");
 });
 
 redis.on("error", (err) => {
-  console.error("❌ Redis error:", err.message);
+  console.error(" Redis error:", err.message);
 });
 
 export default redis;
