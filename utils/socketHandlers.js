@@ -25,6 +25,21 @@ const redisScore = (p) =>
   p.timeSpent * 1000 +
   p.score;
 
+const safeParseLeaderboardEntry = (raw) => {
+  if (raw == null) return null;
+  if (typeof raw !== "string") return null;
+
+  // Backward/compat: older entries may be stored as plain userId strings.
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object") return parsed;
+  } catch {
+    // ignore
+  }
+
+  return { userId: raw };
+};
+
 /* =========================================================
    BUILD LEADERBOARD IN REDIS (ON START / RESTART)
 ========================================================= */
@@ -75,7 +90,7 @@ const getCurrentLeaderboard = async (competitionId, limit = 100) => {
 
     if (cached?.length) {
       return cached.map((entry, index) => {
-        const data = JSON.parse(entry);
+        const data = safeParseLeaderboardEntry(entry) || {};
 
         return {
           rank: index + 1,
@@ -271,10 +286,13 @@ export const initializeSocketHandlers = (io) => {
       49
     );
 
-    const leaderboard = cached.map((entry, index) => ({
-      rank: index + 1,
-      ...JSON.parse(entry),
-    }));
+    const leaderboard = cached
+      .map((entry, index) => {
+        const parsed = safeParseLeaderboardEntry(entry);
+        if (!parsed) return null;
+        return { rank: index + 1, ...parsed };
+      })
+      .filter(Boolean);
 
     socket.emit("competitionJoined", {
       serverTime: Date.now(),
@@ -391,10 +409,19 @@ export const initializeSocketHandlers = (io) => {
 export const addParticipantToLeaderboard = async (competitionId, participant) => {
   try {
     if (participant && participant.userId) {
+      // Store JSON consistently to match readers (and remain backward compatible).
+      const entry = {
+        userId: participant.userId.toString(),
+        username: participant.username,
+        score: participant.score || 0,
+        puzzlesSolved: participant.puzzlesSolved || 0,
+        timeSpent: participant.timeSpent || 0,
+      };
+
       await redis.zadd(
         leaderboardKey(competitionId),
         redisScore(participant),
-        participant.userId.toString()
+        JSON.stringify(entry)
       );
     }
   } catch (error) {
