@@ -125,9 +125,10 @@ export const participateInCompetition = async (req, res) => {
     // Run Redis + Socket operations in background
     setImmediate(async () => {
       try {
-        if (competition.status === "LIVE") {
-          await addParticipantToLeaderboard(competition._id, participant);
-        }
+        // Always keep Redis leaderboard in sync so lobby views
+        // (which may read from Redis cache) see ALL participants,
+        // even while the competition is still UPCOMING.
+        await addParticipantToLeaderboard(competition._id, participant);
 
         const roomName = `competition_${competitionId}`;
 
@@ -136,8 +137,12 @@ export const participateInCompetition = async (req, res) => {
           userId: participant.userId.toString(),
         });
 
+        // Broadcast latest leaderboard to everyone in the room.
+        // Note: addParticipantToLeaderboard already emits a
+        // "leaderboardUpdate" event after syncing Redis, so this
+        // extra emit is mainly a safety net and can be removed
+        // later if desired.
         const leaderboard = await getCurrentLeaderboard(competitionId);
-
         io.to(roomName).emit("leaderboardUpdate", leaderboard);
       } catch (err) {
         console.error("Background event error:", err);
