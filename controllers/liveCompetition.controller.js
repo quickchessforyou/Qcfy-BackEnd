@@ -197,14 +197,59 @@ export const submitCompetition = async (req, res) => {
     }
 
     // Mark participant as submitted (add submittedAt field)
-    participant.submittedAt = new Date();
+    const submittedAt = new Date();
+    participant.submittedAt = submittedAt;
     participant.isActive = false; // Mark as inactive to prevent further submissions
     participant.isSubmitted = true;
     participant.status = "SUBMITTED";
+
+    // Compute total elapsed time the user actually spent in the live competition,
+    // from when they were eligible to play (competition start OR their join time,
+    // whichever is later) up to when they clicked submit.
+    const effectiveStart = (() => {
+      const start = competition.startTime instanceof Date
+        ? competition.startTime
+        : new Date(competition.startTime);
+
+      // If they joined after the official start, measure from join; otherwise from start.
+      if (participant.joinedAt && participant.joinedAt > start) {
+        return participant.joinedAt;
+      }
+      return start;
+    })();
+
+    if (effectiveStart) {
+      const elapsedMs = submittedAt.getTime() - effectiveStart.getTime();
+      if (elapsedMs > 0) {
+        participant.timeSpent = Math.floor(elapsedMs / 1000); // seconds
+      }
+    }
+
     await participant.save();
 
     // Notify all participants via Socket.IO
     const roomName = `competition_${competitionId}`;
+
+    // Sync Redis leaderboard with final submitted stats for this user
+    try {
+      const entry = {
+        userId: participant.userId.toString(),
+        username: participant.username,
+        score: participant.score || 0,
+        puzzlesSolved: participant.puzzlesSolved || 0,
+        timeSpent: participant.timeSpent || 0,
+        status: participant.status || "SUBMITTED",
+        submittedAt: participant.submittedAt || null,
+      };
+
+      await redis.zadd(
+        leaderboardKey(competitionId),
+        redisScore(participant),
+        JSON.stringify(entry)
+      );
+    } catch (redisError) {
+      console.error("[Leaderboard] Redis zadd error in submitCompetition:", redisError);
+    }
 
     // Async leaderboard broadcast
     getCurrentLeaderboard(competitionId).then(updatedLeaderboard => {
@@ -225,7 +270,7 @@ export const submitCompetition = async (req, res) => {
       $or: [{ isSubmitted: true }, { submittedAt: { $exists: true } }]
     });
 
-    console.log(`Competition ${competitionId} progress: ${submittedParticipants}/${totalParticipants} submitted`);
+   // console.log(`Competition ${competitionId} progress: ${submittedParticipants}/${totalParticipants} submitted`);
 
     res.json({
       success: true,
@@ -358,12 +403,12 @@ export const submitPuzzleSolution = async (req, res) => {
         { upsert: true, new: true }
       );
 
-      console.log('Created/updated puzzle attempt (solved):', {
-        puzzleId,
-        userId,
-        status: puzzleAttempt.status,
-        isLocked: puzzleAttempt.isLocked
-      });
+      //console.log('Created/updated puzzle attempt (solved):', {
+      //   puzzleId,
+      //   userId,
+      //   status: puzzleAttempt.status,
+      //   isLocked: puzzleAttempt.isLocked
+      // });
 
       // Create puzzle solution record (for backward compatibility)
       const puzzleSolution = new PuzzleSolutionModel({
@@ -394,12 +439,24 @@ export const submitPuzzleSolution = async (req, res) => {
       );
 
       /* ================= UPDATE REDIS + BROADCAST ================= */
-      // Sync Redis sorted set with fresh score BEFORE reading leaderboard
+      // Sync Redis sorted set with fresh score BEFORE reading leaderboard.
+      // IMPORTANT: store full JSON entry (not just userId string) so that
+      // getCurrentLeaderboard (and thus the lobby) sees up-to-date fields
+      // like puzzlesSolved, timeSpent and score for every participant.
       try {
+        const entry = {
+          userId: updatedParticipant.userId.toString(),
+          username: updatedParticipant.username,
+          score: updatedParticipant.score || 0,
+          puzzlesSolved: updatedParticipant.puzzlesSolved || 0,
+          timeSpent: updatedParticipant.timeSpent || 0,
+          status: updatedParticipant.status || "JOINED",
+        };
+
         await redis.zadd(
           leaderboardKey(competitionId),
           redisScore(updatedParticipant),
-          userId.toString()
+          JSON.stringify(entry)
         );
       } catch (redisError) {
         console.error(`[Leaderboard] Redis zadd error in submit:`, redisError);
@@ -821,12 +878,12 @@ export const getLobbyState = async (req, res) => {
     const now = new Date();
 
     // 1. Fetch competition (only required fields)
-    console.time("competitionQuery");
+    //console.time("competitionQuery");
     const competition = await CompetitionModel
       .findById(competitionId)
       .select("name startTime endTime duration puzzles status isActive accessCode")
       .lean();
-    console.timeEnd("competitionQuery");
+    //console.timeEnd("competitionQuery");
 
     if (!competition) {
       return res.status(404).json({
@@ -836,12 +893,12 @@ export const getLobbyState = async (req, res) => {
     }
 
     // 2. Fetch participant (only status)
-    console.time("participantQuery");
+    //console.time("participantQuery");
     const participant = await ParticipantModel
       .findOne({ competitionId, userId })
       .select("status")
       .lean();
-    console.timeEnd("participantQuery");
+    //console.timeEnd("participantQuery");
 
     // 3. Determine competition state
     let competitionState = competition.status?.toUpperCase() || "UPCOMING";
@@ -875,7 +932,7 @@ export const getLobbyState = async (req, res) => {
     // 5. Leaderboard
     console.time("leaderboardQuery");
     const leaderboard = await getCurrentLeaderboard(competitionId);
-    console.timeEnd("leaderboardQuery");
+  console.timeEnd("leaderboardQuery");
 
     // 6. Response
     return res.json({

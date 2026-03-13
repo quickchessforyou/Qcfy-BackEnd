@@ -46,7 +46,7 @@ const safeParseLeaderboardEntry = (raw) => {
 const buildRedisLeaderboard = async (competitionId) => {
   try {
     const participants = await ParticipantModel.find({ competitionId })
-      .select("userId username score puzzlesSolved timeSpent")
+      .select("userId username score puzzlesSolved timeSpent status submittedAt")
       .populate("userId", "name avatar")
       .lean();
 
@@ -66,6 +66,8 @@ const buildRedisLeaderboard = async (competitionId) => {
         score: p.score || 0,
         puzzlesSolved: p.puzzlesSolved || 0,
         timeSpent: p.timeSpent || 0,
+        status: p.status || "JOINED",
+        submittedAt: p.submittedAt || null,
       };
 
       pipeline.zadd(key, redisScore(p), JSON.stringify(entry));
@@ -416,6 +418,8 @@ export const addParticipantToLeaderboard = async (competitionId, participant) =>
         score: participant.score || 0,
         puzzlesSolved: participant.puzzlesSolved || 0,
         timeSpent: participant.timeSpent || 0,
+        status: participant.status || "JOINED",
+        submittedAt: participant.submittedAt || null,
       };
 
       await redis.zadd(
