@@ -164,7 +164,7 @@ export const submitCompetition = async (req, res) => {
     const { competitionId } = req.params;
     const userId = req.user._id;
 
-   // console.log('Competition submission request:', { competitionId, userId });
+    // console.log('Competition submission request:', { competitionId, userId });
 
     // Validate competition exists and is active
     const competition = await CompetitionModel.findById(competitionId);
@@ -270,7 +270,7 @@ export const submitCompetition = async (req, res) => {
       $or: [{ isSubmitted: true }, { submittedAt: { $exists: true } }]
     });
 
-   // console.log(`Competition ${competitionId} progress: ${submittedParticipants}/${totalParticipants} submitted`);
+    // console.log(`Competition ${competitionId} progress: ${submittedParticipants}/${totalParticipants} submitted`);
 
     res.json({
       success: true,
@@ -316,11 +316,22 @@ export const submitPuzzleSolution = async (req, res) => {
       });
     }
 
-    if (competition.status !== "LIVE") {
+    const now = new Date();
+    const isTimeLive = now >= competition.startTime && now <= competition.endTime;
+
+    if (competition.status !== "LIVE" && !isTimeLive) {
       return res.status(400).json({
         success: false,
         message: "Competition is not live",
       });
+    }
+
+    // DB status is stale — fix it async so next request is clean
+    if (competition.status !== "LIVE" && isTimeLive) {
+      CompetitionModel.updateOne(
+        { _id: competitionId },
+        { status: "LIVE", isActive: true }
+      ).catch(() => { });
     }
 
     /* ================= PARTICIPANT CHECK ================= */
@@ -580,8 +591,8 @@ export const getLiveLeaderboard = async (req, res) => {
       getCurrentLeaderboard(competitionId),
       userId
         ? ParticipantModel.findOne({ competitionId, userId })
-            .select("status")
-            .lean()
+          .select("status")
+          .lean()
         : null,
     ]);
 
@@ -924,7 +935,7 @@ export const getLobbyState = async (req, res) => {
       CompetitionModel.updateOne(
         { _id: competitionId },
         { status: "LIVE", isActive: true }
-      ).catch(() => {});
+      ).catch(() => { });
     }
 
     if (now > competition.endTime && competitionState !== "ENDED") {
@@ -933,7 +944,7 @@ export const getLobbyState = async (req, res) => {
       CompetitionModel.updateOne(
         { _id: competitionId },
         { status: "ENDED", isActive: false }
-      ).catch(() => {});
+      ).catch(() => { });
     }
 
     // 4. Participant state
@@ -942,7 +953,7 @@ export const getLobbyState = async (req, res) => {
     // 5. Leaderboard
     console.time("leaderboardQuery");
     const leaderboard = await getCurrentLeaderboard(competitionId);
-  console.timeEnd("leaderboardQuery");
+    console.timeEnd("leaderboardQuery");
 
     // 6. Response
     return res.json({

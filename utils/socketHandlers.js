@@ -193,25 +193,29 @@ const authenticateSocket = (socket, next) => {
 ========================================================= */
 const autoStartCompetition = async (io, competition) => {
   const now = new Date();
-
   if (competition.status !== "UPCOMING") return;
   if (now < competition.startTime) return;
 
   competition.status = "LIVE";
   competition.isActive = true;
-
   await competition.save();
 
-  const key = leaderboardKey(competition._id);
-  const exists = await redis.exists(key);
-
-  if (!exists) {
-    await buildRedisLeaderboard(competition._id);
-  }
-
+  // ✅ Emit IMMEDIATELY — don't wait for Redis
   io.to(`competition_${competition._id}`).emit("competitionStarted");
-
   scheduleCompetitionEnd(io, competition._id, competition.endTime);
+
+  // ✅ Build Redis in background
+  setImmediate(async () => {
+    try {
+      const key = leaderboardKey(competition._id);
+      const exists = await redis.exists(key);
+      if (!exists) {
+        await buildRedisLeaderboard(competition._id);
+      }
+    } catch (err) {
+      console.error("Redis build error after start:", err);
+    }
+  });
 };
 
 /* =========================================================
