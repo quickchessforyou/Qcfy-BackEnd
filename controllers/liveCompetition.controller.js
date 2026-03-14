@@ -383,6 +383,14 @@ export const submitPuzzleSolution = async (req, res) => {
     }
 
     /* ================= HANDLE SOLUTION RESULT ================= */
+    const effectiveStart = new Date(
+      Math.max(
+        new Date(competition.startTime).getTime(),
+        new Date(participant.joinedAt || new Date()).getTime()
+      )
+    ).getTime();
+    const currentTotalTime = Math.max(0, Math.floor((new Date().getTime() - effectiveStart) / 1000));
+
     if (isCorrect) {
       // CORRECT SOLUTION
       const scoreEarned = calculateScore(puzzle.difficulty, timeSpent);
@@ -431,7 +439,9 @@ export const submitPuzzleSolution = async (req, res) => {
           $inc: {
             score: scoreEarned,
             puzzlesSolved: 1,
-            timeSpent: timeSpent,
+          },
+          $set: {
+            timeSpent: currentTotalTime,
           },
           lastActivity: new Date(),
         },
@@ -517,8 +527,8 @@ export const submitPuzzleSolution = async (req, res) => {
       const updatedParticipant = await ParticipantModel.findOneAndUpdate(
         { competitionId, userId },
         {
-          $inc: {
-            timeSpent: timeSpent,
+          $set: {
+            timeSpent: currentTotalTime,
           },
           lastActivity: new Date(),
         },
