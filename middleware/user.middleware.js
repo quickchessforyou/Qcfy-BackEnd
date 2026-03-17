@@ -6,26 +6,35 @@ const isUser = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ message: "Token is required" });
+      return res.status(401).json({ message: "Token is required", code: "NO_TOKEN" });
     }
     
     const token = authHeader.split(" ")[1];
     
     if (!token) {
-      return res.status(401).json({ message: "Token is required" });
+      return res.status(401).json({ message: "Token is required", code: "NO_TOKEN" });
     }
     
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (jwtErr) {
+      if (jwtErr.name === "TokenExpiredError") {
+        return res.status(401).json({ message: "Session expired. Please log in again.", code: "TOKEN_EXPIRED" });
+      }
+      return res.status(401).json({ message: "Invalid token. Please log in again.", code: "TOKEN_INVALID" });
+    }
+
     const user = await User.findById(decoded.id);
     
     if (!user) {
-      return res.status(401).json({ message: "User not found" });
+      return res.status(401).json({ message: "User not found", code: "USER_NOT_FOUND" });
     }
     
     req.user = user;
     next();
   } catch (err) {
-    return res.status(401).json({ message: "Token is invalid or expired" });
+    return res.status(401).json({ message: "Authentication failed", code: "AUTH_ERROR" });
   }
 };
 

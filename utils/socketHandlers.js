@@ -310,19 +310,8 @@ export const initializeSocketHandlers = (io) => {
       try {
         socket.join(`competition_${competitionId}`);
 
-        const cached = await redis.zrevrange(
-          leaderboardKey(competitionId),
-          0,
-          49
-        );
-
-        const leaderboard = cached
-          .map((entry, index) => {
-            const parsed = safeParseLeaderboardEntry(entry);
-            if (!parsed) return null;
-            return { rank: index + 1, ...parsed };
-          })
-          .filter(Boolean);
+        // Always use getCurrentLeaderboard so we get DB fallback + full count
+        const leaderboard = await getCurrentLeaderboard(competitionId);
 
         socket.emit("competitionJoined", {
           serverTime: Date.now(),
@@ -411,6 +400,19 @@ export const initializeSocketHandlers = (io) => {
       }
 
       if (comp.status === "UPCOMING") {
+        // Pre-build Redis leaderboard for upcoming competitions that already have participants
+        // so that when they go LIVE the leaderboard is ready immediately
+        setImmediate(async () => {
+          try {
+            const key = leaderboardKey(comp._id);
+            const exists = await redis.exists(key);
+            if (!exists) {
+              await buildRedisLeaderboard(comp._id);
+            }
+          } catch (err) {
+            console.error(`Redis pre-build error for upcoming ${comp._id}:`, err);
+          }
+        });
         autoStartCompetition(io, comp);
       }
     }
