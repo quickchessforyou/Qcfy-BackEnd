@@ -13,8 +13,13 @@ const PuzzleSchema = new mongoose.Schema({
   // Puzzle type
   type: {
     type: String,
-    enum: ["normal", "kids"],
+    enum: ["normal", "kids", "illegal"],
     default: "normal"
+  },
+
+  // Illegal Move mode configuration
+  illegalConfig: {
+    playerSide: { type: String, enum: ["w", "b"], default: "w" } // which color the player controls
   },
 
   // Difficulty & Rating

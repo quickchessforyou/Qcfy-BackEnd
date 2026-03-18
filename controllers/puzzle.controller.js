@@ -131,7 +131,7 @@ export const validateSolutionMoves = (fen, moves = []) => {
 
 const createPuzzle = async (req, res) => {
   try {
-    const { title, fen, difficulty, solutionMoves, description, category, type, kidsConfig, level, rating, firstMoveBy } = req.body;
+    const { title, fen, difficulty, solutionMoves, description, category, type, kidsConfig, illegalConfig, level, rating, firstMoveBy } = req.body;
 
     // --- REQUIRED FIELDS CHECK ---
     const missingFields = [];
@@ -140,7 +140,7 @@ const createPuzzle = async (req, res) => {
     if (!difficulty) missingFields.push("difficulty");
     if (!category) missingFields.push("category");
 
-    // For normal puzzles, solutionMoves is required
+    // For normal puzzles, solutionMoves is required; illegal and kids don't need it
     if ((!type || type === 'normal') && !solutionMoves) missingFields.push("solutionMoves");
 
     if (type === 'kids' && !kidsConfig) missingFields.push("kidsConfig");
@@ -168,12 +168,14 @@ const createPuzzle = async (req, res) => {
       return res.status(400).json({ message: "Level must be between 1 and 7" });
     }
 
-    // --- FEN VALIDATION ---
-    const fenResult = validateFen(fen);
-    if (!fenResult.valid) {
-      return res.status(400).json({
-        message: `FEN Error: ${fenResult.message}`,
-      });
+    // --- FEN VALIDATION --- (skip for illegal type; frontend injects kings already)
+    if (type !== 'illegal') {
+      const fenResult = validateFen(fen);
+      if (!fenResult.valid) {
+        return res.status(400).json({
+          message: `FEN Error: ${fenResult.message}`,
+        });
+      }
     }
 
     // --- SOLUTION MOVES VALIDATION (Only for Normal Puzzles) ---
@@ -185,6 +187,7 @@ const createPuzzle = async (req, res) => {
         });
       }
     }
+    // Illegal and Kids types do not require solution move validation
 
     // --- CREATE PUZZLE ---
     const puzzleData = {
@@ -202,6 +205,13 @@ const createPuzzle = async (req, res) => {
     };
 
     if (solutionMoves) puzzleData.solutionMoves = solutionMoves;
+
+    // Save illegalConfig for illegal puzzles
+    if (type === 'illegal' && illegalConfig) {
+      puzzleData.illegalConfig = {
+        playerSide: illegalConfig.playerSide === 'b' ? 'b' : 'w'
+      };
+    }
 
     if (req.body.alternativeSolutions && Array.isArray(req.body.alternativeSolutions)) {
       const altSolutions = req.body.alternativeSolutions;

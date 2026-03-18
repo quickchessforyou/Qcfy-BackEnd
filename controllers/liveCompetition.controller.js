@@ -732,6 +732,7 @@ export const getCompetitionPuzzles = async (req, res) => {
         alternativeSolutions: puzzle.alternativeSolutions || [],
         firstMoveBy: puzzle.firstMoveBy || 'human',
         kidsConfig: puzzle.kidsConfig,
+        illegalConfig: puzzle.illegalConfig || null,
         level: puzzle.level,
         rating: puzzle.rating,
 
@@ -845,6 +846,17 @@ export const startCompetition = async (req, res) => {
 // Helper function to validate puzzle solution
 const validatePuzzleSolution = (puzzle, solution) => {
   try {
+    // ── ILLEGAL MOVE PUZZLES ───────────────────────────────────────────────────
+    // For this type the frontend fully controls win/lose logic (capture-all vs
+    // moving-into-attack). It submits a simple string: 'solved' or 'failed'.
+    if (puzzle.type === 'illegal') {
+      const result = typeof solution === 'string'
+        ? solution
+        : (Array.isArray(solution) ? solution[0] : null);
+      return result === 'solved';
+    }
+
+    // ── NORMAL / KIDS PUZZLES ─────────────────────────────────────────────────
     console.log('Validating solution:', {
       puzzleSolution: puzzle.solutionMoves,
       puzzleSolutionType: typeof puzzle.solutionMoves,
