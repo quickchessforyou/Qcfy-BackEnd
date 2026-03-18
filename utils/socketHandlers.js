@@ -111,21 +111,48 @@ const getCurrentLeaderboard = async (competitionId, limit = 100) => {
         if (p.userId) map.set(p.userId._id.toString(), p);
       });
 
+      // Build a map of cached Redis entries for fallback (covers race condition
+      // where participant was just created in DB but the DB query above missed it)
+      const redisEntryMap = new Map();
+      cached.forEach((raw) => {
+        const data = safeParseLeaderboardEntry(raw);
+        if (data?.userId) redisEntryMap.set(data.userId, data);
+      });
+
       return userIds.map((uid, index) => {
         const p = map.get(uid);
-        if (!p) return null;
-        return {
-          rank: index + 1,
-          userId: uid,
-          username: p.username,
-          name: p.userId?.name,
-          avatar: p.userId?.avatar,
-          score: p.score || 0,
-          puzzlesSolved: p.puzzlesSolved || 0,
-          timeSpent: p.timeSpent || 0,
-          status: p.status,           // ✅ always fresh from DB
-          submittedAt: p.submittedAt, // ✅ always fresh from DB
-        };
+        if (p) {
+          return {
+            rank: index + 1,
+            userId: uid,
+            username: p.username,
+            name: p.userId?.name,
+            avatar: p.userId?.avatar,
+            score: p.score || 0,
+            puzzlesSolved: p.puzzlesSolved || 0,
+            timeSpent: p.timeSpent || 0,
+            status: p.status,           // ✅ always fresh from DB
+            submittedAt: p.submittedAt, // ✅ always fresh from DB
+          };
+        }
+        // ✅ Race condition fallback: DB record not found yet, use Redis cached data
+        // so the user is never silently dropped from the leaderboard
+        const cached_entry = redisEntryMap.get(uid);
+        if (cached_entry) {
+          return {
+            rank: index + 1,
+            userId: uid,
+            username: cached_entry.username,
+            name: cached_entry.name,
+            avatar: cached_entry.avatar,
+            score: cached_entry.score || 0,
+            puzzlesSolved: cached_entry.puzzlesSolved || 0,
+            timeSpent: cached_entry.timeSpent || 0,
+            status: cached_entry.status || "JOINED",
+            submittedAt: cached_entry.submittedAt || null,
+          };
+        }
+        return null;
       }).filter(Boolean);
     }
   } catch (error) {
@@ -222,12 +249,13 @@ const autoStartCompetition = async (io, competition) => {
    AUTO END COMPETITION
 ========================================================= */
 const handleCompetitionEnd = async (io, competitionId) => {
-  // Get final leaderboard fast from Redis/DB
-  const leaderboard = await getCurrentLeaderboard(competitionId);
+  // Use Redis for the instant emit (fast), but use DB as source of truth for
+  // final rankings so that participants who joined but scored 0 are never lost.
+  const redisLeaderboard = await getCurrentLeaderboard(competitionId);
 
   // 1. Emit immediately to frontend so players see it instantly without 5-6s delay!
   io.to(`competition_${competitionId}`).emit("competitionEnded", {
-    leaderboard,
+    leaderboard: redisLeaderboard,
     message: "Competition ended! Calculating final results...",
   });
 
@@ -240,11 +268,31 @@ const handleCompetitionEnd = async (io, competitionId) => {
         updatedAt: new Date(),
       });
 
+      // ✅ Always read ALL participants from DB for final rankings.
+      // Redis may be missing users who joined but never scored (score=0 entries
+      // can be evicted or lost on server restart), so DB is the only reliable source.
+      const allParticipants = await ParticipantModel.find({ competitionId })
+        .select("userId username score puzzlesSolved timeSpent status submittedAt")
+        .sort({ puzzlesSolved: -1, timeSpent: 1, score: -1 })
+        .populate("userId", "name avatar")
+        .lean();
+
+      const finalLeaderboard = allParticipants.map((p, index) => ({
+        rank: index + 1,
+        userId: p.userId?._id?.toString(),
+        username: p.username,
+        score: p.score || 0,
+        puzzlesSolved: p.puzzlesSolved || 0,
+        timeSpent: p.timeSpent || 0,
+        status: p.status,
+        submittedAt: p.submittedAt,
+      }));
+
       await CompetitionRankingModel.deleteMany({ competitionId });
 
-      if (leaderboard.length) {
+      if (finalLeaderboard.length) {
         await CompetitionRankingModel.insertMany(
-          leaderboard.map((p) => ({
+          finalLeaderboard.map((p) => ({
             competitionId,
             userId: p.userId,
             username: p.username,
