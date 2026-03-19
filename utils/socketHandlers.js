@@ -70,7 +70,7 @@ const buildRedisLeaderboard = async (competitionId) => {
         submittedAt: p.submittedAt || null,
       };
 
-      pipeline.zadd(key, redisScore(p), JSON.stringify(entry));
+      pipeline.zadd(key, redisScore(p), p.userId._id.toString());
     }
 
     await pipeline.exec();
@@ -161,7 +161,7 @@ const getCurrentLeaderboard = async (competitionId, limit = 100) => {
       if (exists) return;
       const pipeline = redis.pipeline();
       leaderboard.forEach((entry) => {
-        pipeline.zadd(key, redisScore(entry), JSON.stringify(entry));
+        pipeline.zadd(key, redisScore(entry), entry.userId);
       });
       await pipeline.exec();
     } catch (err) {
@@ -348,7 +348,7 @@ export const initializeSocketHandlers = (io) => {
         await redis.zadd(
           leaderboardKey(competitionId),
           redisScore(participant),
-          JSON.stringify(entry)
+          participant.userId._id.toString()
         );
 
         const leaderboard = await getCurrentLeaderboard(competitionId);
@@ -455,7 +455,7 @@ export const addParticipantToLeaderboard = async (competitionId, participant) =>
       await redis.zadd(
         leaderboardKey(competitionId),
         redisScore(participant),
-        JSON.stringify(entry)
+        participant.userId.toString()
       );
     }
   } catch (error) {

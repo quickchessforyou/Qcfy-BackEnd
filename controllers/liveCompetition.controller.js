@@ -104,6 +104,21 @@ export const participateInCompetition = async (req, res) => {
       timeSpent: 0,
     });
 
+    // Unified system: Sync back to legacy Competition.participants array
+    try {
+      await CompetitionModel.findByIdAndUpdate(competitionId, {
+        $push: {
+          participants: {
+            user: userId,
+            score: 0,
+            joinedAt: new Date(),
+          }
+        }
+      });
+    } catch (err) {
+      console.error("Legacy participant sync error:", err);
+    }
+
     // Send response immediately
     res.json({
       success: true,

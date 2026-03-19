@@ -1,6 +1,7 @@
 import CompetitionModel from "../models/CompetitionSchema.js";
 import PuzzleModel from "../models/PuzzleSchema.js";
 import ParticipantModel from "../models/ParticipantSchema.js";
+import { addParticipantToLeaderboard } from "../utils/socketHandlers.js";
 
 // Create a new competition
 export const createCompetition = async (req, res) => {
@@ -461,6 +462,31 @@ export const joinCompetition = async (req, res) => {
       competition.participants.length >= competition.maxParticipants
     ) {
       return res.status(400).json({ message: "Competition is full" });
+    }
+
+    // Ensure ParticipantModel entry exists as well (Unified system)
+    let participant = await ParticipantModel.findOne({ competitionId: id, userId });
+    
+    if (!participant) {
+      participant = await ParticipantModel.create({
+        competitionId: id,
+        userId,
+        username: req.user.username || req.user.name,
+        status: "JOINED",
+        joinedAt: new Date(),
+        score: 0,
+        puzzlesSolved: 0,
+        timeSpent: 0,
+      });
+
+      // Sync to Redis and Broadcast
+      setImmediate(async () => {
+        try {
+          await addParticipantToLeaderboard(id, participant);
+        } catch (err) {
+          console.error("Redis sync error in joinCompetition:", err);
+        }
+      });
     }
 
     competition.participants.push({
