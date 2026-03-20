@@ -245,22 +245,11 @@ export const submitCompetition = async (req, res) => {
     // Notify all participants via Socket.IO
     const roomName = `competition_${competitionId}`;
 
-    // Sync Redis leaderboard with final submitted stats for this user
     try {
-      const entry = {
-        userId: participant.userId.toString(),
-        username: participant.username,
-        score: participant.score || 0,
-        puzzlesSolved: participant.puzzlesSolved || 0,
-        timeSpent: participant.timeSpent || 0,
-        status: participant.status || "SUBMITTED",
-        submittedAt: participant.submittedAt || null,
-      };
-
       await redis.zadd(
         leaderboardKey(competitionId),
         redisScore(participant),
-        JSON.stringify(entry)
+        participant.userId.toString()
       );
     } catch (redisError) {
       console.error("[Leaderboard] Redis zadd error in submitCompetition:", redisError);
@@ -480,19 +469,10 @@ export const submitPuzzleSolution = async (req, res) => {
       // getCurrentLeaderboard (and thus the lobby) sees up-to-date fields
       // like puzzlesSolved, timeSpent and score for every participant.
       try {
-        const entry = {
-          userId: updatedParticipant.userId.toString(),
-          username: updatedParticipant.username,
-          score: updatedParticipant.score || 0,
-          puzzlesSolved: updatedParticipant.puzzlesSolved || 0,
-          timeSpent: updatedParticipant.timeSpent || 0,
-          status: updatedParticipant.status || "JOINED",
-        };
-
         await redis.zadd(
           leaderboardKey(competitionId),
           redisScore(updatedParticipant),
-          JSON.stringify(entry)
+          updatedParticipant.userId.toString()
         );
       } catch (redisError) {
         console.error(`[Leaderboard] Redis zadd error in submit:`, redisError);

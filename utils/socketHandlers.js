@@ -91,16 +91,16 @@ const getCurrentLeaderboard = async (competitionId, limit = 100) => {
     const cached = await redis.zrevrange(key, 0, limit - 1);
 
     if (cached?.length) {
-      // Extract userIds from cached JSON entries
-      const userIds = cached.map((entry) => {
+      // Extract userIds from cached JSON entries and deduplicate
+      const uniqueUserIds = [...new Set(cached.map((entry) => {
         const data = safeParseLeaderboardEntry(entry);
         return data?.userId;
-      }).filter(Boolean);
+      }).filter(Boolean))];
 
       // Always fetch FRESH status from DB — never trust cached status
       const participants = await ParticipantModel.find({
         competitionId,
-        userId: { $in: userIds },
+        userId: { $in: uniqueUserIds },
       })
         .select("userId username score puzzlesSolved timeSpent status submittedAt")
         .populate("userId", "name avatar")
@@ -111,7 +111,7 @@ const getCurrentLeaderboard = async (competitionId, limit = 100) => {
         if (p.userId) map.set(p.userId._id.toString(), p);
       });
 
-      return userIds.map((uid, index) => {
+      return uniqueUserIds.map((uid, index) => {
         const p = map.get(uid);
         if (!p) return null;
         return {
