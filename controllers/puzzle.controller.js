@@ -131,7 +131,7 @@ export const validateSolutionMoves = (fen, moves = []) => {
 
 const createPuzzle = async (req, res) => {
   try {
-    const { title, fen, difficulty, solutionMoves, description, category, type, kidsConfig, illegalConfig, level, rating, firstMoveBy } = req.body;
+    const { title, fen, difficulty, solutionMoves, description, category, type, captureConfig, illegalConfig, level, rating, firstMoveBy } = req.body;
 
     // --- REQUIRED FIELDS CHECK ---
     const missingFields = [];
@@ -140,10 +140,7 @@ const createPuzzle = async (req, res) => {
     if (!difficulty) missingFields.push("difficulty");
     if (!category) missingFields.push("category");
 
-    // For normal puzzles, solutionMoves is required; illegal and kids don't need it
-    if ((!type || type === 'normal') && !solutionMoves) missingFields.push("solutionMoves");
-
-    if (type === 'kids' && !kidsConfig) missingFields.push("kidsConfig");
+    if (type === 'capture' && !captureConfig) missingFields.push("captureConfig");
 
     // Level and Rating are required (schema has default, but good to ensure if sent)
     // Actually schema defaults handle it if missing, but let's check input validity if provided
@@ -168,8 +165,8 @@ const createPuzzle = async (req, res) => {
       return res.status(400).json({ message: "Level must be between 1 and 7" });
     }
 
-    // --- FEN VALIDATION --- (skip for illegal type; frontend injects kings already)
-    if (type !== 'illegal') {
+    // --- FEN VALIDATION --- (skip for illegal/capture types; frontend injects kings usually)
+    if (type !== 'illegal' && type !== 'capture') {
       const fenResult = validateFen(fen);
       if (!fenResult.valid) {
         return res.status(400).json({
@@ -206,28 +203,47 @@ const createPuzzle = async (req, res) => {
 
     if (solutionMoves) puzzleData.solutionMoves = solutionMoves;
 
-    // Save illegalConfig for illegal puzzles
-    if (type === 'illegal' && illegalConfig) {
-      puzzleData.illegalConfig = {
-        playerSide: illegalConfig.playerSide === 'b' ? 'b' : 'w'
-      };
-    }
+    // Capture Mode Validation (formerly Kids)
+    if (type === 'capture' && captureConfig) {
+      if (captureConfig.mode === 'pieces') {
+        // Validation for Capture Pieces:
+        // 1. Only 1 player piece
+        // 2. No piece should be capturable without moving (immediate capture)
+        const { piece, startSquare, enemyPieces, playerSide } = captureConfig;
+        
+        if (!piece || !startSquare) {
+          return res.status(400).json({ message: "Capture Pieces mode requires a player piece and start square." });
+        }
+        if (!enemyPieces || enemyPieces.length === 0) {
+          return res.status(400).json({ message: "Capture Pieces mode requires at least one enemy piece." });
+        }
 
-    if (req.body.alternativeSolutions && Array.isArray(req.body.alternativeSolutions)) {
-      const altSolutions = req.body.alternativeSolutions;
-      const validAltSolutions = [];
-      for (const altSol of altSolutions) {
-        if (Array.isArray(altSol) && altSol.length > 0) {
-          const altResult = validateSolutionMoves(fen, altSol);
-          if (!altResult.valid) {
-            return res.status(400).json({ message: `Alternative Solution Error: ${altResult.message}` });
+        // Check for immediate capture
+        const chess = new Chess();
+        chess.clear();
+        try {
+          chess.put({ type: piece, color: playerSide || 'w' }, startSquare);
+          enemyPieces.forEach(ep => {
+            chess.put({ type: ep.type || 'p', color: (playerSide === 'w' ? 'b' : 'w') }, ep.square);
+          });
+          
+          const legalMoves = chess.moves({ verbose: true });
+          const captures = legalMoves.filter(m => m.captured);
+          
+          if (captures.length > 0) {
+            // Check if any capture is possible from the initial square
+            // Actually, in the current FEN, since it's player's turn, if they can capture immediately, it's invalid.
+            return res.status(400).json({ 
+              message: "Invalid setup: One or more pieces can be captured without moving. Please move them further away." 
+            });
           }
-          validAltSolutions.push(altSol);
+        } catch (e) {
+          console.error("Capture Pieces validation error:", e);
         }
       }
-      puzzleData.alternativeSolutions = validAltSolutions;
+      
+      puzzleData.captureConfig = captureConfig;
     }
-    if (type === 'kids' && kidsConfig) puzzleData.kidsConfig = kidsConfig;
 
     const puzzle = await PuzzleModel.create(puzzleData);
 
@@ -355,7 +371,7 @@ const getPuzzlesWithFilters = async (req, res) => {
       minRating,
       maxRating,
       search,
-      type, // 'normal' or 'kids'
+      type, // 'normal' or 'capture' or 'illegal'
       page = 1,
       limit = 20
     } = req.query;
@@ -568,7 +584,7 @@ const bulkCreatePuzzles = async (req, res) => {
         type,
         level: level || 1, // Fallback to 1 if still missing (shouldn't be if logic holds, but safe)
         rating: rating || 400,
-        kidsConfig: puzzle.kidsConfig,
+        captureConfig: puzzle.captureConfig,
         initialMove: undefined,
         firstMoveBy: puzzle.firstMoveBy === 'computer' ? 'computer' : 'human',
         createdBy: req.admin._id,
@@ -608,7 +624,7 @@ const exportPuzzles = async (req, res) => {
       type: 1,
       level: 1,
       rating: 1,
-      kidsConfig: 1,
+      captureConfig: 1,
       firstMoveBy: 1
     });
 

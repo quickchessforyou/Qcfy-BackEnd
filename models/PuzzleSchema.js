@@ -13,26 +13,27 @@ const PuzzleSchema = new mongoose.Schema({
   // Puzzle type
   type: {
     type: String,
-    enum: ["normal", "kids", "illegal"],
+    enum: ["normal", "capture", "illegal"],
     default: "normal"
-  },
-
-  // Illegal Move mode configuration
-  illegalConfig: {
-    playerSide: { type: String, enum: ["w", "b"], default: "w" } // which color the player controls
   },
 
   // Difficulty & Rating
   level: { type: Number, required: true, default: 1 }, // 1 to 7
   rating: { type: Number, required: true, default: 400 },
 
-  // Kids mode configuration
-  kidsConfig: {
-    piece: String, // e.g., "n" for knight, "r" for rook
+  // Capture mode configuration (formerly Kids)
+  captureConfig: {
+    mode: { type: String, enum: ["objects", "pieces"], default: "objects" },
+    piece: String, // Player piece: e.g., "n" for knight, "r" for rook
+    playerSide: { type: String, enum: ["w", "b"], default: "w" },
     startSquare: String, // e.g., "e4"
     targets: [{
       square: String,
-      item: { type: String, enum: ["pizza", "chocolate"] }
+      item: { type: String, enum: ["pizza", "chocolate", "star", "burger"] }
+    }],
+    enemyPieces: [{
+      square: String,
+      type: String // e.g., "p", "n", "r"
     }]
   },
 

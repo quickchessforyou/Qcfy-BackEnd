@@ -746,7 +746,7 @@ export const getCompetitionPuzzles = async (req, res) => {
         solutionMoves: puzzle.solutionMoves,
         alternativeSolutions: puzzle.alternativeSolutions || [],
         firstMoveBy: puzzle.firstMoveBy || 'human',
-        kidsConfig: puzzle.kidsConfig,
+        captureConfig: puzzle.captureConfig || puzzle.kidsConfig,
         illegalConfig: puzzle.illegalConfig || null,
         level: puzzle.level,
         rating: puzzle.rating,
