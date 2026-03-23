@@ -237,9 +237,14 @@ const createPuzzle = async (req, res) => {
 };
 
 
-const getPuzzles = async (_req, res) => {
+const getPuzzles = async (req, res) => {
   try {
-    const puzzles = await PuzzleModel.find().sort({ createdAt: -1 });
+    const { limit } = req.query;
+    let query = PuzzleModel.find().sort({ createdAt: -1 });
+    if (limit) {
+      query = query.limit(parseInt(limit));
+    }
+    const puzzles = await query.exec();
     res.status(200).json(puzzles);
   } catch (error) {
     console.error("Error fetching puzzles:", error);
@@ -617,6 +622,23 @@ const deleteAllPuzzles = async (req, res) => {
     res.status(500).json({ message: "Failed to delete all puzzles" });
   }
 };
+// Delete multiple puzzles
+const deleteMultiplePuzzles = async (req, res) => {
+  try {
+    const { puzzleIds } = req.body;
+    if (!Array.isArray(puzzleIds) || puzzleIds.length === 0) {
+      return res.status(400).json({ message: "No puzzle IDs provided" });
+    }
+    const result = await PuzzleModel.deleteMany({ _id: { $in: puzzleIds } });
+    res.status(200).json({
+      message: `Successfully deleted ${result.deletedCount} puzzles`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error("Error deleting multiple puzzles:", error);
+    res.status(500).json({ message: "Failed to delete puzzles" });
+  }
+};
 
 export {
   createPuzzle,
@@ -629,5 +651,6 @@ export {
   getPuzzleStats,
   getRandomPuzzle,
   bulkCreatePuzzles,
-  exportPuzzles
+  exportPuzzles,
+  deleteMultiplePuzzles
 }

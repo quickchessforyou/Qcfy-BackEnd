@@ -1,5 +1,6 @@
 import CompetitionModel from "../models/CompetitionSchema.js";
 import PuzzleModel from "../models/PuzzleSchema.js";
+import ParticipantModel from "../models/ParticipantSchema.js";
 
 // Create a new competition
 export const createCompetition = async (req, res) => {
@@ -77,34 +78,102 @@ export const getCompetitions = async (req, res) => {
   try {
     const { status, isActive, page = 1, limit = 10 } = req.query;
 
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const now = new Date();
+
+    // Build a time-aware query so late-starting competitions are never missed.
+    // A competition is effectively LIVE if:
+    //   - DB status is LIVE, OR
+    //   - DB status is UPCOMING but startTime has already passed and endTime hasn't
+    // A competition is effectively UPCOMING if:
+    //   - DB status is UPCOMING and startTime is still in the future
     const query = {};
-    // Handle case-insensitive status (convert to uppercase to match schema)
-    if (status) query.status = status.toUpperCase();
+
+    if (status) {
+      const s = status.toUpperCase();
+      if (s === "LIVE") {
+        query.$or = [
+          { status: "LIVE" },
+          // Catch stale UPCOMING competitions that have already started
+          { status: "UPCOMING", startTime: { $lte: now }, endTime: { $gt: now } },
+        ];
+      } else if (s === "UPCOMING") {
+        // Only truly upcoming (startTime still in the future)
+        query.status = "UPCOMING";
+        query.startTime = { $gt: now };
+      } else {
+        query.status = s;
+      }
+    }
+
     if (isActive !== undefined) query.isActive = isActive === "true";
 
-    const skip = (page - 1) * limit;
+    const skip = (pageNum - 1) * limitNum;
 
-    const competitions = await CompetitionModel.find(query)
-      .populate("puzzles", "title difficulty category type")
-      .populate("participants.user", "name email")
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit));
+    const [competitions, total] = await Promise.all([
+      CompetitionModel.find(query)
+        .select(
+          "name description status startTime endTime duration puzzles participants maxParticipants createdAt"
+        )
+        .populate("puzzles", "title difficulty category type")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
 
-    const total = await CompetitionModel.countDocuments(query);
+      CompetitionModel.countDocuments(query),
+    ]);
+
+    // Async: promote any stale UPCOMING→LIVE competitions in the DB so next poll is clean
+    const staleUpcoming = competitions.filter(
+      (c) => c.status === "UPCOMING" && new Date(c.startTime) <= now && new Date(c.endTime) > now
+    );
+    if (staleUpcoming.length) {
+      CompetitionModel.updateMany(
+        { _id: { $in: staleUpcoming.map((c) => c._id) } },
+        { status: "LIVE", isActive: true }
+      ).catch(() => {});
+    }
+
+    // Get accurate participant counts from ParticipantModel (live system)
+    const competitionIds = competitions.map((c) => c._id);
+    const participantCounts = await ParticipantModel.aggregate([
+      { $match: { competitionId: { $in: competitionIds } } },
+      { $group: { _id: "$competitionId", count: { $sum: 1 } } },
+    ]);
+    const countMap = new Map(participantCounts.map((p) => [p._id.toString(), p.count]));
+
+    const enriched = competitions.map((c) => {
+      // Compute effective status from time so the frontend always gets the truth
+      let effectiveStatus = c.status;
+      const start = new Date(c.startTime);
+      const end = new Date(c.endTime);
+      if (c.status === "UPCOMING" && start <= now && end > now) {
+        effectiveStatus = "LIVE";
+      }
+
+      return {
+        ...c,
+        status: effectiveStatus,
+        participantCount: countMap.get(c._id.toString()) ?? c.participants?.length ?? 0,
+        participants: undefined,
+      };
+    });
 
     res.status(200).json({
       success: true,
-      data: competitions,
+      data: enriched,
       pagination: {
-        current: parseInt(page),
-        total: Math.ceil(total / limit),
+        current: pageNum,
+        total: Math.ceil(total / limitNum),
         count: competitions.length,
-        totalRecords: total
-      }
+        totalRecords: total,
+      },
     });
   } catch (error) {
     console.error("Error fetching competitions:", error);
+
     res.status(500).json({
       success: false,
       message: "Failed to fetch competitions",
@@ -119,6 +188,8 @@ export const getPuzzlesForCompetition = async (req, res) => {
       category,
       difficulty,
       type,
+      level,
+      rating,
       search,
       page = 1,
       limit = 20,
@@ -132,6 +203,8 @@ export const getPuzzlesForCompetition = async (req, res) => {
     if (category && category !== 'all') query.category = category;
     if (difficulty && difficulty !== 'all') query.difficulty = difficulty;
     if (type && type !== 'all') query.type = type;
+    if (level && level !== 'all') query.level = parseInt(level);
+    if (rating && rating !== 'all') query.rating = parseInt(rating);
 
     // Search functionality
     if (search) {
@@ -158,6 +231,8 @@ export const getPuzzlesForCompetition = async (req, res) => {
     const categories = await PuzzleModel.distinct('category');
     const difficulties = await PuzzleModel.distinct('difficulty');
     const types = await PuzzleModel.distinct('type');
+    const levels = await PuzzleModel.distinct('level');
+    const ratings = await PuzzleModel.distinct('rating');
 
     res.status(200).json({
       success: true,
@@ -171,7 +246,9 @@ export const getPuzzlesForCompetition = async (req, res) => {
       filters: {
         categories: categories.filter(Boolean),
         difficulties: difficulties.filter(Boolean),
-        types: types.filter(Boolean)
+        types: types.filter(Boolean),
+        levels: levels.filter(val => val !== null && val !== undefined).sort((a, b) => a - b),
+        ratings: ratings.filter(val => val !== null && val !== undefined).sort((a, b) => a - b)
       }
     });
   } catch (error) {
