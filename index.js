@@ -34,7 +34,7 @@ app.set("trust proxy", 1);
 const io = new Server(server, {
   cors: {
     origin: process.env.FRONTEND_URL || "http://localhost:5173",
-    methods: ["GET", "POST","PUT","PATCH","DELETE"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   },
 });
 
@@ -48,7 +48,9 @@ const allowedOrigins = new Set(
     process.env.FRONTEND_URL,
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "https://test.quickchessforyou.com"
+    "https://test.quickchessforyou.com",
+    "https://quickchessforyou.com"
+
   ].filter(Boolean)
 );
 
