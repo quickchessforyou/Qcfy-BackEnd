@@ -33,8 +33,24 @@ app.set("trust proxy", 1);
 // Socket.IO setup
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      const allowed = [
+        process.env.FRONTEND_URL,
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://test.quickchessforyou.com",
+        "https://quickchessforyou.com",
+        "https://admin.quickchessforyou.com"
+      ].filter(Boolean);
+      
+      if (allowed.includes(origin) || origin.endsWith('quickchessforyou.com')) {
+        return callback(null, true);
+      }
+      return callback(null, false);
+    },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+    credentials: true,
   },
 });
 
@@ -43,27 +59,33 @@ initializeSocketHandlers(io);
 
 
 // Middleware
-const allowedOrigins = new Set(
-  [
-    process.env.FRONTEND_URL,
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://test.quickchessforyou.com",
-    "https://quickchessforyou.com"
-
-  ].filter(Boolean)
-);
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "https://test.quickchessforyou.com",
+  "https://quickchessforyou.com",
+  "https://admin.quickchessforyou.com"
+].filter(Boolean);
 
 app.use(
   cors({
-    origin(origin, callback) {
+    origin: function (origin, callback) {
       // Allow non-browser clients (curl/postman) where Origin is not set
       if (!origin) return callback(null, true);
-      if (allowedOrigins.has(origin)) return callback(null, true);
-      return callback(new Error("Not allowed by CORS"));
+      
+      // Allow if origin is explicitly in list, or matches proper subdomains
+      if (allowedOrigins.includes(origin) || origin.endsWith('quickchessforyou.com')) {
+        return callback(null, true);
+      }
+      
+      // Returns false instead of an Error, allowing the browser to see a clean CORS error
+      // instead of crashing the server request pipeline with a 500 error.
+      return callback(null, false);
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
+    credentials: true,
     optionsSuccessStatus: 204,
   })
 );
