@@ -17,6 +17,10 @@ import quizRoutes from "./routes/quiz.route.js";
 import examRoutes from "./routes/exam.route.js";
 import { Chess } from "chess.js";
 import { initializeSocketHandlers } from "./utils/socketHandlers.js";
+import eventRoutes from "./routes/event.route.js";
+import liveEventRoutes from "./routes/liveEvent.route.js";
+import { initializeEventSocketHandlers } from "./utils/socketEventHandlers.js";
+
 
 // Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -43,6 +47,8 @@ const io = new Server(server, {
 
 // Initialize socket handlers
 initializeSocketHandlers(io);
+initializeEventSocketHandlers(io);
+
 
 
 // Middleware
@@ -85,6 +91,9 @@ app.use("/api/category", categoryRoutes)
 app.use("/api/quiz-category", quizCategoryRoutes)
 app.use("/api/quiz", quizRoutes)
 app.use("/api/exam", examRoutes)
+app.use("/api/event", eventRoutes)
+app.use("/api/live-event", liveEventRoutes)
+
 
 app.get("/", (req, res) => {
   return res.status(200).json({ message: "QuickChess4U backend is running" });
