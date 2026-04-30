@@ -50,7 +50,6 @@ const upsertLeaderboardEntry = async (competitionId, participant) => {
       redisScore(participant),
       userId
     );
-
     // Hash: full metadata keyed by userId
     pipeline.hset(
       leaderboardMetaKey(competitionId),
@@ -67,6 +66,7 @@ const upsertLeaderboardEntry = async (competitionId, participant) => {
         timeSpent: participant.timeSpent || 0,
         status: participant.status || "JOINED",
         submittedAt: participant.submittedAt || null,
+        joinedAt: participant.joinedAt || new Date(),
       })
     );
 
@@ -81,11 +81,11 @@ const upsertLeaderboardEntry = async (competitionId, participant) => {
 
 /* =========================================================
    BUILD LEADERBOARD IN REDIS  (on start / server restart)
-========================================================= */
+ ========================================================= */
 const buildRedisLeaderboard = async (competitionId) => {
   try {
     const participants = await ParticipantModel.find({ competitionId })
-      .select("userId username score puzzlesSolved timeSpent status submittedAt")
+      .select("userId username score puzzlesSolved timeSpent status submittedAt joinedAt")
       .populate("userId", "name avatar")
       .lean();
 
@@ -114,6 +114,7 @@ const buildRedisLeaderboard = async (competitionId) => {
           timeSpent: p.timeSpent || 0,
           status: p.status || "JOINED",
           submittedAt: p.submittedAt || null,
+          joinedAt: p.joinedAt || new Date(),
         })
       );
     }
@@ -130,7 +131,7 @@ const buildRedisLeaderboard = async (competitionId) => {
 
 /* =========================================================
    GET LEADERBOARD  (Redis → DB merge, with DB fallback)
-========================================================= */
+ ========================================================= */
 const getCurrentLeaderboard = async (competitionId, limit = 200) => {
   const key = leaderboardKey(competitionId);
   const metaKey = leaderboardMetaKey(competitionId);
@@ -150,7 +151,7 @@ const getCurrentLeaderboard = async (competitionId, limit = 200) => {
         competitionId,
         userId: { $in: userIds },
       })
-        .select("userId username score puzzlesSolved timeSpent status submittedAt")
+        .select("userId username score puzzlesSolved timeSpent status submittedAt joinedAt")
         .populate("userId", "name avatar")
         .lean();
 
@@ -178,6 +179,7 @@ const getCurrentLeaderboard = async (competitionId, limit = 200) => {
             // Always prefer fresh DB values for status & submittedAt
             status: db?.status ?? meta?.status ?? "JOINED",
             submittedAt: db?.submittedAt ?? meta?.submittedAt ?? null,
+            joinedAt: db?.joinedAt ?? meta?.joinedAt ?? null,
           };
         })
         .filter(Boolean);
@@ -190,8 +192,8 @@ const getCurrentLeaderboard = async (competitionId, limit = 200) => {
   console.warn(`[Leaderboard] Falling back to DB for ${competitionId}`);
 
   const participants = await ParticipantModel.find({ competitionId })
-    .select("userId username score puzzlesSolved timeSpent status submittedAt")
-    .sort({ puzzlesSolved: -1, timeSpent: 1, score: -1 })
+    .select("userId username score puzzlesSolved timeSpent status submittedAt joinedAt")
+    .sort({ puzzlesSolved: -1, timeSpent: 1, score: -1, joinedAt: 1 })
     .limit(limit)
     .populate("userId", "name avatar")
     .lean();
@@ -208,7 +210,7 @@ const getCurrentLeaderboard = async (competitionId, limit = 200) => {
     puzzlesSolved: p.puzzlesSolved || 0,
     timeSpent: p.timeSpent || 0,
     status: p.status,
-    submittedAt: p.submittedAt,
+    joinedAt: p.joinedAt,
   }));
 
   // Rebuild Redis in the background so next call is fast

@@ -99,6 +99,10 @@ app.get("/", (req, res) => {
   return res.status(200).json({ message: "QuickChess4U backend is running" });
 })
 
+app.get("/api/ping", (req, res) => {
+  return res.status(200).json({ success: true });
+})
+
 
 console.log("Chess import:", Chess);
 

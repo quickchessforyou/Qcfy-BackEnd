@@ -128,12 +128,8 @@ export const getEvents = async (req, res) => {
 
     // Get accurate participant counts from EventParticipantModel
     const eventIds = events.map((e) => e._id);
-    const participantCounts = await EventParticipantModel.aggregate([
-      { $match: { eventId: { $in: eventIds }, isApproved: true } },
-      { $group: { _id: "$eventId", count: { $sum: 1 } } },
-    ]);
-    const countMap = new Map(participantCounts.map((p) => [p._id.toString(), p.count]));
-
+    const participants = await EventParticipantModel.find({ eventId: { $in: eventIds } }).lean();
+    
     const enriched = events.map((e) => {
       let effectiveStatus = e.status;
       const start = new Date(e.startTime);
@@ -142,10 +138,16 @@ export const getEvents = async (req, res) => {
         effectiveStatus = "LIVE";
       }
 
+      const eventParticipants = participants.filter(p => p.eventId.toString() === e._id.toString());
+      const registered = eventParticipants.length;
+      const approved = eventParticipants.filter(p => p.isApproved).length;
+
       return {
         ...e,
         status: effectiveStatus,
-        participantCount: countMap.get(e._id.toString()) ?? 0,
+        participantCount: approved, // Backward compatibility
+        approvedCount: approved,
+        registeredCount: registered,
         participants: undefined,
       };
     });
